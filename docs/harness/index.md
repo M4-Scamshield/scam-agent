@@ -19,6 +19,8 @@
 
 스킬은 저장소의 `.agents/skills/`에 두었다. [OpenAI 공식 스킬 문서](https://learn.chatgpt.com/docs/build-skills)의 저장소 스킬 탐색 경로를 따른다. 루트 파일은 [공식 안내](https://learn.chatgpt.com/docs/agent-configuration/agents-md)에서 사용하는 이름인 `AGENTS.md`로 작성했다.
 
+Claude Code는 [CLAUDE.md](../../CLAUDE.md)에서 AGENTS를 import하고, `.claude/skills/`의 상대 심볼릭 링크로 같은 스킬 원본을 사용한다. 호출 명령은 Codex의 `$이름`, Claude Code의 `/이름`이며, 도구별 사용법은 [README](../../README.md)에 있다. Claude 연결은 [공식 import 안내](https://code.claude.com/docs/en/memory#share-one-file-with-other-coding-tools)와 [공식 스킬 안내](https://code.claude.com/docs/en/skills#where-skills-live)를 따른다.
+
 ## 참고한 구조와 적용 범위
 
 2026-10-10 로컬 `Downloads/aTopsMigrator`의 AGENTS.md, docs/index.md, 주제별 인덱스, architecture/overview.md, document-map.md, openspec/index.md와 저장소 스킬을 읽었다.

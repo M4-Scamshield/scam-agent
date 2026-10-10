@@ -63,6 +63,9 @@ def check(root: Path) -> Tuple[List[str], int, int]:
     sources = set(documents)
     sources.update(change_documents)
     sources.update(path for path in required if path.is_file())
+    claude = root / "CLAUDE.md"
+    if claude.is_file():
+        sources.add(claude)
     skills = root / ".agents" / "skills"
     if skills.is_dir():
         sources.update(skills.rglob("*.md"))

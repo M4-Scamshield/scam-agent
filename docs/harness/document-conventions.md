@@ -22,6 +22,12 @@ AGENTS.md는 구현 전·중·후 각 단계의 핵심 행동과 문서·스킬�
 
 change의 proposal·spec·design에서 관련 상위 설계와 기준 문서를 직접 연결한다. tasks는 완료 근거가 있는 work로, work는 관련 설계·변경 파일과 실제 검증 근거로 연결한다. 설계 본문의 관련 문서 항목에도 해당 change를 연결해 양쪽에서 찾을 수 있게 한다.
 
+## 도구별 진입점과 공유 원본
+
+공통 작업 안내는 AGENTS.md, 스킬 지침과 스크립트는 `.agents/skills/`에서 관리한다. [CLAUDE.md](../../CLAUDE.md)는 AGENTS를 import하고 Claude Code의 호출 방법만 안내한다. `.claude/skills/<skill-name>`은 해당 `.agents/skills/<skill-name>` 폴더를 가리키는 상대 심볼릭 링크다. 원본을 수정하면 두 도구가 같은 내용을 사용한다.
+
+스킬을 추가·이동·삭제하면 Claude의 연결과 README의 호출 안내도 맞춘다. 심볼릭 링크가 보존되지 않는 환경에서는 CLAUDE에 연결한 원본 SKILL.md를 직접 읽어 적용한다. Codex용 `agents/openai.yaml`은 Codex UI 메타데이터이며 공통 절차는 SKILL.md에 둔다.
+
 ## 문서 상태
 
 - 설계: `초안` 또는 `확정`. 확정의 근거를 적는다. 확정 설계도 구현 완료를 뜻하지 않는다.
