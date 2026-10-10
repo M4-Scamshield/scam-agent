@@ -1,0 +1,4 @@
+interface:
+  display_name: "ScamShield Work Cycle"
+  short_description: "Resume repository work with shared context and evidence."
+  default_prompt: "Use $scamshield-work-cycle to continue the current ScamShield task from its document indexes and change records."

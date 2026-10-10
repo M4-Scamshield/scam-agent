@@ -1,0 +1,4 @@
+interface:
+  display_name: "ScamShield Docs Sync"
+  short_description: "Keep documents, indexes, and handoff records consistent."
+  default_prompt: "Use $scamshield-docs-sync to synchronize the documents affected by this ScamShield change and check their navigation."
