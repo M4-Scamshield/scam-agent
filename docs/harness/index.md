@@ -14,6 +14,8 @@
 
 ## 스킬 연결
 
+- [scamshield-github-templates](../../.agents/skills/scamshield-github-templates/SKILL.md): 이슈/PR 템플릿 유지와 요청받은 초안을 작성한다. 실제 외부 생성은 사용자 요청 범위를 따른다.
+
 - [scamshield-work-cycle](../../.agents/skills/scamshield-work-cycle/SKILL.md): 새 작업은 설계 기준부터, 작업 재개는 진행·인계 기록부터 확인하는 공통 흐름을 적용한다.
 - [scamshield-docs-sync](../../.agents/skills/scamshield-docs-sync/SKILL.md): 변경 사실을 기준 문서·작업 기록·인덱스에 반영하고 문서 검사를 실행한다.
 
@@ -33,3 +35,8 @@ ScamShield의 변경별 문서는 사용자 요청에 따라 참고 저장소처
 ## 2026-10-12 — AI 설정 커밋 정리
 
 AI 문서 구조, 작업 재개/문서 동기화 스킬, Codex·Claude 공유 연결은 기존 기능별 커밋으로 기록되어 있다. 이번 정리는 OpenSpec 공통 인덱스를 버전에 포함하고 분석·아키텍처 인덱스의 존재하지 않는 agent-harness 기록 링크를 제거한다. 서비스 스펙/first-demo 기록·Python 설정·IDE 파일은 이번 AI 설정 커밋 범위와 구분한다. 작업 트리의 문서 검사 PASS(문서 18개·로컬 링크 181개)와 git diff --check 통과를 확인했다. 커밋할 파일만 추출한 상태의 문서 검사도 PASS(문서 11개·로컬 링크 90개)로 확인했다. 서비스 테스트는 설정/문서 변경 범위이므로 실행하지 않는다.
+
+
+## 2026-10-12 — 이슈·PR 협업 설정
+
+aTopsMigrator의 GitHub 협업 스킬을 참고해 [버그 폼](../../.github/ISSUE_TEMPLATE/bug_report.yml)·[변경 제안 폼](../../.github/ISSUE_TEMPLATE/change_proposal.yml)·[PR 양식](../../.github/PULL_REQUEST_TEMPLATE.md)과 공유 스킬을 추가했다. 단일 PR 양식에서 변경 결과와 검증 근거를 연결하고 Fake/Mock과 실제 검증을 구분한다. 세 스킬을 Codex/Claude에서 공유한다. 진행·검증 근거는 [협업 change](../../openspec/changes/github-collaboration/work.md)에 있다.

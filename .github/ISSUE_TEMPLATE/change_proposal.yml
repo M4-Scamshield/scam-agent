@@ -1,0 +1,29 @@
+name: 기능·설계 변경
+description: 해결할 문제와 변경 범위, 완료 조건을 제안합니다.
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: 문제와 목표
+      description: 누구에게 어떤 문제가 있고 어떤 결과가 필요한지 적어 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 변경 범위와 제약
+      description: 필요한 동작과 영향을 적어 주세요. 확정된 MVP 방향을 바꾸는 제안은 이유와 대안을 함께 적어 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 완료 조건
+      description: 입력·동작·출력이나 문서 변경을 어떻게 확인할지 적어 주세요. Mock 데모와 실제 연동의 완료 조건을 구분해 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: 관련 스펙과 작업 기록
+      description: 관련 docs 문서, openspec/changes 기록, 이슈를 연결해 주세요. 작은 변경마다 새 change를 만들 필요는 없습니다.

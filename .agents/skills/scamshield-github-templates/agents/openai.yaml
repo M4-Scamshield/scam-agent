@@ -1,0 +1,4 @@
+interface:
+  display_name: "ScamShield GitHub Templates"
+  short_description: "Draft issues and PRs with scoped changes and evidence."
+  default_prompt: "Use $scamshield-github-templates to prepare the requested ScamShield issue or PR text and maintain the repository templates."

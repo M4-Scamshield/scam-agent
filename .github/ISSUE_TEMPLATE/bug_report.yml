@@ -1,0 +1,34 @@
+name: 버그 보고
+description: 관찰한 문제와 재현 방법을 기록합니다.
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: 관찰한 동작과 기대한 동작
+      description: 어떤 입력에서 무엇이 달라졌는지 적어 주세요. 원인이 불확실하면 관찰과 추측을 구분해 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 재현 방법
+      description: 입력, 실행 명령, 순서와 결과를 적어 주세요. 재현하지 못했다면 그 사실도 기록해 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 실행 환경
+      description: 관련 버전, 실행 모드, Fake/Mock 또는 실제 Provider 사용 여부를 적어 주세요.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 로그와 관련 문서
+      description: 관련 스펙, openspec/changes 기록, 필요한 로그를 연결해 주세요. 실제 통화 내용, 계좌/연락처, 토큰 등 민감한 정보는 제거해 주세요.
+  - type: checkboxes
+    id: existing_issue
+    attributes:
+      label: 기존 이슈 확인
+      options:
+        - label: 같은 문제의 기존 이슈를 확인했습니다.
+          required: true
