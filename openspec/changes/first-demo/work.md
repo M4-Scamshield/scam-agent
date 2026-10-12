@@ -339,3 +339,7 @@ CLI는 고유 callId로 세 발화를 순차 실행하고 Node·risk/phase·선�
 [PR #2 — 통화별 대화 유지와 사건번호 확인·경고 흐름 구현](https://github.com/M4-Scamshield/scam-agent/pull/2)를 생성했다. 반환된 open·draft=false·base/head 일치를 확인했다. 실제 Gemini 성공과 이후 P2 수정의 API 없는 검증은 본문에서 구분했으며 후속 Agent/STT/실제 조회를 완료로 표시하지 않았다. merge·이슈 수동 종료는 수행하지 않았다.
 
 PR URL과 최신 인계 상태를 컨텍스트·tasks·OpenSpec 인덱스에 반영했다. 기록 갱신은 별도 문서 커밋으로 같은 브랜치에 추가해 PR에 포함한다. `python3 .agents/skills/scamshield-docs-sync/scripts/check_docs.py` **PASS**, `git diff --check` **PASS**. PR을 다시 읽어 제목·6개 양식 섹션·Closes #1·실제 검증 시점 구분과 base/head를 확인했다. 코드/실제 Gemini는 재실행하지 않았다. 이전 31 passed·실제 모델 실행은 기존 검증 기록이다.
+
+## 2026-10-12 — 이슈·PR 제목 접두사 수정
+
+사용자 요청으로 [이슈 #1](https://github.com/M4-Scamshield/scam-agent/issues/1)·[PR #2](https://github.com/M4-Scamshield/scam-agent/pull/2)의 제목을 [데모] 대신 `feat:`로 바꿨다. 데모의 구현 범위와 실제 Gemini/Fake/Mock 구분은 본문에 유지한다. 제목/양식의 feat/fix 기준과 검증 근거는 [github-collaboration work](../github-collaboration/work.md)에 기록했다. 서비스 기능이나 이슈 완료 조건은 변경하지 않았다.

@@ -1,5 +1,6 @@
 name: 기능·설계 변경
 description: 해결할 문제와 변경 범위, 완료 조건을 제안합니다.
+title: "feat: "
 body:
   - type: textarea
     id: goal

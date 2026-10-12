@@ -40,7 +40,7 @@ first-demo의 이번 데모 범위를 완료했다. [MVP 전체 스펙](../docs/
 
 ## GitHub 협업 설정 — 완료
 
-이슈 폼·기본 PR 양식과 공유 스킬을 추가한다. 외부 이슈/PR 생성이나 push 없이 기능별 로컬 커밋으로 기록한다.
+이슈 폼·기본 PR 양식과 공유 스킬을 추가했고 초기 구성은 외부 게시/push 없이 로컬 커밋으로 기록했다. 후속 사용자 요청으로 feat/fix 등의 제목 형식을 폼·PR/README 안내에 반영하고 기존 이슈 #1·PR #2의 제목을 `feat:`로 맞췄다. 제목 변경과 초기 템플릿 구성의 실행 범위는 [work](changes/github-collaboration/work.md)에서 구분한다.
 
 - [proposal](changes/github-collaboration/proposal.md): 목적·범위.
 - [spec](changes/github-collaboration/spec.md): 양식·권한·검증 요구.
