@@ -4,6 +4,6 @@
 
 ## 문서 목록
 
-서비스 분석·실험 문서는 아직 없다. Harness 참고 저장소의 조사 결과는 [Harness 안내](../harness/index.md)와 [이번 change의 작업 기록](../../openspec/changes/agent-harness/work.md)에 있다.
+서비스 분석·실험 문서는 아직 없다. Harness 참고 저장소와 적용 범위는 [Harness 안내](../harness/index.md)에 있다.
 
 새 분석에는 관찰한 대상·시점·방법·결과·한계·관련 설계를 적는다. 외부 API 문서 확인과 실제 API 호출 성공을 구분하고, Mock 결과를 실제 기관 검증 결과로 표현하지 않는다.

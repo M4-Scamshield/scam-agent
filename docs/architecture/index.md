@@ -4,7 +4,7 @@
 
 ## 현재 구현
 
-서비스 코드는 없다. 이번에 구성한 것은 [에이전트 작업 환경](../harness/index.md)이며 근거는 [Harness change의 작업 기록](../../openspec/changes/agent-harness/work.md)에 있다. 서비스 기능의 구현 완료로 해석하지 않는다.
+서비스 코드는 없다. 이번에 구성한 것은 [에이전트 작업 환경](../harness/index.md)이다. 서비스 기능의 구현 완료로 해석하지 않는다.
 
 ## 문서 목록
 
