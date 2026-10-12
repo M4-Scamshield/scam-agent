@@ -20,6 +20,18 @@
 
 공통 설계의 기준은 `docs/design/`, 현재 구현 설명은 `docs/architecture/`에 둔다. change 문서는 해당 변경의 요구와 적용 방법·진행을 담고 상위 문서로 연결한다. 변경이 반영되면 관련 기준 문서를 갱신하고, 본문의 관련 문서 항목에서 해당 change와 검증 기록으로 연결한다.
 
+## 첫 데모 — 진행 중
+
+first-demo는 진행 중이며 서비스 구현은 미착수다. 사용자가 기존 설계를 전체 스펙으로 사용하고 싶다고 요청해 [ScamShield MVP 전체 스펙](../docs/design/state-and-graph.md)으로 확장했다. 공통 실행·Jev/Agent/Tool 내부 계약·입력/응답·데모 검증 기준을 같은 문서에서 관리한다. 실제 Jev API/risk·Agent 모델·외부 조회·STT 연결은 미정이며 이어 확정한다. 전체 스펙 초안 작성과 구현 완료는 구분한다. 기존 change에서 진행을 이어 기록한다.
+
+| 변경 문서 | 포함한 내용 |
+|---|---|
+| [proposal](changes/first-demo/proposal.md) | 첫 통화 데모의 목표·범위·완료 조건 |
+| [spec](changes/first-demo/spec.md) | 상태 누적·두 Agent·검증 후 재판단 요구 |
+| [design](changes/first-demo/design.md) | 공통 실행 설계의 데모 적용·후속 상세 스펙·구현 검증 방향 |
+| [tasks](changes/first-demo/tasks.md) | 단계별 구현·검증 진행 |
+| [work](changes/first-demo/work.md) | 실제 진행·환경·검증·다음 행동 |
+
 ## GitHub 협업 설정 — 완료
 
 이슈 폼·기본 PR 양식과 공유 스킬을 추가한다. 외부 이슈/PR 생성이나 push 없이 기능별 로컬 커밋으로 기록한다.

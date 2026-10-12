@@ -4,7 +4,7 @@
 
 ## 현재 구현
 
-서비스 코드는 없다. 이번에 구성한 것은 [에이전트 작업 환경](../harness/index.md)이다. 서비스 기능의 구현 완료로 해석하지 않는다.
+서비스 코드는 없다. [에이전트 작업 환경](../harness/index.md)과 Python 의존성 설정이 있으며 서비스 기능의 구현 완료로 해석하지 않는다. 현재는 [MVP 전체 스펙 초안](../design/state-and-graph.md)에 공통 규칙과 구성요소별 계약을 통합했고 외부 연결 계약 확정·구현을 이어갈 단계다. 기존 첫 데모의 진행은 [first-demo change](../../openspec/changes/first-demo/work.md)에서 확인한다.
 
 ## 문서 목록
 
