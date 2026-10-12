@@ -43,4 +43,12 @@
 python3 .agents/skills/scamshield-docs-sync/scripts/check_docs.py
 ```
 
-서비스 실행·빌드·테스트 명령은 아직 없다. 실행 환경을 구성할 때 [README](../../README.md)에 실제 명령을 추가하고 그때부터 작업에 맞게 사용한다.
+데모 실행과 API 없는 테스트는 다음 명령을 사용한다. Gemini 실행 환경변수·입력 방법과 검증 한계는 [README](../../README.md)에 있다.
+
+```sh
+uv sync --locked
+uv run --locked pytest -q
+uv run --locked python -m scamshield --offline --auto
+```
+
+실제 Gemini 안내/Tool Calling은 GEMINI_API_KEY를 실행 환경에 설정한 뒤 `uv run --locked python -m scamshield --auto`로 별도 검증한다. 로컬 `.env`를 사용하면 uv에 `--env-file .env`를 명시한다. 캐시 권한 오류의 대체 경로와 직접 입력 명령은 [README](../../README.md)를 따른다. API 없는 테스트 통과를 실제 모델 호출 성공으로 표시하지 않는다.

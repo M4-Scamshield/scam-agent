@@ -23,16 +23,16 @@
 | Detection·phase 결정 | Jev |
 | Jev 입력 | 전체 한국어 Transcript + 이전 phase + 기존 검증 결과 |
 | Jev 출력 | `risk`, `phase`, 선택적인 `signals` |
-| Jev 출력 적용 | Q8 Option A: detect_with_jev가 출력 schema·허용 phase 전이를 검사한 뒤 State에 반영. 최초 판단·검증 후 재판단 모두 적용. 검증 실패는 자동 재시도 없이 오류 반환(Q11). risk 범위와 기준 수치는 미정 |
-| Jev·Agent 실패 | Q11 Option A 부분 채택: 호출·출력 검증 실패 시 자동 재시도 없이 이번 실행의 오류 반환. 데모에서는 중간 재개 없이 새 발화로 새 turn을 시작하고 마지막 저장 State를 유지 |
-| Tool 실행 실패 | Q11의 Tool 실패 Option A: 오류·timeout을 검증하지 못한 결과로 누적 저장하고 Jev 재판단. Tool 재호출 없이 Q4의 1회 제한 유지. 실행 상태는 Q2의 ERROR/TIMEOUT으로 구분. 공통 실패 상세는 code/message, timeout 뒤 늦은 결과는 폐기. 도구별 상세 오류는 후속 스펙에서 정함 |
+| Jev 출력 적용 | Q8 Option A: detect_with_jev가 출력 schema·허용 phase 전이를 검사한 뒤 State에 반영. 최초 판단·검증 후 재판단 모두 적용. 검증 실패는 자동 재시도 없이 오류 반환(Q11). 데모 risk 0~1·VERIFY >= 0.6. 실제 Jev 척도/기준은 후속 범위 |
+| Jev·Agent 실패 | Q11 Option A 부분 채택: 호출·출력 검증 실패 시 자동 재시도 없이 이번 실행의 오류 반환. 데모에서는 실행 오류 시 통화 시나리오를 중단하고 새 callId로 처음부터 재시작 |
+| Tool 실행 실패 | 현재 실행 예외/잘못된 결과는 ERROR로 저장하고 Jev 재판단. Tool 재호출 없이 Q4의 1회 제한 유지. 공통 형식에는 TIMEOUT도 남겨두지만 시간 초과 감지/취소/늦은 완료는 후속 구현 범위 |
 | signals 보관 | Q9 Option A: MVP ScamState에서 제외. Jev의 선택적 출력 가능성과 State 저장 여부는 구분 |
 | 사용자 안내 response | Q10 Option A: State·checkpoint에 이번 안내를 저장하고 update_context가 새 STT turn 시작 시 None으로 초기화. suspect_agent·warn과 VERIFY 종료를 처리하는 기존 Node가 작성 |
 | Phase | OBSERVE, SUSPECT, VERIFY, WARN |
 | phase 전이 | WARN 하향 금지. 나머지는 Jev 판단에 따라 유연한 전이, VERIFY에는 의심·검증 정보·필요성 요구 |
-| OBSERVE → VERIFY | 일정 risk 기준 이상 + 검증 가능한 정보·검증 필요성이 있어야 진입. 전화번호 등장만으로 진입하지 않음. 이전 SUSPECT 기록은 필수 아님. risk 척도·기준 수치는 Jev 스펙에서 정함 |
-| Agent | Suspect Agent, Verify Agent의 두 역할 |
-| Trigger | 새로운 STT 발화의 도착 |
+| OBSERVE → VERIFY | 일정 risk 기준 이상 + 검증 가능한 정보·검증 필요성이 있어야 진입. 전화번호 등장만으로 진입하지 않음. 이전 SUSPECT 기록은 필수 아님. 데모 VERIFY 기준 0.6 이상. 실제 Jev 척도/기준은 후속 범위 |
+| Agent | Suspect·Verify의 두 역할. Gemini Developer API/gemini-3.8-flash 공유, prompt·Tool 권한만 분리. 연결 구현·API 없는 SDK 검사·실제 안내/Tool Calling 검증 완료 |
+| Trigger | 현재는 CLI 텍스트 발화 입력. 실제 연결에서는 양쪽 화자의 새 final STT 발화 도착 |
 | 입력 경계 | `callId`, `utterance`. Q6 Option A: 데모에서는 완성된 final utterance를 중복 없이 한 번씩 전달. partial STT·동일 요청 재전송은 범위 밖, 발화 ID 기반 중복 제거는 현재 추가하지 않음 |
 | Transcript | 통화 시작 이후 전체 발화를 State에 누적 |
 | 첫 통화 초기값 | Q12: update_context에서 phase=OBSERVE, transcript=[], verification_results=[], response=None을 준비. risk는 최초 성공 Jev 판단 전 None. 기존 통화의 누적 상태는 초기화하지 않음 |
@@ -44,9 +44,13 @@
 | 검증 결과 보관 | 후속 답변에서 통화 전체 Tool 검증 결과 누적(Q2 Option A)과 tool·input·status·result·is_mock 공통 형식을 채택. tool_execution이 기존 결과 + [새 결과] 전체 목록을 기본 교체로 저장하고 append reducer는 사용하지 않음. 상세 계약은 [설계 Q2](design/state-and-graph.md#q2-verification_results는-전체-누적일까-최근-검증-batch일까) 참고 |
 | VERIFY 실행 범위 | Q4 Option A: STT turn당 Tool 최대 1회와 결과 저장 후 Jev 재판단 1회. 다시 VERIFY여도 같은 turn에서는 재검증 없이 종료 |
 | Tool 실행 위치 | Q7 Option A: verify_agent Node가 Tool·인자를 선택하고 독립 tool_execution Node가 실행·결과 저장. State의 tool_request={tool,input}로 전달·checkpoint 보관·실행 후 소비. verification_attempted로 같은 turn의 재실행 방지 |
-| 같은 통화 실행 순서 | Q5 Option A 확정: 같은 callId의 turn을 순차 처리하고 Tool 대기에 시간 제한을 둠. Tool timeout은 실패 결과로 저장해 Jev 재판단(Q11). 데모 기본 timeout 5초·설정 가능, 가능한 취소를 시도하고 늦은 결과는 폐기. Tool 대기 중 새 발화 판단·늦은 결과 반영은 후속 개선으로 연기 |
+| 같은 통화 실행 순서 | CLI가 turn 완료를 기다려 세 발화를 순차 실행. 별도 lock/큐·timeout wrapper/취소 검증은 첫 범위 밖. 늦은 결과 반영은 후속 개선 |
 
 Suspect Agent는 전체 대화와 현재 State를 보고 사용자에게 확인 행동을 안내하며 초기 외부 Tool은 없다. Verify Agent는 대화를 직접 읽고 Tool과 인자를 선택한다. 독립 tool_execution Node가 Tool을 실행하고 검증 결과를 State에 저장한 뒤 Jev가 다시 판단한다. 정상 검증 이후 위험 단계가 내려가는 전이도 가능해야 한다.
+
+2026-10-12 후속 설명에서 사용자는 실제 통화에서 상대방과 사용자 양쪽의 STT가 필요함을 확인했다. 실제 연결에서는 화자를 구분해 같은 통화에 누적해야 한다. 현재 CLI 발화·list[str] State에는 화자 정보가 없고, 화자 정보와 STT 전달/State schema는 후속 설계에서 정한다.
+
+현재 상대방 발화는 DEMO_UTTERANCES의 세 문장 또는 직접 입력이며 상대방 AI는 없다. 세 번 입력 후 종료하는 것은 CLI의 데모 선택이고 Graph의 turn 횟수 제한이 아니다. Fake Jev의 검증 진입 규칙과 Mock 등록 번호 때문에 모든 입력이 일반적인 탐지·조회 흐름으로 이어지지는 않는다. 정확한 조건과 실제 Gemini/Fake/Mock의 구분은 [데모 스펙](design/state-and-graph.md)과 [현재 구성](architecture/overview.md)을 따른다.
 
 사용자는 ScamShield 내부의 멀티 에이전트 구성을 원한다고 명확히 했다. 이는 개발 도구의 병렬 작업 에이전트를 요청한 것이 아니다.
 
@@ -67,21 +71,19 @@ State의 출발 후보는 `transcript`, `phase`, `risk`, `verification_results`,
 
 후속 요청에서 사용자는 기존 문서를 전체 스펙으로 사용하고 싶다고 했다. 공통 규칙과 구성요소별 내부 계약·데모 검증 기준을 같은 문서에 통합했다. Mock case_lookup의 인자/결과, Agent 행동 지침·오류 분류는 에이전트가 작성한 내부 초안이며 실제 서비스 계약과 구분한다. 별도 구성요소 문서 작성은 필수가 아니다.
 
-이 문서 안에서 남은 외부 연결·설정을 확정한다. 주요 항목은 다음과 같다.
+2026-10-12 데모데이 리뷰 반영: 사용자는 필요한 선택만 확인하고 나머지는 에이전트가 진행하도록 요청했다. 데모 risk 0~1·VERIFY 기준 0.6·phase별 fixture 0.1/0.5/0.7/0.9, 대화와 해당 사건번호 결과를 함께 읽는 Fake Jev, CLI 순차 실행과 관찰 출력, 오류 시 새 callId 재시작을 선택했다. 실패 뒤 같은 통화의 재개·동시 요청 제어·timeout 취소/늦은 완료·다양한 오류 fixture는 후속 범위로 옮겼다. 이는 기존 공통 설계보다 첫 구현 범위를 줄인 후속 결정이다.
 
-- Jev: 실제 서비스/API·입출력 schema, risk 척도·범위·VERIFY 기준과 의미 조건.
-- Agent: Provider·모델·prompt, 확인 행동 출력, 원시 Tool Calling 메시지를 공통 요청으로 변환하는 방법.
-- Tool: 도구별 인자·정상 결과·세부 오류·Mock 데이터, 재조회/상충 결과 해석, 실제 도구에 맞춘 timeout 조정.
-- 입력·응답 연결: STT Provider, 실제 재전송·callId 생성, HTTP/WebSocket 계약·중간 risk 전달·수신 큐 운영 한도.
-- 구현: 실제 코드 구조·환경 동작·서비스 테스트. Python 설정은 있지만 서비스 실행 검증은 없다. FastAPI는 추천 방향이며 아직 선택하지 않았다.
+사용자는 처음 LLM API가 없고 무료 Gemini 또는 GPT로 실험할 계획이라고 답했다. Gemini Developer API/gemini-3.8-flash를 두 역할의 공유 기본값으로 선택했다. 이후 키를 로컬 `.env`에 제공했고 SDK 연결·API 없는 검사와 실제 Gemini 안내/Tool Calling·최종 WARN을 확인했다. 계정별 무료 한도를 검증한 것은 아니다. GPT는 후속 비교 후보이며 무료 API로 가정하지 않는다. 공식 요금/Function Calling 근거는 [전체 스펙](design/state-and-graph.md)에 연결한다.
 
-예시 risk는 fixture이며 실제 threshold가 아니다. RTZR은 STT 후보다. 공통 timeout 5초도 데모 기본값이며 외부 조회 서비스의 보장이나 측정 결과가 아니다.
+사용자는 현재 데모의 역할별 LLM 호출 방식을 허용하되 후속 단계에서는 구현한 Agent를 호출하는 구조로 전환하도록 명시적으로 요청했다. [Agent 실행 구조 TODO](design/state-and-graph.md#todo--데모-이후-agent-실행-구조로-전환)에 미완료 작업으로 기록했다. 현재 데모와 Agent 런타임 구현 완료는 구분한다.
+
+실제 Jev/기관 조회·STT·HTTP/WebSocket·프론트·운영 복구/cleanup은 첫 데모 뒤 범위다. [데모 구현](architecture/overview.md)·API 없는 CLI/테스트와 실제 Gemini 안내/Tool Calling 검증을 완료했다. 이는 역할별 LLM 호출 데모 완료이며 후속 Agent 실행 런타임 전환과 구분한다.
 
 ## 작업 범위에 관한 합의
 
 초기 작업은 `Downloads/aTopsMigrator`의 문서 탐색·작업 연속성 방식을 참고한 Harness 구성이었다. 루트 AGENTS.md는 구현 전·중·후의 핵심 행동과 문서·스킬의 사용 시점을 안내하고, 세부 절차·재개 방법·기록 크기·검증 명령은 docs/harness/workflow.md에서 관리한다. 새 작업은 관련 아키텍처·설계를 먼저 읽고, 기존 작업 재개는 change의 진행·인계 기록부터 확인한다. 공통 작업과 문서 동기화는 스킬로 연결한다.
 
-현재 요청은 기존 State·Graph 설계 문서를 기반으로 MVP 전체 스펙을 하나의 문서에 정리하는 것이다. 기존 정책을 유지하며 필요한 세부 선택은 에이전트가 진행한다. 확정 방향을 바꾸는 큰 설계 변경과 실제 외부 계약은 별도로 다룬다. 새 OpenSpec 구현 작업, LangGraph 코드, 실제 Jev 연동과 Tool 구현은 이번 단계에서 수행하지 않는다. Agent 행동 지침과 Tool별 내부 계약은 문서에 포함한다.
+2026-10-12 구현 요청은 [이슈 #1](https://github.com/M4-Scamshield/scam-agent/issues/1)과 로컬 스펙을 기준으로 데모를 구현하고 검증하는 것이었다. 기존 미커밋 문서를 보존하며 first-demo 기록에서 Agent 대역 핵심 Graph 검증 → Gemini 연결/Tool Calling → CLI 실행/README 순서로 진행했다. 실제 Gemini 데모 성공 후 리뷰 P2를 수정하고 API 없는 31개 검사로 확인했다. 후속 문서 정합성 감사에서 기록을 맞췄으며, 사용자가 기능별 로컬 커밋을 요청해 Graph·Gemini·CLI·문서로 나눠 기록한다. push·PR 생성은 별도 요청을 기다린다.
 
 사용자는 변경별 기록도 참고 저장소의 OpenSpec 형식으로 관리하도록 요청했다. 공통 방법은 harness에 유지하고, 변경의 목적·요구·설계·진행·검증은 openspec/changes의 proposal·spec·design·tasks·work로 구분한다.
 

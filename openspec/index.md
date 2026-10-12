@@ -20,9 +20,15 @@
 
 공통 설계의 기준은 `docs/design/`, 현재 구현 설명은 `docs/architecture/`에 둔다. change 문서는 해당 변경의 요구와 적용 방법·진행을 담고 상위 문서로 연결한다. 변경이 반영되면 관련 기준 문서를 갱신하고, 본문의 관련 문서 항목에서 해당 change와 검증 기록으로 연결한다.
 
-## 첫 데모 — 진행 중
+## 첫 데모 — 완료
 
-first-demo는 진행 중이며 서비스 구현은 미착수다. 사용자가 기존 설계를 전체 스펙으로 사용하고 싶다고 요청해 [ScamShield MVP 전체 스펙](../docs/design/state-and-graph.md)으로 확장했다. 공통 실행·Jev/Agent/Tool 내부 계약·입력/응답·데모 검증 기준을 같은 문서에서 관리한다. 실제 Jev API/risk·Agent 모델·외부 조회·STT 연결은 미정이며 이어 확정한다. 전체 스펙 초안 작성과 구현 완료는 구분한다. 기존 change에서 진행을 이어 기록한다.
+구현 이슈: [#1 — 대화 기록을 유지하며 사건번호 확인과 경고까지 실행하기](https://github.com/M4-Scamshield/scam-agent/issues/1).
+
+first-demo의 이번 데모 범위를 완료했다. [MVP 전체 스펙](../docs/design/state-and-graph.md)을 기준으로 CLI·State·LangGraph/InMemorySaver·Fake Jev·독립 Mock 조회·역할별 Gemini 연결을 구현하고 API 없는 시나리오/상태/한도·SDK 변환 검사와 실제 Gemini 안내/사건번호 Tool Calling·최종 WARN을 확인했다. Fake/Mock·전송 대역 검사와 실제 모델 호출 근거는 구분해 남겼다. 복구/동시 요청/Tool timeout·실제 Jev/기관 조회/STT와 후속 Agent 실행 런타임 전환 TODO는 이번 범위에서 제외한다. 커밋·push·PR 생성은 별도 요청을 기다린다.
+
+리뷰 P2의 사건번호 일부 선택 통과를 수정했다. 전체 번호 정확히 일치 검사·Tool 미실행 회귀 검사를 포함해 API 없는 테스트 31개와 CLI를 확인했으며, 이번 수정에서는 실제 Gemini를 재호출하지 않았다. 상세 근거는 [work](changes/first-demo/work.md)에 있다.
+
+문서 정합성 감사로 현재 CLI/Fake/Mock의 범위·후속 양쪽 화자 STT·미구현 Tool timeout/오류 분류와 과거 설계 기록의 구분을 보완했다. 데모 완료 상태와 후속 TODO는 유지하며 [현재 구성](../docs/architecture/overview.md)·[스펙](../docs/design/state-and-graph.md)·[tasks/work](changes/first-demo/work.md)에 반영했다.
 
 | 변경 문서 | 포함한 내용 |
 |---|---|

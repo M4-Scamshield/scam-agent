@@ -4,8 +4,12 @@
 
 ## 현재 구현
 
-서비스 코드는 없다. [에이전트 작업 환경](../harness/index.md)과 Python 의존성 설정이 있으며 서비스 기능의 구현 완료로 해석하지 않는다. 현재는 [MVP 전체 스펙 초안](../design/state-and-graph.md)에 공통 규칙과 구성요소별 계약을 통합했고 외부 연결 계약 확정·구현을 이어갈 단계다. 기존 첫 데모의 진행은 [first-demo change](../../openspec/changes/first-demo/work.md)에서 확인한다.
+[CLI 데모](overview.md)를 구현하고 API 없는 Graph·상태·Tool·CLI 검사와 실제 Gemini 안내/Tool Calling·최종 WARN 실행을 완료했다. 상세 계약은 [MVP 전체 스펙](../design/state-and-graph.md), 실행 근거는 [first-demo change](../../openspec/changes/first-demo/work.md)에서 확인한다.
 
 ## 문서 목록
 
-아키텍처 본문은 아직 작성하지 않았다. 다음 설계 작업에서 `overview.md`에 시스템 구성, 주요 책임, 입력부터 응답까지의 흐름과 현재 구현 상태를 기록할 예정이다. 사용자가 제공한 방향은 [프로젝트 컨텍스트](../project-context.md), 세부 설계의 분류는 [설계 인덱스](../design/index.md)에 있다.
+| 문서 | 포함한 내용 |
+|---|---|
+| [현재 데모 구성](overview.md) | CLI·Graph·State·Fake Jev·역할별 Gemini·독립 Mock 실행의 책임, 상태 수명과 실제 검증 범위 |
+
+사용자가 제공한 방향은 [프로젝트 컨텍스트](../project-context.md), 세부 설계의 분류는 [설계 인덱스](../design/index.md)에 있다.
