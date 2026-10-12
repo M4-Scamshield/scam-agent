@@ -24,7 +24,7 @@
 
 구현 이슈: [#1 — 대화 기록을 유지하며 사건번호 확인과 경고까지 실행하기](https://github.com/M4-Scamshield/scam-agent/issues/1).
 
-first-demo의 이번 데모 범위를 완료했다. [MVP 전체 스펙](../docs/design/state-and-graph.md)을 기준으로 CLI·State·LangGraph/InMemorySaver·Fake Jev·독립 Mock 조회·역할별 Gemini 연결을 구현하고 API 없는 시나리오/상태/한도·SDK 변환 검사와 실제 Gemini 안내/사건번호 Tool Calling·최종 WARN을 확인했다. Fake/Mock·전송 대역 검사와 실제 모델 호출 근거는 구분해 남겼다. 복구/동시 요청/Tool timeout·실제 Jev/기관 조회/STT와 후속 Agent 실행 런타임 전환 TODO는 이번 범위에서 제외한다. 커밋·push·PR 생성은 별도 요청을 기다린다.
+first-demo의 이번 데모 범위를 완료했다. [MVP 전체 스펙](../docs/design/state-and-graph.md)을 기준으로 CLI·State·LangGraph/InMemorySaver·Fake Jev·독립 Mock 조회·역할별 Gemini 연결을 구현하고 API 없는 시나리오/상태/한도·SDK 변환 검사와 실제 Gemini 안내/사건번호 Tool Calling·최종 WARN을 확인했다. Fake/Mock·전송 대역 검사와 실제 모델 호출 근거는 구분해 남겼다. 복구/동시 요청/Tool timeout·실제 Jev/기관 조회/STT와 후속 Agent 실행 런타임 전환 TODO는 이번 범위에서 제외한다. 사용자 요청에 따라 기능별 커밋을 push하고 [PR #2](https://github.com/M4-Scamshield/scam-agent/pull/2)를 main 대상으로 생성했다. 리뷰·merge는 후속 단계다.
 
 리뷰 P2의 사건번호 일부 선택 통과를 수정했다. 전체 번호 정확히 일치 검사·Tool 미실행 회귀 검사를 포함해 API 없는 테스트 31개와 CLI를 확인했으며, 이번 수정에서는 실제 Gemini를 재호출하지 않았다. 상세 근거는 [work](changes/first-demo/work.md)에 있다.
 

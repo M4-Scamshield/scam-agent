@@ -24,7 +24,7 @@ API 없는 테스트·CLI·설치 SDK 전송 대역 검사와 실제 Gemini 세 
 
 ## 다음 행동
 
-이번 데모 구현·검증과 문서 감사는 완료했다. 사용자는 [README](../../../README.md)의 명시적 `--env-file .env`·캐시 경로 명령으로 데모를 실행할 수 있다. 사용자 요청에 따라 기능별 로컬 커밋으로 기록하며 push·PR 생성은 별도 요청을 기다린다. 후속 Agent 런타임 전환과 실제 Jev/기관 조회/STT·복구/동시 입력/Tool timeout은 후속 change에서 필요에 맞춰 다룬다. 실제 호출의 성공을 일반적인 탐지 성능·무료 한도·Provider 가용성 보장으로 해석하지 않는다.
+이번 데모 구현·검증과 문서 감사는 완료했다. 사용자는 [README](../../../README.md)의 명시적 `--env-file .env`·캐시 경로 명령으로 데모를 실행할 수 있다. 기능별 커밋을 push하고 [PR #2](https://github.com/M4-Scamshield/scam-agent/pull/2)를 생성했다. 다음은 PR 리뷰 결과를 확인하고 요청받은 후속 조치를 진행하는 것이다. 후속 Agent 런타임 전환과 실제 Jev/기관 조회/STT·복구/동시 입력/Tool timeout은 후속 change에서 필요에 맞춰 다룬다. 실제 호출의 성공을 일반적인 탐지 성능·무료 한도·Provider 가용성 보장으로 해석하지 않는다.
 
 ## 2026-10-12 — 이슈 #1 구현: 핵심 Graph 대역 검증
 
@@ -329,3 +329,13 @@ CLI는 고유 callId로 세 발화를 순차 실행하고 Node·risk/phase·선�
 - `docs(demo): 데모 스펙과 실행·검증 기록 동기화`: 기존 미커밋 데모 설계 변경, 현재 아키텍처·README·후속 범위·인덱스·tasks/work를 함께 기록하는 문서 커밋. 자체 hash는 Git 이력에서 확인한다.
 
 커밋 전 실행: `.venv/bin/python -m pytest -q` **31 passed**, `python3 .agents/skills/scamshield-docs-sync/scripts/check_docs.py` **PASS**, `git diff --check` **PASS**, `uv --cache-dir /private/tmp/scamshield-uv-cache lock --check --offline` **PASS**(55 packages). 각 stage의 경로·diff 확인과 `git diff --cached --check`를 수행했다. `.env`·.venv·.idea·pytest cache의 제외와 `.env.example`의 빈 키 값을 확인했다. 키/로컬 설정은 커밋 대상에 넣지 않았으며 실제 Gemini 호출은 다시 하지 않았다. push·PR·GitHub 이슈 변경은 이번 요청 범위가 아니다.
+
+## 2026-10-12 — 브랜치 push·PR #2 생성
+
+사용자가 push와 PR 스킬을 통한 생성을 요청했다. [GitHub 템플릿 스킬](../../../.agents/skills/scamshield-github-templates/SKILL.md)과 [PR 양식](../../../.github/PULL_REQUEST_TEMPLATE.md)을 적용했다. 저장소 origin=M4-Scamshield/scam-agent, base=main, head=junyheon/1/cli-call-demo를 확인하고 같은 head의 열린 PR이 없는 것을 확인했다. 원격 main과 로컬 origin/main의 SHA는 동일했다.
+
+`git push -u origin junyheon/1/cli-call-demo`는 최초 샌드박스 DNS 오류 후 승인된 네트워크 실행으로 성공했다. 기능별 4개 커밋을 push하고 upstream을 설정했다. gh가 없어 기존 git 인증으로 GitHub REST API를 사용했으며 credential 값을 파일/출력에 남기지 않았다. 본문은 임시 파일에서 읽어 양식의 변경 결과·리뷰 시작점·요구/검증 표·남은 범위를 작성했고 이슈 #1을 Closes로 연결했다.
+
+[PR #2 — 통화별 대화 유지와 사건번호 확인·경고 흐름 구현](https://github.com/M4-Scamshield/scam-agent/pull/2)를 생성했다. 반환된 open·draft=false·base/head 일치를 확인했다. 실제 Gemini 성공과 이후 P2 수정의 API 없는 검증은 본문에서 구분했으며 후속 Agent/STT/실제 조회를 완료로 표시하지 않았다. merge·이슈 수동 종료는 수행하지 않았다.
+
+PR URL과 최신 인계 상태를 컨텍스트·tasks·OpenSpec 인덱스에 반영했다. 기록 갱신은 별도 문서 커밋으로 같은 브랜치에 추가해 PR에 포함한다. `python3 .agents/skills/scamshield-docs-sync/scripts/check_docs.py` **PASS**, `git diff --check` **PASS**. PR을 다시 읽어 제목·6개 양식 섹션·Closes #1·실제 검증 시점 구분과 base/head를 확인했다. 코드/실제 Gemini는 재실행하지 않았다. 이전 31 passed·실제 모델 실행은 기존 검증 기록이다.

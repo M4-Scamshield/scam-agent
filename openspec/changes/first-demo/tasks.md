@@ -44,7 +44,8 @@
 - [x] 실제 구현 범위·실행 명령·검증 결과를 문서와 [work](work.md)에 반영한다.
 - [x] 리뷰 P2의 사건번호 부분 문자열 통과를 수정하고 `2026`/`12345` 요청의 INVALID_OUTPUT·Tool 미실행·결과 미저장을 API 없는 회귀 검사로 확인한다. 근거: [work](work.md).
 - [x] 스펙부터 현재 구현까지 문서 정합성을 검토하고 CLI/Fake/Mock·화자 STT·오류/timeout 범위·실행 시점별 근거를 맞춘다. 근거: [work](work.md).
-- [x] 사용자 요청에 따라 Graph·Gemini·CLI·문서를 기능별 로컬 커밋으로 기록한다. push·PR은 포함하지 않는다. 근거: [work](work.md).
+- [x] 사용자 요청에 따라 Graph·Gemini·CLI·문서를 기능별 로컬 커밋으로 기록한다. 당시 커밋 요청에는 push·PR을 포함하지 않았다. 근거: [work](work.md).
+- [x] 후속 사용자 요청에 따라 현재 브랜치를 push하고 PR 스킬/양식으로 [PR #2](https://github.com/M4-Scamshield/scam-agent/pull/2)를 생성한다. 근거: [work](work.md).
 
 2026-10-12 리뷰 반영으로 과거 체크 항목의 실패 뒤 새 turn·timeout 기본값 등은 현재 스펙의 단순화된 데모 범위로 대체했다. 과거 체크는 당시 문서 반영 근거이며 후속 기능의 구현 완료를 뜻하지 않는다.
 

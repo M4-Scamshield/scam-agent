@@ -83,7 +83,7 @@ State의 출발 후보는 `transcript`, `phase`, `risk`, `verification_results`,
 
 초기 작업은 `Downloads/aTopsMigrator`의 문서 탐색·작업 연속성 방식을 참고한 Harness 구성이었다. 루트 AGENTS.md는 구현 전·중·후의 핵심 행동과 문서·스킬의 사용 시점을 안내하고, 세부 절차·재개 방법·기록 크기·검증 명령은 docs/harness/workflow.md에서 관리한다. 새 작업은 관련 아키텍처·설계를 먼저 읽고, 기존 작업 재개는 change의 진행·인계 기록부터 확인한다. 공통 작업과 문서 동기화는 스킬로 연결한다.
 
-2026-10-12 구현 요청은 [이슈 #1](https://github.com/M4-Scamshield/scam-agent/issues/1)과 로컬 스펙을 기준으로 데모를 구현하고 검증하는 것이었다. 기존 미커밋 문서를 보존하며 first-demo 기록에서 Agent 대역 핵심 Graph 검증 → Gemini 연결/Tool Calling → CLI 실행/README 순서로 진행했다. 실제 Gemini 데모 성공 후 리뷰 P2를 수정하고 API 없는 31개 검사로 확인했다. 후속 문서 정합성 감사에서 기록을 맞췄으며, 사용자가 기능별 로컬 커밋을 요청해 Graph·Gemini·CLI·문서로 나눠 기록한다. push·PR 생성은 별도 요청을 기다린다.
+2026-10-12 구현 요청은 [이슈 #1](https://github.com/M4-Scamshield/scam-agent/issues/1)과 로컬 스펙을 기준으로 데모를 구현하고 검증하는 것이었다. 기존 미커밋 문서를 보존하며 first-demo 기록에서 Agent 대역 핵심 Graph 검증 → Gemini 연결/Tool Calling → CLI 실행/README 순서로 진행했다. 실제 Gemini 데모 성공 후 리뷰 P2를 수정하고 API 없는 31개 검사로 확인했다. 후속 문서 정합성 감사에서 기록을 맞췄으며, 사용자 요청에 따라 Graph·Gemini·CLI·문서로 나눠 커밋했다. 이어 push·PR 생성 요청을 받아 [PR #2](https://github.com/M4-Scamshield/scam-agent/pull/2)를 main 대상으로 생성했다. 리뷰·merge는 후속 단계다.
 
 사용자는 변경별 기록도 참고 저장소의 OpenSpec 형식으로 관리하도록 요청했다. 공통 방법은 harness에 유지하고, 변경의 목적·요구·설계·진행·검증은 openspec/changes의 proposal·spec·design·tasks·work로 구분한다.
 
