@@ -19,6 +19,17 @@ Codex와 Claude Code는 같은 AGENTS·문서·스킬 원본을 사용한다.
 
 Claude Code의 작업 안내는 `CLAUDE.md`의 `@AGENTS.md` import로 연결하고, 세 스킬은 `.agents/skills/`의 원본을 가리키는 상대 심볼릭 링크로 등록했다. 사용 방식의 근거는 [공식 import 안내](https://code.claude.com/docs/en/memory#share-one-file-with-other-coding-tools)와 [공식 스킬 안내](https://code.claude.com/docs/en/skills#where-skills-live)에 있다. Claude Code 세션에서 `/context`로 작업 안내의 로드를 확인하고 `/` 메뉴에서 스킬을 확인할 수 있다. 스킬이 목록에 나타나지 않으면 AGENTS 또는 CLAUDE의 링크로 원본 지침을 직접 읽고 적용한다.
 
+## Python 개발 환경
+
+Python 3.12와 uv를 사용한다. 의존성은 pyproject.toml과 uv.lock으로 관리하고 .python-version은 기본 Python 버전을 지정한다.
+
+```sh
+uv sync --locked
+uv lock --check --offline
+```
+
+.venv, IDE 개인 설정(.idea), 실행 캐시와 .env는 Git에서 제외한다. 서비스 실행·테스트 코드는 아직 없다.
+
 ## 문서 검사
 
 Python 3.9 이상에서 추가 패키지 없이 실행한다.
