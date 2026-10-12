@@ -4,6 +4,8 @@
 
 PR은 변경 결과·관련 기록·리뷰 시작점을 먼저 설명하고 요구-변경-근거와 실행/미실행 검증을 구분한다. 사람·AI 양식을 나누지 않으며 Mock 결과를 실제 검증으로 표시하지 않는다.
 
+사용자 후속 요청에 따라 이슈·PR 제목은 `type: 변경 내용` 형식을 사용한다. 기능 feat, 수정 fix, 문서 docs, 환경/관리 chore, 동작을 유지한 구조 변경 refactor를 선택한다. Issue Forms는 feat/fix를 기본값으로 제공하고 PR 양식/README에 기준을 안내한다. 데모 범위는 본문에서 설명한다.
+
 스킬은 템플릿 유지와 요청받은 이슈/PR 초안을 지원한다. 템플릿 추가만으로 외부 생성·push·merge 권한이 생기지 않는다. 실제 작업 지시는 기존 세션의 권한을 따른다.
 
 기준은 [문서 관리](../../../docs/harness/document-conventions.md)와 [스킬](../../../.agents/skills/scamshield-github-templates/SKILL.md)이다. 완료 근거는 [work](work.md)에 기록한다.

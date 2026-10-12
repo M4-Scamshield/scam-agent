@@ -1,34 +1,27 @@
-# 첫 데모 요구사항
+# 데모데이용 첫 실행 요구사항
 
-공통 실행 계약의 기준은 [State·Graph 설계](../../../docs/design/state-and-graph.md)다. 공통 설계는 정리 완료했고 구성요소별 내부 계약과 검증 기준은 후속 요청으로 같은 문서에 통합했다. 실제 외부 연결 계약과 서비스 구현·실행 검증은 후속 작업이다. 이번 보완은 사용자가 에이전트의 세부 선택을 허용한 요청에 따른다.
+기준은 [전체 스펙](../../../docs/design/state-and-graph.md)과 [데모 흐름](../../../docs/design/mvp-flow.md)이다. 운영 수준의 확장/복구보다 정해진 세 발화 시나리오의 실제 동작을 완료 조건으로 삼는다.
 
-## 실행·상태
+## 필요한 동작
 
-- 새 final utterance 하나가 turn 하나를 시작한다. 같은 callId를 순차 처리하고 InMemorySaver의 같은 thread에서 전체 한국어 대화와 검증 결과를 유지한다.
-- update_context는 새 발화를 한 번 추가하고 utterance를 소비한다. 대화·검증 결과는 전체 새 목록을 기본 교체로 저장하며 append reducer를 함께 사용하지 않는다.
-- 첫 통화는 OBSERVE·risk=None·빈 대화/검증 결과로 시작한다. 새 turn에 response·tool_request·verification_attempted를 초기화하고 기존 누적 도메인 상태는 유지한다.
-- Jev가 risk·phase를 결정한다. detect_with_jev가 schema·유한 risk·전이와 후속 Jev 스펙의 수치 조건을 검증한 뒤 적용한다. WARN 하향은 금지하며 VERIFY의 의심·검증 정보·필요성 조건을 유지한다.
-- OBSERVE는 안내 없이 종료, SUSPECT는 외부 Tool 없는 확인 행동 안내, WARN은 고정 경고다.
+- CLI가 같은 callId의 세 final 발화를 한 번씩 순차 전달하고 완료를 기다린다.
+- 세 발화 제한과 준비된 문장은 데모 CLI의 설정이다. Graph의 정상 통화 상태는 후속 turn에서도 유지하며 현재 화자 정보·STT·상대방 AI는 없다.
+- State·InMemorySaver로 전체 대화·검증 결과를 유지하고 새 callId와 분리한다. 초기값·목록 교체·입력/요청 소비는 전체 스펙을 따른다.
+- 데모 risk는 0~1·VERIFY >= 0.6이고 OBSERVE/SUSPECT/VERIFY/WARN fixture는 0.1/0.5/0.7/0.9다. 실제 Jev 수치 계약으로 확대하지 않는다.
+- Fake Jev는 대화와 해당 사건번호의 결과로 판단하며 동일 세 발화에서 결과 없으면 VERIFY, 정상 Mock NOT_FOUND면 WARN이다. 호출 횟수만으로 WARN을 반환하지 않는다.
+- Gemini 같은 모델을 두 Agent가 공유하며 역할·Tool 권한만 분리한다. Suspect 안내와 Verify 실제 Tool Calling을 확인한다.
+- 선택한 요청 하나를 독립 tool_execution이 즉시 반환 Mock case_lookup으로 실행/저장한다. 한 turn에서 Tool 최대 1회·결과 후 Jev 재판단 1회를 유지한다.
+- 조회 인자는 대화에 제시된 데모 사건번호 전체와 정확히 일치해야 한다. `2026`/`12345`처럼 일부만 선택한 요청은 INVALID_OUTPUT으로 거부하고 Tool 실행·결과 저장을 하지 않는다.
+- CLI에서 Node 순서·phase/risk·Tool 요청/결과·response를 보여준다.
 
-## 검증 경로
+## 오류와 제외 범위
 
-- verify_agent가 검증한 Tool 요청 하나를 State의 tool_request로 전달하고 독립 tool_execution Node가 실행·결과 저장·요청 소비를 맡는다.
-- 정상 조회와 ERROR/TIMEOUT 결과 모두 tool·input·status·result·is_mock 공통 형식으로 통화 전체에 누적한다. OK와 안전 판정은 구분하며 Mock 미등록을 실제 기관 미등록으로 단정하지 않는다.
-- turn당 Tool 최대 1회, 저장 후 Jev 재판단 1회다. verification_attempted와 routing으로 재검증을 막는다.
-- 유효한 요청 없음은 안내 후 종료, 여러/잘못된 요청은 Agent 출력 오류로 Tool 실행 없이 종료한다. 재판단이 VERIFY여도 추가 실행 없이 안내 후 종료한다.
+기본 입력/출력 검증·금지 전이 거부·자동 재시도 없는 오류 반환을 유지한다. Tool 오류는 실패 결과를 저장해 재판단하되 실행 오류로 끝나면 해당 통화 시나리오를 중단한다. 새 callId로 처음부터 재시작하며 같은 실패 통화의 계속 처리·중간 재개는 요구하지 않는다.
 
-## 오류·유지
+첫 데모에는 동시 요청 제어·수신 큐·timeout wrapper/취소/늦은 완료 검증과 포괄적인 오류 fixture가 필요하지 않다. 실제 Jev·기관 조회·STT/프론트/운영 인프라는 후속 범위다. Fake/Mock 완료와 실제 탐지/기관 확인은 구분한다.
 
-Jev·Agent 실패는 자동 재시도 없는 실행 오류다. Tool 실패는 검증하지 못한 결과로 저장하고 Jev 재판단한다. 정상 결과와 내부 오류 결과를 구분하며 정확한 형식·각 종료 안내는 기준 설계를 따른다.
+현재 Tool 예외/잘못된 결과는 ERROR로 정규화하고, TIMEOUT 결과 생성은 후속 계약이다. 후속 STT에서는 상대방과 사용자 양쪽의 발화를 화자별로 구분해 같은 통화에 누적한다. 실제 입력/State schema는 아직 구현하지 않았다.
 
-실패 뒤에는 중간 재개나 같은 요청 재전송 없이 새 final utterance로 새 turn을 시작한다. 마지막 저장 도메인 State는 유지하고 오래된 pending 실행을 이어 실행하지 않는다. checkpoint 접근 실패는 정상 처리를 이어가지 않는다.
+## 검증
 
-Tool 대기의 데모 기본 timeout은 설정 가능한 5초다. 초과 시 가능한 취소를 시도하고 TIMEOUT 결과 하나를 반영한다. 늦은 완료는 State를 수정하거나 background 판단을 시작하지 않는다. 실제 Tool에 맞춘 값은 상세 스펙에서 조정한다.
-
-sync checkpoint 저장을 사용하고 통화 종료 후에도 프로세스 생존 동안 보관한다. 재시작 복구·cleanup·실시간 늦은 결과 반영은 이번 범위 밖이다. final 발화의 중복 없는 데모 입력 전제와 실제 STT 전달 보장은 구분한다.
-
-## 검증과 후속 계약
-
-실행 가능한 검사는 누적·통화 분리·검증 후 재판단뿐 아니라 요청 소비·한도/실패 종료·잘못된 출력·timeout과 늦은 결과 폐기·실패 뒤 새 ENTRY 실행을 확인해야 한다. 아직 실행 검증은 없다.
-
-Jev·Agent·Tool의 내부 스펙과 데모 인수조건은 같은 전체 스펙의 해당 절을 따른다. 실제 Jev API/risk 기준·Agent Provider·외부 조회·STT/프론트 연결은 이어 확정한다. 범위는 [MVP 흐름](../../../docs/design/mvp-flow.md), 완료 근거는 [work](work.md)에 있다.
+API 없는 핵심 Graph 검사와 실제 Agent 모델 호출을 구분한다. 첫 완료 조건은 시나리오·상태 누적/분리·실제 Tool 선택/인자·결과 반영·1회 한도다. 문서 검사만으로 실행 완료를 표시하지 않는다. 진행과 결과는 [tasks](tasks.md)·[work](work.md)에 기록한다.

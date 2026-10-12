@@ -1,5 +1,6 @@
 name: 버그 보고
 description: 관찰한 문제와 재현 방법을 기록합니다.
+title: "fix: "
 body:
   - type: textarea
     id: behavior
