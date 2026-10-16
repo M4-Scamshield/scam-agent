@@ -13,3 +13,11 @@
 사용자 요청에 따라 기존 git 인증으로 REST API를 사용해 [이슈 #1](https://github.com/M4-Scamshield/scam-agent/issues/1)을 `feat: 대화 기록을 유지하며 사건번호 확인과 경고까지 실행하기`, [PR #2](https://github.com/M4-Scamshield/scam-agent/pull/2)를 `feat: 통화별 대화 유지와 사건번호 확인·경고 흐름 구현`으로 수정했다. 반환된 제목/URL 일치를 확인했고 본문·label·상태는 변경하지 않았다. 인증 값을 출력하거나 저장하지 않았다.
 
 검증: `.venv/bin/python`과 PyYAML로 두 Issue Forms의 YAML 구조/기본 제목·자유 이슈 활성 유지 **PASS**. `python3 .agents/skills/scamshield-docs-sync/scripts/check_docs.py` **PASS**, `git diff --check` **PASS**. PR 본문의 기존 표 열 수/섹션을 유지했고 제목 안내 주석만 추가했다. 서비스 코드·테스트·실제 Gemini 호출은 이번 제목/양식 수정에 해당하지 않아 수행하지 않았다. 같은 PR 브랜치에 협업 양식/기록을 별도 커밋으로 반영하며 main에 적용되는 시점은 PR merge 이후다.
+
+## 2026-10-16 — 이슈 생성 스킬 추가 및 게시 준비
+
+사용자가 작성한 [이슈 생성 스킬](../../../.agents/skills/scamshield-create-issue/SKILL.md)과 Codex UI 설정·Verify 예시를 추가하고, 기존 협업 스킬은 템플릿 유지·PR 작성으로 역할을 구분했다. README·CLAUDE·Harness 인덱스의 진입점을 맞췄다. 새 스킬의 `.claude/skills/` 링크는 현재 없으며 CLAUDE의 원본 링크로 읽을 수 있다. 사용자 요청으로 main에 커밋·push한다.
+
+이 스킬로 논의 우선 절차를 포함한 [Verify Agent 이슈 #4](https://github.com/M4-Scamshield/scam-agent/issues/4)를 등록하고 반환된 제목·본문을 확인했다. 예시 문서는 확정 설계가 아니며 이슈 #4의 전체 보이스피싱 범위와 구분한다.
+
+검증: `py -3.14 .agents/skills/scamshield-docs-sync/scripts/check_docs.py` PASS(문서 24개·로컬 링크 340개), `git diff --check` PASS. 현재 Python에는 pytest가 없어 서비스 테스트 재실행은 불가했다. Graph 이미지 관련 이전 31 passed 근거는 first-demo work에 있으며 이번 재실행 결과로 취급하지 않는다.

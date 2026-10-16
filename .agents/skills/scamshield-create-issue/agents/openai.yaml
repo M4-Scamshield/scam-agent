@@ -1,0 +1,4 @@
+interface:
+  display_name: "ScamShield Issue Creator"
+  short_description: "Draft and create consistent Korean ScamShield issues."
+  default_prompt: "Use $scamshield-create-issue to turn my task notes into a consistent ScamShield GitHub issue and publish it when requested."

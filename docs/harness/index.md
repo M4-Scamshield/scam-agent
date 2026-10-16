@@ -14,7 +14,8 @@
 
 ## 스킬 연결
 
-- [scamshield-github-templates](../../.agents/skills/scamshield-github-templates/SKILL.md): 이슈/PR 템플릿 유지와 요청받은 초안을 작성한다. 실제 외부 생성은 사용자 요청 범위를 따른다.
+- [scamshield-github-templates](../../.agents/skills/scamshield-github-templates/SKILL.md): 이슈/PR 템플릿 유지와 PR 초안을 작성한다.
+- [scamshield-create-issue](../../.agents/skills/scamshield-create-issue/SKILL.md): 작업 메모를 일정한 제목·본문의 이슈로 작성하고 요청받으면 GitHub에 등록한다. 기능 이슈는 기존 변경 제안 폼의 네 구역을 사용한다.
 
 - [scamshield-work-cycle](../../.agents/skills/scamshield-work-cycle/SKILL.md): 새 작업은 설계 기준부터, 작업 재개는 진행·인계 기록부터 확인하는 공통 흐름을 적용한다.
 - [scamshield-docs-sync](../../.agents/skills/scamshield-docs-sync/SKILL.md): 변경 사실을 기준 문서·작업 기록·인덱스에 반영하고 문서 검사를 실행한다.

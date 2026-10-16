@@ -1,11 +1,11 @@
 ---
 name: scamshield-github-templates
-description: Maintain ScamShield GitHub issue forms and the pull request template, or draft an individual issue/PR using those templates when requested.
+description: Maintain ScamShield GitHub issue forms and the pull request template, or draft an individual PR using the repository template. For drafting or publishing individual issues, use scamshield-create-issue.
 ---
 
 # GitHub Collaboration Templates
 
-Use this skill when a repository needs GitHub issue templates, a PR template, or both. It also supports drafting individual issues or PRs when requested, using the relevant repository template.
+Use this skill when a repository needs GitHub issue templates, a PR template, or both. It also supports drafting individual PRs using the repository template. Route individual issue drafting and publication to [scamshield-create-issue](../scamshield-create-issue/SKILL.md), which owns the consistent issue-writing workflow.
 
 ## First inspect the repository
 
