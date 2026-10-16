@@ -343,3 +343,9 @@ PR URL과 최신 인계 상태를 컨텍스트·tasks·OpenSpec 인덱스에 반
 ## 2026-10-12 — 이슈·PR 제목 접두사 수정
 
 사용자 요청으로 [이슈 #1](https://github.com/M4-Scamshield/scam-agent/issues/1)·[PR #2](https://github.com/M4-Scamshield/scam-agent/pull/2)의 제목을 [데모] 대신 `feat:`로 바꿨다. 데모의 구현 범위와 실제 Gemini/Fake/Mock 구분은 본문에 유지한다. 제목/양식의 feat/fix 기준과 검증 근거는 [github-collaboration work](../github-collaboration/work.md)에 기록했다. 서비스 기능이나 이슈 완료 조건은 변경하지 않았다.
+
+## 2026-10-13 — LangGraph 실행 구조도 추출
+
+사용자 요청으로 수동 도식이 아니라 컴파일된 `build_graph(DemoRoles())`에서 LangGraph의 `get_graph().draw_mermaid_png()`를 호출해 [실행 구조도](../../../docs/architecture/scamshield-langgraph.png)를 생성했다. 기존 조건부 Edge는 목적지 메타데이터가 없어 내장 렌더러에서 분기선이 누락됐으므로 [graph.py](../../../scamshield/graph.py)의 두 `add_conditional_edges`에 실제 `path_map`을 명시했다. 이는 시각화·정적 그래프 탐색용 메타데이터이며 라우팅 함수의 반환값과 실행 동작은 바꾸지 않는다.
+
+렌더링은 `uv.lock`의 LangChain 1.4.4·LangGraph 1.2.14·Pydantic 2.14.0을 맞춘 저장소 내부 임시 환경에서 수행했다. 생성된 PNG를 직접 열어 START → update_context → detect_with_jev, 네 조건 분기, verify_agent → tool_execution, tool_execution → detect_with_jev 재판단 루프가 표시되는지 확인했다. 같은 환경의 전체 API 없는 검사 결과는 **31 passed**이며 Python 3.14에서 Google GenAI 내부 deprecated 타입 경고 1건이 있었지만 실패는 없었다. 실제 Gemini API는 호출하지 않았다.

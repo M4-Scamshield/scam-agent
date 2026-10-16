@@ -10,6 +10,6 @@
 
 | 문서 | 포함한 내용 |
 |---|---|
-| [현재 데모 구성](overview.md) | CLI·Graph·State·Fake Jev·역할별 Gemini·독립 Mock 실행의 책임, 상태 수명과 실제 검증 범위 |
+| [현재 데모 구성](overview.md) | 컴파일된 LangGraph 구조도, CLI·Graph·State·Fake Jev·역할별 Gemini·독립 Mock 실행의 책임, 상태 수명과 실제 검증 범위 |
 
 사용자가 제공한 방향은 [프로젝트 컨텍스트](../project-context.md), 세부 설계의 분류는 [설계 인덱스](../design/index.md)에 있다.

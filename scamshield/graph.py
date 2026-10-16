@@ -139,9 +139,20 @@ def build_graph(
     builder.add_node("warn", lambda state: {"response": WARN_RESPONSE})
     builder.add_edge(START, "update_context")
     builder.add_edge("update_context", "detect_with_jev")
-    builder.add_conditional_edges("detect_with_jev", route_decision)
     builder.add_conditional_edges(
-        "verify_agent", lambda state: "tool_execution" if state["tool_request"] else END
+        "detect_with_jev",
+        route_decision,
+        {
+            "verify_agent": "verify_agent",
+            "suspect_agent": "suspect_agent",
+            "warn": "warn",
+            END: END,
+        },
+    )
+    builder.add_conditional_edges(
+        "verify_agent",
+        lambda state: "tool_execution" if state["tool_request"] else END,
+        {"tool_execution": "tool_execution", END: END},
     )
     builder.add_edge("tool_execution", "detect_with_jev")
     builder.add_edge("suspect_agent", END)

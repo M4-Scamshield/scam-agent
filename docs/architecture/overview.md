@@ -2,6 +2,10 @@
 
 상태: 2026-10-12 데모 구현·API 없는 검사·실제 Gemini 세 발화 실행 완료. 계약 기준은 [MVP 전체 스펙](../design/state-and-graph.md), 실행 근거는 [first-demo work](../../openspec/changes/first-demo/work.md)에 있다.
 
+![컴파일된 ScamShield LangGraph](scamshield-langgraph.png)
+
+위 그림은 현재 `build_graph(DemoRoles())`를 컴파일한 뒤 LangGraph의 `get_graph().draw_mermaid_png()`로 추출한 실행 그래프다. 점선은 조건부 Edge이며, `tool_execution` 결과는 `detect_with_jev`로 돌아가 재판단된다.
+
 ## 구성과 책임
 
 | 코드 | 책임 |
