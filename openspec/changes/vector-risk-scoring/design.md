@@ -6,7 +6,9 @@
 |---|---|
 | [graph.py](../../../scamshield/graph.py) `build_graph(roles, jev=fake_jev, ...)` | `build_graph(roles, utterance_filter=..., scorer=..., verify_judge=..., ...)`로 세 port 주입 |
 | `detect_with_jev` 한 Node가 최초 판단·재판단 | filter_utterance · score_risk · judge_verify · apply_verification 네 Node |
-| VERIFY에 risk ≥ 0.6(Fake Jev 데모 값) | VERIFY에 risk ≥ suspect_threshold(설정) |
+| VERIFY에 risk ≥ 0.6(Fake Jev 데모 값) | VERIFY에 risk ≥ suspect_threshold(설정, 초기 0.5) |
+| Jev가 risk 반환 | RiskScorer는 utterance·call 점수만, 결합·감쇠·phase는 score_risk Node |
+| Verify 요청 없음이면 phase 유지 | 요청 없음이면 SUSPECT로 복귀 |
 | [jev.py](../../../scamshield/jev.py) Fake Jev가 risk·phase 결정 | Fake VerifyJudge(사건번호 진입 규칙)와 TypeSafe Jev adapter |
 | — | 새 모듈: 점수 port·벡터 adapter, 임베딩·벡터 저장소 adapter, 적재 스크립트 |
 | [cli.py](../../../scamshield/cli.py) `--offline` | offline은 모든 Fake 대역, 그 외는 실제 adapter를 조립 |

@@ -4,12 +4,12 @@
 
 ## 충족해야 할 동작과 계약
 
-- R0. filter_utterance는 이전 WARN이면 warn으로 보낸다. 그 외에는 `UtteranceFilter`로 이번 발화가 일상 발화인지 판단하고, 일상 발화면 risk·phase를 바꾸지 않고 안내 없이 종료한다. 걸러진 발화도 transcript에 남는다.
-- R1. score_risk는 `RiskScorer`로 risk(0~1)를 계산해 State에 적용한다. risk가 SUSPECT 기준 미만이면 OBSERVE로 종료하고 VerifyJudge를 호출하지 않는다.
-- R2. 벡터 adapter는 이번 발화 검색과 통화 누적 검색을 모두 수행한다. 통화 누적 검색의 query는 최근 N개 발화 window다. 각 검색 점수는 사기 유사도 − 정상 유사도이며, `risk = max(previous_risk × decay, w·utterance_score + (1−w)·call_score)`로 결합한다. 이전 phase가 VERIFY·WARN이면 감쇠하지 않고 phase를 내리지 않는다. 각 검색 점수는 `clip((top-k scam 평균 − top-k normal 평균) / d_scale, 0, 1)`이고, 임베딩은 768차원 SEMANTIC_SIMILARITY다. w·decay·N·k·d_scale·기준값은 모두 설정으로 바꿀 수 있다.
-- R3. 이전 phase가 OBSERVE·SUSPECT이고 risk가 SUSPECT 기준 이상인 판단 대상 발화마다 judge_verify가 `VerifyJudge`를 호출한다. should_verify=true이면 VERIFY, 아니면 SUSPECT다. FOUND 뒤 SUSPECT에서도 다시 VERIFY할 수 있다. 이전 phase가 VERIFY면 VerifyJudge 없이 verify_agent로 가서 다시 조회한다. VERIFY에는 risk ≥ SUSPECT 기준을 요구한다(기존 0.6 대체).
+- R0. filter_utterance는 이전 WARN이면 필터·점수 없이 warn으로 보내고 risk를 유지한다. 그 외에는 `UtteranceFilter`로 이번 발화가 일상 발화인지 판단하고, 일상 발화면 risk·phase를 바꾸지 않고 안내 없이 종료한다. 걸러진 발화도 transcript에 남는다. VERIFY 중 일상 발화는 재조회 없이 VERIFY를 유지한다. 첫 발화가 걸리면 risk=None으로 정상 종료한다.
+- R1. score_risk는 `RiskScorer`에서 utterance_score·call_score를 받아 Node 안에서 이전 risk·phase와 결합해 risk(0~1)를 State에 적용한다. RiskScorer는 이전 risk·phase를 입력받지 않는다. risk가 SUSPECT 기준(초기 0.5) 미만이면 phase=OBSERVE로 종료하고 VerifyJudge를 호출하지 않는다. 기준 이상이면 score_risk는 phase를 쓰지 않는다.
+- R2. 벡터 adapter는 이번 발화 검색과 통화 누적 검색을 모두 수행한다. 통화 누적 검색의 query는 최근 N개 발화 window다. 각 검색 점수는 사기 유사도 − 정상 유사도이며, `risk = max(previous_risk × decay, w·utterance_score + (1−w)·call_score)`로 결합하고, previous_risk가 None이면 turn_score를 쓴다. 이전 phase가 VERIFY이면 감쇠하지 않고 phase를 내리지 않는다. 각 검색 점수는 `clip((top-k scam 평균 − top-k normal 평균) / d_scale, 0, 1)`이고, 임베딩은 768차원 SEMANTIC_SIMILARITY다. w·decay·N·k·d_scale·기준값은 모두 설정으로 바꿀 수 있다.
+- R3. 이전 phase가 OBSERVE·SUSPECT이고 risk가 SUSPECT 기준 이상인 판단 대상 발화마다 judge_verify가 `VerifyJudge`를 호출한다. should_verify=true이면 VERIFY, 아니면 SUSPECT다. FOUND 뒤 SUSPECT에서도 다시 VERIFY할 수 있으나, 이미 status=OK로 조회한 대상은 VerifyJudge 질문과 verify_agent 모두 다시 조회하지 않는다. 이전 phase가 VERIFY면 VerifyJudge 없이 verify_agent로 가서 다시 조회한다. VERIFY에는 risk ≥ SUSPECT 기준을 요구한다(기존 0.6 대체).
 - R3a. 필터는 is_routine=true이고 confidence ≥ routine_min_confidence(초기 0.8)일 때만 거른다. VERIFY는 should_verify=true이고 confidence ≥ verify_min_confidence(초기 0.5)일 때다. confidence가 None이면 Boolean만 쓴다. 기준값은 Graph 설정이다.
-- R4. SUSPECT는 suspect_agent의 안내로, VERIFY는 verify_agent → tool_execution → apply_verification으로 이어진다. apply_verification은 Jev를 호출하지 않고 이번 turn 결과로 정한다: NOT_FOUND → WARN(risk 하한 적용), FOUND → SUSPECT 안내, ERROR/TIMEOUT → VERIFY 유지 안내.
+- R4. SUSPECT는 suspect_agent의 안내로, VERIFY는 verify_agent → tool_execution → apply_verification으로 이어진다. apply_verification은 Jev를 호출하지 않고 이번 turn 결과로 정한다: NOT_FOUND → WARN(risk 하한 적용), FOUND → SUSPECT 안내, ERROR/TIMEOUT → VERIFY 유지 안내. verify_agent가 요청을 내지 않으면 SUSPECT로 되돌린다.
 - R5. 이전 phase가 WARN이면 필터·점수와 관계없이 WARN을 유지한다. turn당 Tool 실행은 최대 1회다.
 - R6. Graph는 `UtteranceFilter`·`RiskScorer`·`VerifyJudge` 구현을 주입받는다. 구현을 바꿔도 Graph 코드를 수정하지 않는다.
 - R7. 데이터셋 적재 스크립트는 JSONL `{source_id, text, label, speaker}`를 임베딩해 pgvector에 저장한다. 통화 Graph는 검색만 한다.
@@ -31,6 +31,7 @@
 | 이전 VERIFY에서 VerifyJudge 없이 재조회, FOUND 뒤 재VERIFY | Fake 대역으로 pytest |
 | confidence 기준 경계값과 None 처리 | Fake 대역으로 pytest |
 | 설정만 바꿔 수치 탐색 반복 실행 | 탐색 스크립트 실행 결과를 docs/analysis에 기록 |
+| 첫 발화 일상 발화(risk None), 요청 없음 → SUSPECT, 같은 대상 재조회 없음 | Fake 대역으로 pytest |
 | 조회 결과 세 종류의 phase·risk·안내 | Mock 결과 대역으로 pytest |
 | 일상 발화의 State 불변·transcript 보존·안내 없음 | Fake Filter로 pytest |
 | port 교체 | 다른 대역 구현을 주입한 pytest |

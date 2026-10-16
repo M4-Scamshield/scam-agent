@@ -15,7 +15,7 @@
 
 일상 발화로 걸러지면 점수를 계산하지 않는다. 점수가 SUSPECT 기준 미만이면 VERIFY 판단을 호출하지 않는다. 발화 필터·위험 점수·VERIFY 판단은 port/adapter로 분리해 벡터 검색·Jev 외의 API나 ML 모델로 교체할 수 있게 한다. 분류 모델 학습·데이터셋 수집·threshold 보정 실험 자체는 이 문서의 범위가 아니다.
 
-State·checkpoint·Agent·Tool·turn당 Tool 1회·WARN 하향 금지 등 공통 규칙은 [MVP 전체 스펙](state-and-graph.md)을 그대로 따른다.
+State·checkpoint·Agent·Tool·turn당 Tool 1회·WARN 하향 금지 등 공통 규칙은 [MVP 전체 스펙](state-and-graph.md)을 따른다. 단, MVP 스펙의 다음 규칙은 이 문서가 대체한다: risk·phase 판단 주체(Jev → 필터·점수·VERIFY 판단), Tool 결과 뒤 Jev 재판단(→ apply_verification 규칙), "Tool 결과만으로 WARN을 강제하지 않음"(→ NOT_FOUND는 WARN), 오류 stage 목록(filter·risk·verify_judge 추가, jev 제거), "정상 완료에는 risk가 숫자"(→ 첫 발화가 일상 발화면 None 허용).
 
 ## 구조와 책임
 
@@ -33,7 +33,7 @@ flowchart TD
     A --> E2([이번 turn 종료])
     J -->|맥락 있음: VERIFY| V[verify_agent]
     V -->|요청 1개| T[tool_execution]
-    V -->|요청 없음: 안내| E2
+    V -->|요청 없음: SUSPECT 복귀 안내| E2
     T --> P[apply_verification]
     P -->|NOT_FOUND: WARN| W
     P -->|FOUND: SUSPECT| A
@@ -43,11 +43,11 @@ flowchart TD
 
 | Node | 읽기 | 쓰기·동작 |
 |---|---|---|
-| filter_utterance | 이번 발화·최근 transcript·phase | 이전 WARN이면 필터 없이 warn. 그 외 `UtteranceFilter` 호출 → 일상 발화면 State를 바꾸지 않고 종료 |
-| score_risk | 이번 발화·전체 transcript·이전 risk | `RiskScorer` 호출 → risk 적용, 기준과 비교해 OBSERVE 또는 다음 단계 |
-| judge_verify | 전체 transcript·phase·검증 결과 | `VerifyJudge` 호출 → VERIFY 또는 SUSPECT. 이전 VERIFY면 호출하지 않음 |
+| filter_utterance | 이번 발화·최근 transcript·phase | 이전 WARN이면 필터·점수 없이 warn(risk 유지). 그 외 `UtteranceFilter` 호출 → 일상 발화면 State를 바꾸지 않고 종료(VERIFY 중이면 VERIFY 유지, 재조회 없음) |
+| score_risk | 이번 발화·전체 transcript·이전 risk·이전 phase | `RiskScorer`로 utterance_score·call_score를 받아 아래 결합식으로 risk 적용. 기준 미만이면 phase=OBSERVE로 쓰고 종료. 기준 이상이면 phase를 쓰지 않고, 이전 VERIFY면 verify_agent, 그 외 judge_verify로 보낸다 |
+| judge_verify | 전체 transcript·이전 phase·검증 결과 | `VerifyJudge` 호출 → phase=VERIFY 또는 SUSPECT로 쓴다 |
 | suspect_agent | 기존과 동일 | 경고·확인 행동 안내 생성 |
-| verify_agent·tool_execution | 기존과 동일 | Tool 선택·실행·결과 저장 |
+| verify_agent·tool_execution | 기존과 동일 | Tool 선택·실행·결과 저장. 요청 없음이면 phase=SUSPECT로 되돌리고 기존 요청 없음 안내로 종료. 이미 status=OK로 조회한 대상은 다시 요청하지 않는다 |
 | apply_verification | 이번 turn 검증 결과·risk | 아래 규칙으로 phase·risk 확정 |
 
 기존 `detect_with_jev` 한 Node가 하던 최초 판단과 재판단을 filter_utterance·score_risk·judge_verify·apply_verification으로 나눈다. Tool 결과 뒤 Jev를 다시 호출하지 않으므로 verification_attempted는 같은 turn의 두 번째 Tool 실행을 막는 용도로만 남는다.
@@ -77,7 +77,7 @@ flowchart TD
 | 답 이름 | 사용 Node | 질문 초안 |
 |---|---|---|
 | `is_routine` | filter_utterance | Given the recent conversation, does the latest utterance add NO new information for judging phone-scam risk? (greetings, backchannels like '네네', small talk). Answer false if it mentions an institution, money, account, personal info, urgency, or something verifiable. |
-| `should_verify` | judge_verify | Does the conversation contain a verifiable target (case number, institution phone number, account) AND is the other party using it to demand an action, so the user needs to check it? A number merely appearing is not enough. |
+| `should_verify` | judge_verify | Does the conversation contain a verifiable target (case number, institution phone number, account) AND is the other party using it to demand an action, so the user needs to check it? A number merely appearing is not enough. A target already looked up successfully (in the given verification results) does not need verification again. |
 
 | 적용 | 규칙 | 이유 |
 |---|---|---|
@@ -91,11 +91,11 @@ flowchart TD
 
 | 구분 | 내부 계약 |
 |---|---|
-| 입력 | utterance: 이번 발화, transcript: 이번 발화를 포함한 전체 목록, previous_risk: float 또는 None |
-| 출력 | `RiskScore{risk, utterance_score, call_score}` — 모두 유한한 0~1 |
+| 입력 | utterance: 이번 발화, transcript: 이번 발화를 포함한 전체 목록 |
+| 출력 | `RiskScore{utterance_score, call_score}` — 모두 유한한 0~1 |
 | 실패 | 호출·출력 검증 오류를 실행 오류(stage=`risk`)로 반환, 자동 재시도 없음 |
 
-phase 결정은 port 밖 score_risk Node가 `risk >= suspect_threshold`로 한다. adapter는 점수만 반환하고 phase를 고르지 않는다. 그래야 다른 모델로 바꿔도 threshold 정책이 한 곳에 남는다.
+이전 risk와의 결합·감쇠와 phase 결정은 port 밖 score_risk Node가 한다. adapter는 이번 발화와 대화의 점수만 반환하고 이전 risk·phase를 보지 않는다. 감쇠 규칙이 이전 phase에 따라 달라지므로 phase 정책을 Graph 한 곳에 두고, 다른 모델로 바꿀 때 점수만 제공하면 되게 하기 위해서다.
 
 **벡터 유사도 adapter** (`VectorRiskScorer`)는 두 검색을 한다.
 
@@ -119,7 +119,7 @@ score      = clip(d / d_scale, 0, 1)             (초기 d_scale = 0.1)
 
 검토한 대안: (a) 사기 데이터만 넣고 실측 분포로 정규화 — 정상 통화 기준이 없어 기준값의 의미가 약하다. (c) top-k 중 사기 문장 비율(kNN 투표) — 데이터 양의 쏠림에 민감하다.
 
-risk는 previous_risk·utterance_score·call_score를 아래처럼 결합한다(2026-10-16 사용자 채택).
+score_risk Node는 previous_risk·utterance_score·call_score를 아래처럼 결합한다(2026-10-16 사용자 채택).
 
 ```
 turn_score = w · utterance_score + (1 − w) · call_score        (초기 w = 0.5)
@@ -127,7 +127,8 @@ risk       = max(previous_risk × decay, turn_score)             (초기 decay =
 ```
 
 - 기존 누적 점수를 감쇠해 유지하므로 위험 발화 뒤 평범한 발화가 이어져도 점수가 바로 사라지지 않는다. 위험 발화가 계속 없으면 risk가 조금씩 내려가 SUSPECT → OBSERVE로 돌아갈 수 있다. 오탐 한 번으로 통화 끝까지 SUSPECT에 머무는 것을 피하기 위해서다.
-- 이전 phase가 VERIFY 또는 WARN이면 감쇠하지 않고(`decay = 1`) phase도 내리지 않는다. WARN 하향 금지와 "VERIFY는 risk ≥ suspect_threshold" 정책을 지키고, 조회 흐름이 점수 변동으로 끊기지 않게 한다.
+- previous_risk가 None(이번 통화 첫 채점)이면 `risk = turn_score`다.
+- 이전 phase가 VERIFY이면 감쇠하지 않고(`decay = 1`) phase도 내리지 않는다. "VERIFY는 risk ≥ suspect_threshold" 정책을 지키고, 조회 흐름이 점수 변동으로 끊기지 않게 한다. 이전 WARN은 filter_utterance에서 바로 warn으로 가므로 score_risk에 오지 않는다.
 - w·decay·N은 설정값이다. 위 초기값은 에이전트 초안이며 실험으로 조정한다.
 
 내부 의존성도 테스트 대역을 위해 작은 Protocol로 둔다.
@@ -141,7 +142,7 @@ risk       = max(previous_risk × decay, turn_score)             (초기 decay =
 
 | 구분 | 내부 계약 |
 |---|---|
-| 입력 | transcript: 전체 목록, phase: 이번 turn의 phase(SUSPECT 이상), verification_results: 누적 목록 |
+| 입력 | transcript: 전체 목록, phase: 이전 phase(OBSERVE 또는 SUSPECT), verification_results: 누적 목록 |
 | 출력 | `VerifyDecision{should_verify: bool, confidence: 0~1 또는 None}` |
 | 적용 | judge_verify가 should_verify=true이면 VERIFY, 아니면 SUSPECT |
 | 실패 | 호출·출력 검증 오류를 실행 오류(stage=`verify_judge`)로 반환, 자동 재시도 없음 |
@@ -150,7 +151,8 @@ risk       = max(previous_risk × decay, turn_score)             (초기 decay =
 
 - 이전 phase가 OBSERVE·SUSPECT이고 risk ≥ suspect_threshold인 판단 대상 발화마다 호출한다. 점수가 그대로인 채 사건번호·계좌번호 같은 검증 정보가 뒤에 나와도 놓치지 않기 위해서다. 일상 발화는 filter_utterance가 먼저 걸러 호출 수를 줄인다.
 - 이전 phase가 VERIFY(조회 ERROR/TIMEOUT 뒤)이면 호출하지 않고 score_risk에서 verify_agent로 바로 가서 다시 조회한다. turn당 Tool 1회는 유지한다.
-- FOUND로 SUSPECT가 된 뒤에도 같은 통화에서 다시 VERIFY할 수 있다. 사기범이 다른 사건번호·계좌번호로 바꿔 말하는 경우를 막는다.
+- FOUND로 SUSPECT가 된 뒤에도 같은 통화에서 다시 VERIFY할 수 있다. 사기범이 다른 사건번호·계좌번호로 바꿔 말하는 경우를 막는다. 이미 status=OK로 조회한 대상은 검증 필요로 보지 않는다(질문에 포함). verify_agent도 같은 대상을 다시 요청하지 않으므로, 판단이 잘못 true여도 요청 없음 → SUSPECT로 끝난다.
+- VERIFY에서 빠져나오는 경로: NOT_FOUND → WARN, FOUND → SUSPECT, 요청 없음 → SUSPECT. ERROR/TIMEOUT이 반복되면 데모 범위에서는 판단 대상 발화마다 다시 조회한다.
 - VERIFY에는 risk ≥ suspect_threshold를 요구한다. 기존 "risk ≥ 0.6"은 Fake Jev 데모 값이어서 threshold를 설정 한 곳에서 관리하도록 바꾼다.
 
 판단 기준은 기존 Jev 스펙의 VERIFY 조건과 같다. 사건번호·기관 연락처·계좌처럼 **검증 가능한 대상**이 있고, 상대가 이를 근거로 행동을 요구해 **확인할 필요**가 있을 때만 true다. 번호가 등장했다는 사실만으로 true가 되지 않는다.
@@ -209,7 +211,8 @@ score_risk는 update_context가 utterance를 소비하기 전 값이 필요하�
 | 「사건번호는 2026-12345입니다.」 | 판단 대상 | 기준 이상 | 맥락 있음 | VERIFY → case_lookup → NOT_FOUND → WARN |
 | (추가 검사) SUSPECT 중 「네네」 | 일상 발화 | 호출 안 함 | 호출 안 함 | SUSPECT 유지, 안내 없음 |
 
-- 이전 phase가 WARN이면 score_risk가 WARN을 유지하고 warn으로 간다. 점수 하락으로 WARN을 내리지 않는다.
+- 이전 phase가 WARN이면 filter_utterance가 필터·점수 없이 warn으로 보내고 risk를 유지한다. WARN을 내리지 않는다.
+- 첫 발화가 일상 발화로 걸리면 risk=None·phase=OBSERVE·response=None인 정상 결과다.
 - UtteranceFilter·RiskScorer·VerifyJudge 실패는 기존 Jev 실패와 같이 이번 실행의 오류로 반환한다. 데모에서는 새 callId로 재시작한다.
 - Tool ERROR/TIMEOUT은 기존처럼 결과로 저장한다. WARN을 강제하지 않는다.
 
@@ -228,7 +231,7 @@ score_risk는 update_context가 utterance를 소비하기 전 값이 필요하�
 |---|---|---|---|
 | k (top-k) | 5 | 3·5·10·20 | 사기·정상 점수 분포의 분리 정도 |
 | d_scale | 0.1 | 측정한 d의 80·90·95번째 백분위 | 사기 발화 점수가 0~1에 고르게 퍼지는지 |
-| suspect_threshold | 미정 | 정상 통화 점수 분포의 여러 백분위 | 정상 통화 오탐률과 사기 통화 탐지율 |
+| suspect_threshold | 0.5 (Fake 대역 기준 임시값) | 정상 통화 점수 분포의 여러 백분위 | 정상 통화 오탐률과 사기 통화 탐지율 |
 | w | 0.5 | 0.3·0.5·0.7 | 발화 점수와 누적 점수의 기여 비교 |
 | decay | 0.9 | 0.8·0.9·0.95·1.0 | 오탐 뒤 OBSERVE 복귀 속도와 탐지 유지 |
 | N (window) | 5 | 3·5·8 | 통화 누적 점수의 안정성 |

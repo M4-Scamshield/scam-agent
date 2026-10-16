@@ -23,11 +23,24 @@
 - 사용자 지시: 모든 수치는 확정이 아니며, 여러 수치를 넣어 좋은 값을 찾는 탐색 과정이 필수다. 설계 문서에 "수치 탐색 — 필수" 절, spec R8, tasks 구현 항목으로 남겼다.
 - 남은 미정: 데이터셋 사용 조건(DATA.md) 확인.
 
+## 2026-10-16 — 스펙 가벼운 리뷰 반영
+
+사용자 요청으로 대화 맥락 없는 새 에이전트가 문서 간 모순·흐름 구멍·구현 가능성만 가볍게 검토했다(파일 수정 없음). 8건을 사용자가 추천대로 반영하기로 했다.
+
+- 이전 WARN: filter_utterance에서 바로 warn, 점수 미계산, risk 유지로 통일.
+- RiskScorer는 utterance_score·call_score만 반환하고, 결합·감쇠·phase는 score_risk Node가 맡는다(adapter가 이전 phase를 몰라 감쇠 규칙을 적용할 수 없던 문제).
+- verify_agent 요청 없음 → SUSPECT 복귀. VERIFY 중 일상 발화는 VERIFY 유지·재조회 없음.
+- previous_risk None이면 risk=turn_score. 첫 발화가 일상 발화면 risk=None 정상 결과 허용.
+- 이미 status=OK로 조회한 대상은 VerifyJudge 질문·verify_agent 모두 재조회하지 않는다.
+- suspect_threshold 임시 초기값 0.5.
+- risk-scoring.md에 MVP 스펙에서 대체하는 규칙 목록을 명시하고 state-and-graph 상단에 안내 추가.
+- proposal·tasks에 UtteranceFilter·filter_utterance 추가.
+
 ## 검증
 
 | 명령 또는 확인 | 결과 | 근거·한계 |
 |---|---|---|
-| `python3 .agents/skills/scamshield-docs-sync/scripts/check_docs.py` | PASS: 문서 30개·로컬 링크 365개 (2026-10-16 마지막 실행) | 외부 URL·앵커·의미 정합성은 미검사 |
+| `python3 .agents/skills/scamshield-docs-sync/scripts/check_docs.py` | PASS: 문서 30개·로컬 링크 366개 (2026-10-16 마지막 실행) | 외부 URL·앵커·의미 정합성은 미검사 |
 | `git diff --check` | 통과 | 공백 오류만 확인 |
 
 사용자가 에이전트의 초안으로 [이슈 #3](https://github.com/M4-Scamshield/scam-agent/issues/3)을 직접 생성했다. PR #2가 merge된 `origin/main`에서 `junyheon/3/vector-risk-scoring` 브랜치를 만들고 작성 중이던 문서를 옮겼다. main을 push 대상으로 추적하지 않도록 upstream은 해제했다.

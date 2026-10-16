@@ -14,8 +14,8 @@ GitHub 이슈: [#3 — 데이터셋 벡터 유사도로 위험 점수를 산출�
 
 포함:
 
-- `RiskScorer`·`VerifyJudge` port와 Graph 주입, 벡터 유사도 adapter(Gemini embedding + pgvector), Fake 대역.
-- `detect_with_jev`를 score_risk·judge_verify·apply_verification으로 분리.
+- `UtteranceFilter`·`RiskScorer`·`VerifyJudge` port와 Graph 주입, 벡터 유사도 adapter(Gemini embedding + pgvector), Fake 대역.
+- `detect_with_jev`를 filter_utterance·score_risk·judge_verify·apply_verification으로 분리.
 - 데이터셋 적재 스크립트와 로컬 pgvector 실행 환경.
 - TypeSafe Jev adapter(키 발급 후 실제 검증).
 
