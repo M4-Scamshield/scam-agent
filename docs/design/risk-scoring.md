@@ -114,6 +114,7 @@ risk       = max(previous_risk × decay, turn_score)             (초기 decay =
 | 입력 | transcript: 전체 목록, phase: 이번 turn의 phase(SUSPECT 이상), verification_results: 누적 목록 |
 | 출력 | `VerifyDecision{should_verify: bool, confidence: 0~1 또는 None}` |
 | 적용 | judge_verify가 should_verify=true이면 VERIFY, 아니면 SUSPECT |
+| 실패 | 호출·출력 검증 오류를 실행 오류(stage=`verify_judge`)로 반환, 자동 재시도 없음 |
 
 호출 시점(2026-10-16 사용자 채택):
 
@@ -121,7 +122,6 @@ risk       = max(previous_risk × decay, turn_score)             (초기 decay =
 - 이전 phase가 VERIFY(조회 ERROR/TIMEOUT 뒤)이면 호출하지 않고 score_risk에서 verify_agent로 바로 가서 다시 조회한다. turn당 Tool 1회는 유지한다.
 - FOUND로 SUSPECT가 된 뒤에도 같은 통화에서 다시 VERIFY할 수 있다. 사기범이 다른 사건번호·계좌번호로 바꿔 말하는 경우를 막는다.
 - VERIFY에는 risk ≥ suspect_threshold를 요구한다. 기존 "risk ≥ 0.6"은 Fake Jev 데모 값이어서 threshold를 설정 한 곳에서 관리하도록 바꾼다.
-| 실패 | 호출·출력 검증 오류를 실행 오류(stage=`verify_judge`)로 반환, 자동 재시도 없음 |
 
 판단 기준은 기존 Jev 스펙의 VERIFY 조건과 같다. 사건번호·기관 연락처·계좌처럼 **검증 가능한 대상**이 있고, 상대가 이를 근거로 행동을 요구해 **확인할 필요**가 있을 때만 true다. 번호가 등장했다는 사실만으로 true가 되지 않는다.
 
