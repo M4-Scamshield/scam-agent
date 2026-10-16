@@ -20,6 +20,18 @@
 
 공통 설계의 기준은 `docs/design/`, 현재 구현 설명은 `docs/architecture/`에 둔다. change 문서는 해당 변경의 요구와 적용 방법·진행을 담고 상위 문서로 연결한다. 변경이 반영되면 관련 기준 문서를 갱신하고, 본문의 관련 문서 항목에서 해당 change와 검증 기록으로 연결한다.
 
+## 벡터 유사도 위험 점수와 Jev VERIFY 판단 — 진행 중
+
+보이스피싱범 데이터셋의 pgvector 유사도와 누적 점수로 risk·OBSERVE/SUSPECT를 정하고, SUSPECT 이상에서 Jev가 VERIFY 맥락을 판단한다. 점수와 VERIFY 판단은 port/adapter로 교체할 수 있게 한다. 구현 이슈: [#3](https://github.com/M4-Scamshield/scam-agent/issues/3). 현재 스펙 작성 단계이며 구현 전이다. 설계 기준은 [risk-scoring](../docs/design/risk-scoring.md)이다.
+
+| 변경 문서 | 포함한 내용 |
+|---|---|
+| [proposal](changes/vector-risk-scoring/proposal.md) | 문제·목표·범위·완료 조건 |
+| [spec](changes/vector-risk-scoring/spec.md) | 점수·VERIFY 판단·Graph 분리 요구와 검증 조건 |
+| [design](changes/vector-risk-scoring/design.md) | 기존 코드에서 바꿀 부분·모듈 배치·trade-off |
+| [tasks](changes/vector-risk-scoring/tasks.md) | 스펙·구현 진행 |
+| [work](changes/vector-risk-scoring/work.md) | 사용자 방향·제안·검증 기록 |
+
 ## 첫 데모 — 완료
 
 구현 이슈: [#1 — 대화 기록을 유지하며 사건번호 확인과 경고까지 실행하기](https://github.com/M4-Scamshield/scam-agent/issues/1).

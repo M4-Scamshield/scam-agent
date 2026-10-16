@@ -225,6 +225,8 @@ sync checkpoint 저장. 동일 통화의 상태 유지·새 callId의 분리를 
 
 ## Jev 스펙
 
+> 2026-10-16 방향 변경(구현 전): risk와 OBSERVE/SUSPECT는 데이터셋 벡터 유사도로 산출하고 Jev는 SUSPECT 이상에서 VERIFY 맥락만 판단한다. 새 계약은 [벡터 유사도 위험 점수와 VERIFY 판단](risk-scoring.md)에 있다. 아래는 현재 구현된 데모 계약이다.
+
 역할은 전체 통화를 읽고 현재 risk·phase를 결정하는 것이다. 최초 판단과 Tool 결과 반영 후 재판단은 같은 내부 계약을 사용한다.
 
 | 구분 | 내부 계약 |
@@ -352,6 +354,7 @@ API 없는 Graph 검사는 Fake Jev·Mock case_lookup·Agent 대역으로 핵심
 
 - [프로젝트 컨텍스트](../project-context.md) · [상세 설계 인덱스](index.md) · [아키텍처 인덱스](../architecture/index.md)
 - [MVP 흐름 설계](mvp-flow.md) — 데모 시나리오와 Fake/Mock 검증 범위
+- [벡터 유사도 위험 점수와 VERIFY 판단](risk-scoring.md) — Jev 역할 축소와 점수 port 방향(구현 전)
 - [기존 first-demo change](../../openspec/changes/first-demo/proposal.md) · [작업·검증 근거](../../openspec/changes/first-demo/work.md)
 - [LangGraph Graph API](https://docs.langchain.com/oss/python/langgraph/graph-api) — schemas, reducers, runtime context, recursion limit
 - [LangGraph Checkpointers](https://docs.langchain.com/oss/python/langgraph/checkpointers) — super-step, snapshot, durability

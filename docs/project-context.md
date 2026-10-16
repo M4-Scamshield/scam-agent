@@ -79,6 +79,8 @@ State의 출발 후보는 `transcript`, `phase`, `risk`, `verification_results`,
 
 실제 Jev/기관 조회·STT·HTTP/WebSocket·프론트·운영 복구/cleanup은 첫 데모 뒤 범위다. [데모 구현](architecture/overview.md)·API 없는 CLI/테스트와 실제 Gemini 안내/Tool Calling 검증을 완료했다. 이는 역할별 LLM 호출 데모 완료이며 후속 Agent 실행 런타임 전환과 구분한다.
 
+2026-10-16 사용자 방향: 보이스피싱범 발화 데이터셋을 pgvector에 Gemini embedding으로 넣고, 이번 발화 검색과 통화 누적 검색의 top-k 유사도에 기존 누적 점수를 결합해 risk를 만든다. 기준 이상이면 SUSPECT 이상이고, 그때 Jev(TypeSafe System One)가 VERIFY로 넘어갈 맥락이 있는지 판단한다. SUSPECT는 경고 문구, VERIFY는 Tool 조회로 WARN을 확정한다. 점수와 VERIFY 판단은 port/adapter로 다른 API·ML 모델이 들어올 수 있게 한다. top-k 집계·결합 연산·기준값은 미정이다. 설계는 [risk-scoring](design/risk-scoring.md)에 있으며 구현 전이다.
+
 ## 작업 범위에 관한 합의
 
 초기 작업은 `Downloads/aTopsMigrator`의 문서 탐색·작업 연속성 방식을 참고한 Harness 구성이었다. 루트 AGENTS.md는 구현 전·중·후의 핵심 행동과 문서·스킬의 사용 시점을 안내하고, 세부 절차·재개 방법·기록 크기·검증 명령은 docs/harness/workflow.md에서 관리한다. 새 작업은 관련 아키텍처·설계를 먼저 읽고, 기존 작업 재개는 change의 진행·인계 기록부터 확인한다. 공통 작업과 문서 동기화는 스킬로 연결한다.
