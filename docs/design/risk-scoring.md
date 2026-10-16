@@ -1,6 +1,6 @@
 # 벡터 유사도 위험 점수와 VERIFY 판단
 
-상태: **초안 — 구현 전**. 근거: 2026-10-16 사용자가 위험 점수를 보이스피싱범 데이터셋의 벡터 유사도로 산출하고, Jev는 SUSPECT 이상일 때 VERIFY 맥락만 판단하도록 방향을 정했다. 이어서 사기·정상 유사도 차이 점수와 Jev 일상 발화 필터를 채택했다. 조회 결과 반영은 규칙으로, 통화 누적 검색은 최근 N개 발화 window로, 점수 결합은 감쇠 최댓값으로, Jev 호출은 SUSPECT 기준 이상의 판단 대상 발화마다로 정했다. top-k 집계·threshold 수치는 미정이다. 진행은 [vector-risk-scoring change](../../openspec/changes/vector-risk-scoring/work.md)에 있다.
+상태: **초안 — 구현 전**. 근거: 2026-10-16 사용자가 위험 점수를 보이스피싱범 데이터셋의 벡터 유사도로 산출하고, Jev는 SUSPECT 이상일 때 VERIFY 맥락만 판단하도록 방향을 정했다. 이어서 사기·정상 유사도 차이 점수와 Jev 일상 발화 필터를 채택했다. 조회 결과 반영은 규칙으로, 통화 누적 검색은 최근 N개 발화 window로, 점수 결합은 감쇠 최댓값으로, Jev 호출은 SUSPECT 기준 이상의 판단 대상 발화마다로 정했다. top-k 집계는 top-5 평균 차이 + clip, 임베딩은 768차원 SEMANTIC_SIMILARITY로 정했다. **모든 수치는 확정값이 아니며, 여러 값을 넣어 비교하는 수치 탐색을 거쳐야 한다**([수치 탐색](#수치-탐색--필수)). 진행은 [vector-risk-scoring change](../../openspec/changes/vector-risk-scoring/work.md)에 있다.
 
 ## 목적과 범위
 
@@ -70,6 +70,23 @@ flowchart TD
 - 판단 기준은 "이 맥락에서 이번 발화가 사기 위험 판단에 새 정보를 주지 않는가"다. 기관·금전·개인정보·긴급성·검증 대상이 나오면 일상 발화가 아니다. 애매하면 판단 대상으로 둔다(놓치는 것보다 점수 계산을 한 번 더 하는 편이 안전하다).
 - adapter: TypeSafe Jev(키 발급 후, Boolean 질문), Fake(짧은 인사·맞장구 목록과 일치할 때만 true).
 
+### Jev 질문과 confidence 기준
+
+2026-10-16 사용자 채택. Jev의 주 학습 언어가 영어이므로 대화(state)는 한국어 그대로 넘기고 질문만 영어로 쓴다. 아래 문구는 에이전트 초안이며 키 발급 후 실제 응답으로 다듬는다. `is_routine`·`should_verify`는 phase가 아니라 각 port 출력의 판단 값이며 State에 저장하지 않는다.
+
+| 답 이름 | 사용 Node | 질문 초안 |
+|---|---|---|
+| `is_routine` | filter_utterance | Given the recent conversation, does the latest utterance add NO new information for judging phone-scam risk? (greetings, backchannels like '네네', small talk). Answer false if it mentions an institution, money, account, personal info, urgency, or something verifiable. |
+| `should_verify` | judge_verify | Does the conversation contain a verifiable target (case number, institution phone number, account) AND is the other party using it to demand an action, so the user needs to check it? A number merely appearing is not enough. |
+
+| 적용 | 규칙 | 이유 |
+|---|---|---|
+| 필터 | `is_routine=true`이고 confidence ≥ `routine_min_confidence`(초기 0.8)일 때만 거른다 | 위험 발화를 잘못 거르는 비용이 크다 |
+| VERIFY | `should_verify=true`이고 confidence ≥ `verify_min_confidence`(초기 0.5)이면 VERIFY | 잘못된 VERIFY는 조회 한 번, 놓친 VERIFY는 WARN 누락 |
+| confidence None | Boolean 값만 쓴다 | confidence를 주지 않는 adapter도 교체 가능하게 |
+
+기준값은 adapter가 아니라 Graph 설정에 둔다. suspect_threshold와 같이 모델을 바꿔도 정책이 한 곳에 남게 하기 위해서다.
+
 ### RiskScorer port
 
 | 구분 | 내부 계약 |
@@ -85,7 +102,20 @@ phase 결정은 port 밖 score_risk Node가 `risk >= suspect_threshold`로 한�
 1. **이번 발화 검색**: utterance를 임베딩해 데이터셋에서 top-k를 찾고 점수를 낸다 → utterance_score.
 2. **통화 누적 검색**: 통화 대화를 하나의 query로 임베딩해 top-k를 찾고 점수를 낸다 → call_score. query는 transcript의 최근 N개 발화를 이어 붙인 window다(2026-10-16 사용자 채택, 초기 N=5). 전체 transcript는 통화가 길어질수록 의미가 흐려지고 임베딩 입력 한도에 걸려 쓰지 않는다. 데이터셋은 발화 단위로 적재하므로 window query와 길이가 다르다. window 단위 적재 여부는 실험으로 정한다.
 
-각 검색의 점수는 **사기 유사도와 정상 유사도의 차이**다(2026-10-16 사용자 채택, (b)안). label=scam 문장의 top-k 유사도 집계에서 label=normal 문장의 top-k 유사도 집계를 빼고 0~1로 변환한다. 코사인 유사도의 절댓값은 한국어 문장끼리 대체로 높아 그대로 위험도로 쓰기 어렵기 때문이다. 인사말처럼 사기·정상 통화에 모두 흔한 문장은 두 유사도가 비슷해 점수가 낮게 나온다. 집계 연산과 0~1 변환 방식은 미정이다.
+각 검색의 점수는 **사기 유사도와 정상 유사도의 차이**다(2026-10-16 사용자 채택, (b)안). label=scam 문장의 top-k 유사도 집계에서 label=normal 문장의 top-k 유사도 집계를 빼고 0~1로 변환한다(아래 계산식). 코사인 유사도의 절댓값은 한국어 문장끼리 대체로 높아 그대로 위험도로 쓰기 어렵기 때문이다. 인사말처럼 사기·정상 통화에 모두 흔한 문장은 두 유사도가 비슷해 점수가 낮게 나온다.
+
+2026-10-16 사용자 채택 계산식(수치는 초기값):
+
+```
+scam_sim   = label=scam top-k 유사도 평균        (초기 k = 5)
+normal_sim = label=normal top-k 유사도 평균      (초기 k = 5)
+d          = scam_sim − normal_sim
+score      = clip(d / d_scale, 0, 1)             (초기 d_scale = 0.1)
+```
+
+- 평균: 최댓값은 우연히 비슷한 문장 하나나 같은 통화의 중복 문장에 크게 흔들린다.
+- clip: 범위를 벗어난 값을 끝값으로 자른다. d ≤ 0(정상 통화에 같거나 더 가까움)은 0점, d ≥ d_scale은 1점이다. sigmoid보다 정할 값이 하나 적고 설명이 쉽다.
+- d_scale·suspect_threshold는 적재 후 데이터셋에서 뺀 사기·정상 통화의 d 분포를 측정해 정한다.
 
 검토한 대안: (a) 사기 데이터만 넣고 실측 분포로 정규화 — 정상 통화 기준이 없어 기준값의 의미가 약하다. (c) top-k 중 사기 문장 비율(kNN 투표) — 데이터 양의 쏠림에 민감하다.
 
@@ -164,6 +194,8 @@ score_risk는 update_context가 utterance를 소비하기 전 값이 필요하�
 | 실행 | 데이터셋 → 임베딩 → 적재를 한 번 수행하는 별도 스크립트. 통화 Graph는 검색만 한다 |
 | 로컬 환경 | Docker의 pgvector 이미지. 접속 정보는 `.env`(DATABASE_URL)로 받고 문서에 적지 않는다 |
 
+임베딩 설정(2026-10-16 사용자 채택, 초기값): `gemini-embedding-001`, 768차원, task type `SEMANTIC_SIMILARITY`(적재·검색 같은 값). 발화끼리 비교하는 대칭 유사도이기 때문이다. 3072가 아닌 차원은 출력이 정규화되어 있지 않으므로 저장·검색 전에 직접 정규화한다. 기본 3072차원은 pgvector HNSW 한도(2000)를 넘는다.
+
 적재와 검색은 같은 임베딩 모델·차원을 사용해야 한다. 모델이나 차원을 바꾸면 전체를 다시 적재한다.
 
 ## 정상 흐름과 종료·실패 처리
@@ -188,15 +220,33 @@ score_risk는 update_context가 utterance를 소비하기 전 값이 필요하�
 - 실제 연결: 로컬 pgvector에 샘플 데이터셋을 적재하고 Gemini embedding으로 검색·점수를 산출해 결과를 기록한다. 탐지 성능은 주장하지 않는다.
 - Jev: 키 발급 후 별도로 실제 호출을 검증하며, 그 전에는 Fake로만 검증했다고 구분한다.
 
+## 수치 탐색 — 필수
+
+2026-10-16 사용자 지시: **아래 값들은 아직 확정이 아니다. 여러 수치를 넣어 비교하고 좋은 수치를 찾는 과정이 반드시 필요하다.** 문서의 초기값은 구현을 시작하기 위한 출발점일 뿐이며, 탐색 없이 초기값을 최종값으로 쓰거나 "보정 완료"로 표시하지 않는다.
+
+| 값 | 초기값 | 탐색 후보(예) | 정하는 근거 |
+|---|---|---|---|
+| k (top-k) | 5 | 3·5·10·20 | 사기·정상 점수 분포의 분리 정도 |
+| d_scale | 0.1 | 측정한 d의 80·90·95번째 백분위 | 사기 발화 점수가 0~1에 고르게 퍼지는지 |
+| suspect_threshold | 미정 | 정상 통화 점수 분포의 여러 백분위 | 정상 통화 오탐률과 사기 통화 탐지율 |
+| w | 0.5 | 0.3·0.5·0.7 | 발화 점수와 누적 점수의 기여 비교 |
+| decay | 0.9 | 0.8·0.9·0.95·1.0 | 오탐 뒤 OBSERVE 복귀 속도와 탐지 유지 |
+| N (window) | 5 | 3·5·8 | 통화 누적 점수의 안정성 |
+| 필터 최근 대화 개수 | 미정 | 3·5 | 필터 판단 정확도와 입력 길이 |
+| routine_min_confidence | 0.8 | 0.6·0.7·0.8·0.9 | 위험 발화를 일상으로 잘못 거른 비율 |
+| verify_min_confidence | 0.5 | 0.3·0.5·0.7 | 불필요한 조회와 놓친 VERIFY 비율 |
+| 임베딩 차원 | 768 | 768·1536 | 같은 평가에서 분리 정도 차이 |
+| 집계·변환 방식 | 평균·clip | 최댓값·상위 가중 평균, sigmoid | 위와 같은 평가에서 비교 |
+
+- 평가 데이터는 적재에 쓰지 않은 통화로 나눈다. 같은 통화의 발화가 적재와 평가에 함께 들어가면 점수가 부풀려진다.
+- 모든 값은 코드에 고정하지 않고 설정으로 받는다. 탐색 실험은 설정만 바꿔 반복 실행할 수 있어야 한다.
+- 실험 조건·결과·선택 이유는 [분석 문서](../analysis/index.md)에 기록하고, 정한 값을 이 문서에 반영한다.
+- KorCCVi v2는 사기·정상의 출처가 달라 전사 스타일 차이가 점수에 섞일 수 있다. 탐색 결과를 실제 통화 성능으로 주장하지 않는다.
+
 ## 미확정 사항
 
 | 항목 | 후보 | 비고 |
 |---|---|---|
-| top-k 집계·0~1 변환 | 평균 / 최댓값 / 상위 가중 평균, 차이의 clip·sigmoid | 사용자: "평균?(정확한 연산 미정)". 차이 방식은 채택 |
-| 필터에 넘길 최근 대화 개수 | 최근 3~5개 발화 | 맥락 확보와 입력 길이 사이의 선택 |
-| SUSPECT 기준·k | 초기값으로 시작 후 실험으로 조정 | 정상 통화 데이터로 점수 분포를 측정해 정한다 |
-| w·decay·N 수치 | 초기 0.5·0.9·5에서 실험으로 조정 | 결합 방식은 채택, 수치만 미정 |
-| 임베딩 모델·차원 | `gemini-embedding-001` 768 또는 1536차원 | pgvector HNSW 인덱스는 `vector` 타입에서 2000차원까지. 기본 3072차원은 축소 필요. task type(문장 유사도/검색) 선택 |
 | 데이터셋 사용 조건 | KorCCVi v2 `DATA.md` 확인 | 사기=금감원, 정상=AI Hub로 출처와 label이 완전히 겹쳐 전사 스타일 차이가 점수에 섞일 수 있음(저자 명시 한계) |
 
 ## 관련 문서

@@ -18,17 +18,20 @@
 - 사용자 채택: 조회 결과는 규칙으로 반영(NOT_FOUND → WARN, FOUND → SUSPECT 안내, ERROR/TIMEOUT → VERIFY 유지). FOUND는 first-demo에서 에이전트가 Mock 내부 초안으로 추가한 결과임을 사용자에게 설명했고, 사용자가 유지를 선택했다. WARN 시 risk 하한 `max(risk, 0.9)`도 채택.
 - 사용자 채택: 통화 누적 검색은 최근 N개 발화 window(B안, 초기 N=5). 결합은 `risk = max(previous_risk × decay, w·utterance + (1−w)·call)`, 초기 w=0.5·decay=0.9(수치는 에이전트 초안). 이전 phase가 VERIFY·WARN이면 감쇠·하향 없음.
 - 사용자 채택: SUSPECT 기준 이상 판단 대상 발화마다 VerifyJudge 호출, 이전 VERIFY면 호출 없이 재조회, FOUND 뒤 재VERIFY 허용, VERIFY risk 기준을 0.6에서 suspect_threshold로 변경.
-- 다음 논의: Jev 질문 문구·confidence 기준값, 임베딩 차원.
+- 사용자 채택: Jev 질문은 영어 Boolean 두 개(is_routine·should_verify, phase 아님), 필터 confidence ≥ 0.8·VERIFY ≥ 0.5, None이면 Boolean만 사용, 기준값은 Graph 설정. 문구·수치는 에이전트 초안.
+- 사용자 채택: 임베딩 768차원·SEMANTIC_SIMILARITY, 점수 `clip((top-5 scam 평균 − top-5 normal 평균) / d_scale, 0, 1)`(초기 d_scale 0.1).
+- 사용자 지시: 모든 수치는 확정이 아니며, 여러 수치를 넣어 좋은 값을 찾는 탐색 과정이 필수다. 설계 문서에 "수치 탐색 — 필수" 절, spec R8, tasks 구현 항목으로 남겼다.
+- 남은 미정: 데이터셋 사용 조건(DATA.md) 확인.
 
 ## 검증
 
 | 명령 또는 확인 | 결과 | 근거·한계 |
 |---|---|---|
-| `python3 .agents/skills/scamshield-docs-sync/scripts/check_docs.py` | PASS: 문서 30개·로컬 링크 364개 | 외부 URL·앵커·의미 정합성은 미검사 |
+| `python3 .agents/skills/scamshield-docs-sync/scripts/check_docs.py` | PASS: 문서 30개·로컬 링크 365개 (2026-10-16 마지막 실행) | 외부 URL·앵커·의미 정합성은 미검사 |
 | `git diff --check` | 통과 | 공백 오류만 확인 |
 
 사용자가 에이전트의 초안으로 [이슈 #3](https://github.com/M4-Scamshield/scam-agent/issues/3)을 직접 생성했다. PR #2가 merge된 `origin/main`에서 `junyheon/3/vector-risk-scoring` 브랜치를 만들고 작성 중이던 문서를 옮겼다. main을 push 대상으로 추적하지 않도록 upstream은 해제했다.
 
 ## 남은 사항과 다음 행동
 
-문서 커밋 → Jev 질문·임베딩 차원 확정 → 구현.
+스펙 설계 논의는 데이터셋 사용 조건(DATA.md) 확인만 남았다. 다음: 문서 커밋 → 구현(port·Fake·Graph 분리 → pgvector·Gemini adapter와 적재 → **수치 탐색(필수)** → Jev adapter는 키 발급 후).

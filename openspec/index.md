@@ -22,7 +22,7 @@
 
 ## 벡터 유사도 위험 점수와 Jev VERIFY 판단 — 진행 중
 
-보이스피싱범 데이터셋의 pgvector 유사도와 누적 점수로 risk·OBSERVE/SUSPECT를 정하고, SUSPECT 이상에서 Jev가 VERIFY 맥락을 판단한다. 점수와 VERIFY 판단은 port/adapter로 교체할 수 있게 한다. 구현 이슈: [#3](https://github.com/M4-Scamshield/scam-agent/issues/3). 현재 스펙 작성 단계이며 구현 전이다. 설계 기준은 [risk-scoring](../docs/design/risk-scoring.md)이다.
+보이스피싱범 데이터셋의 pgvector 유사도와 누적 점수로 risk·OBSERVE/SUSPECT를 정하고, SUSPECT 이상에서 Jev가 VERIFY 맥락을 판단한다. 점수와 VERIFY 판단은 port/adapter로 교체할 수 있게 한다. 구현 이슈: [#3](https://github.com/M4-Scamshield/scam-agent/issues/3). 설계 논의를 마쳤고 구현 전이다. 문서의 수치는 초기값이며 구현 후 수치 탐색이 필수다. 설계 기준은 [risk-scoring](../docs/design/risk-scoring.md)이다.
 
 | 변경 문서 | 포함한 내용 |
 |---|---|
