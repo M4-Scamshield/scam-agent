@@ -70,6 +70,20 @@ uv run --locked python -m scamshield --auto
 | 고객님 계좌가 범죄에 연루되었습니다. | SUSPECT 0.5 → 확인 행동 안내 |
 | 사건번호는 2026-12345입니다. | VERIFY 0.7 → Tool 선택 → 독립 Mock 실행 → 재판단 WARN 0.9 → 고정 경고 |
 
+## Jev API 키 설정
+
+2026-10-23 [TypeSafe 공식 Quick start](https://docs.typesafe.ai/introduction/quickstart)와 [SDK 환경변수](https://docs.typesafe.ai/sdk/python/api/constants)를 확인했다. [TypeSafe 콘솔의 API Keys](https://console.typesafe.ai/keys)에서 로그인 후 키를 발급하고, Git에서 제외된 로컬 `.env`의 `TYPESAFE_API_KEY=` 오른쪽에 키만 입력한다. `Bearer ` 접두사는 넣지 않는다. 기존 `.env`의 Gemini 설정은 유지한다.
+
+```dotenv
+TYPESAFE_API_KEY=
+TYPESAFE_BASE_URL=https://api.typesafe.ai
+TYPESAFE_DEFAULT_MODEL=jev-latest
+```
+
+위 이름은 공식 SDK가 읽는 환경변수다. 실제 HTTP 호출은 `POST https://api.typesafe.ai/v1/systemone`에 `Authorization: Bearer <키>`를 전달한다([공식 API 문서](https://docs.typesafe.ai/api/system-one)). `.env`를 실행 환경에 전달하려면 기존과 같이 `uv run --locked --env-file .env ...`를 사용한다. 키는 채팅·소스·문서에 적지 않는다.
+
+이번 설정은 키 등록 준비이며 SDK 설치·실제 Jev 호출·인증 검증은 포함하지 않는다. 현재 CLI는 계속 Fake Jev를 사용하므로 환경변수만 채워도 실제 Jev로 전환되지는 않는다.
+
 ## 현재 데모의 역할과 한계
 
 | 부분 | 현재 구현 |
