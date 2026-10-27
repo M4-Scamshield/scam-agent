@@ -1,5 +1,7 @@
 # 첫 통화 데모 구현
 
+> 역사 기록: 이 문서는 2026-10-12 데모 범위의 요구·적용·검증을 보존한다. 현재 구조는 [2AS change](../jev-gemini-two-agent/proposal.md)와 [현행 계약](../../../docs/design/state-and-graph.md)을 따른다. 당시 계약은 [이전 스펙](https://github.com/M4-Scamshield/scam-agent/blob/9ae72bb/docs/design/state-and-graph.md)에서 확인한다.
+
 상태: 완료 — 이번 데모의 구현·인수조건 검증. 후속 Agent 전환·실제 외부 연결은 제외.
 
 2026-10-12 현재: [공통 State·Graph 설계](../../../docs/design/state-and-graph.md)를 기준으로 CLI·State·Graph·Fake Jev·Mock 조회·역할별 Gemini 연결을 구현했다. API 없는 검사와 실제 Gemini 세 발화 데모를 완료했다. 기존 change에서 진행을 이어 기록했고 실제 외부 Jev/기관 조회 계약은 후속 범위다. 실행 근거는 [work](work.md)에 있다.

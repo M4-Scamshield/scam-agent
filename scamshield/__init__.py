@@ -1,1 +1,1 @@
-"""ScamShield's sequential CLI call demo."""
+"""ScamShield: Jev detection followed by Gemini analysis on Yes."""

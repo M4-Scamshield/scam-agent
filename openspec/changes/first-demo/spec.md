@@ -1,5 +1,7 @@
 # 데모데이용 첫 실행 요구사항
 
+> 역사 기록: 이 문서는 2026-10-12 데모 범위의 요구·적용·검증을 보존한다. 현재 구조는 [2AS change](../jev-gemini-two-agent/proposal.md)와 [현행 계약](../../../docs/design/state-and-graph.md)을 따른다. 당시 계약은 [이전 스펙](https://github.com/M4-Scamshield/scam-agent/blob/9ae72bb/docs/design/state-and-graph.md)에서 확인한다.
+
 기준은 [전체 스펙](../../../docs/design/state-and-graph.md)과 [데모 흐름](../../../docs/design/mvp-flow.md)이다. 운영 수준의 확장/복구보다 정해진 세 발화 시나리오의 실제 동작을 완료 조건으로 삼는다.
 
 ## 필요한 동작

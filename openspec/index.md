@@ -20,7 +20,19 @@
 
 공통 설계의 기준은 `docs/design/`, 현재 구현 설명은 `docs/architecture/`에 둔다. change 문서는 해당 변경의 요구와 적용 방법·진행을 담고 상위 문서로 연결한다. 변경이 반영되면 관련 기준 문서를 갱신하고, 본문의 관련 문서 항목에서 해당 change와 검증 기록으로 연결한다.
 
-## 첫 데모 — 완료
+## Jev·Gemini 2AS — 인터페이스 범위 완료
+
+2026-10-23 사용자 요청으로 기존 phase/조회 구조를 Jev Yes/No·확률 → Yes일 때 Gemini 분석·대응 구조로 전환했다. 2026-10-27 API 없는 테스트 50개·실제 Jev Yes/No 연결·문서 검사·컴파일된 그래프 출력을 확인했다. Gemini 실제 생성은 504/503으로 성공 미확인이며 후속 확인 사항이다. 실제 STT·조회 도구는 이번 범위 밖이다.
+
+- [proposal](changes/jev-gemini-two-agent/proposal.md): 사용자 요청·범위·완료 조건.
+- [spec](changes/jev-gemini-two-agent/spec.md): Yes/No·확률·분석 저장·실패 조건.
+- [design](changes/jev-gemini-two-agent/design.md): 인터페이스·실제 API·정리 방법.
+- [tasks](changes/jev-gemini-two-agent/tasks.md): 실제 완료 범위와 남은 검증.
+- [work](changes/jev-gemini-two-agent/work.md): 실행 근거·한계·다음 행동.
+
+## 첫 데모 — 당시 범위 완료·현재 구조로 대체
+
+현재 계약은 [2AS State·Graph](../docs/design/state-and-graph.md)다. 아래 Fake/Mock 설명과 검증 수치는 이전 데모의 기록이다.
 
 구현 이슈: [#1 — 대화 기록을 유지하며 사건번호 확인과 경고까지 실행하기](https://github.com/M4-Scamshield/scam-agent/issues/1).
 

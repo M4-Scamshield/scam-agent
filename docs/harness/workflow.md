@@ -51,4 +51,4 @@ uv run --locked pytest -q
 uv run --locked python -m scamshield --offline --auto
 ```
 
-실제 Gemini 안내/Tool Calling은 GEMINI_API_KEY를 실행 환경에 설정한 뒤 `uv run --locked python -m scamshield --auto`로 별도 검증한다. 로컬 `.env`를 사용하면 uv에 `--env-file .env`를 명시한다. 캐시 권한 오류의 대체 경로와 직접 입력 명령은 [README](../../README.md)를 따른다. API 없는 테스트 통과를 실제 모델 호출 성공으로 표시하지 않는다.
+실제 2AS는 TYPESAFE_API_KEY를 실행 환경에 설정하고 Yes 경로용 GEMINI_API_KEY를 준비한 뒤 `uv run --locked python -m scamshield --auto`로 별도 검증한다. Jev는 Yes/No·P(Yes)를 반환하고 Yes일 때만 Gemini가 분석·대응한다. 로컬 `.env`를 사용하면 uv에 `--env-file .env`를 명시한다. 캐시 권한 오류의 대체 경로와 직접 입력 명령은 [README](../../README.md)를 따른다. API 없는 테스트 통과를 실제 모델 호출 성공으로 표시하지 않는다.
