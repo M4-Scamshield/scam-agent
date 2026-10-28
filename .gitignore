@@ -12,3 +12,5 @@ __pycache__/
 
 # 실험 원본 데이터(용량·재배포 문제)는 커밋하지 않는다. 결과(results)는 커밋한다.
 experiments/data/
+# 실행 로그는 결과가 아니므로 제외(metrics.md/predictions.csv/figure만 커밋)
+experiments/**/results/*.log

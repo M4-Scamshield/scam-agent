@@ -89,6 +89,8 @@ def main(argv=None):
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--delay", type=float, default=0.0)
     p.add_argument("--timeout", type=int, default=30)
+    p.add_argument("--price-in", type=float, default=None, help="입력 토큰 단가($/1M), 비용 계산용")
+    p.add_argument("--price-out", type=float, default=None, help="출력 토큰 단가($/1M), 비용 계산용")
     p.add_argument("--out", default=str(HERE / "results"))
     args = p.parse_args(argv)
 
@@ -96,17 +98,27 @@ def main(argv=None):
     rows = common.load_dataset(args.data, limit=args.limit, shuffle=args.shuffle, seed=args.seed)
     print(f"[Plan2] 평가 대상 {len(rows)}건, 카테고리 {len(KEYS)}개", flush=True)
 
-    records, failures = [], []  # records: {id, gold, yes_count, cats:{key:(verdict,prob)}}
+    records, failures, calls = [], [], []  # records: {id, gold, yes_count, cats:{key:(verdict,prob)}}
     cat_yes = Counter()
     for i, row in enumerate(rows, 1):
         try:
-            ans = common.ask(QUESTIONS, [row["transcript"]], timeout=args.timeout)
+            res = common.ask(QUESTIONS, [row["transcript"]], timeout=args.timeout)
+            ans = res["answers"]
             cats = {k: (ans[k]["verdict"], ans[k]["probability"]) for k in KEYS}
             yes_count = sum(1 for k in KEYS if cats[k][0] == "Yes")
             for k in KEYS:
                 if cats[k][0] == "Yes":
                     cat_yes[k] += 1
-            records.append({"id": row["id"], "gold": row["gold"], "yes_count": yes_count, "cats": cats})
+            calls.append({
+                "latency_s": res["latency_s"],
+                "input_tokens": res["input_tokens"],
+                "output_tokens": res["output_tokens"],
+            })
+            records.append({
+                "id": row["id"], "gold": row["gold"], "yes_count": yes_count, "cats": cats,
+                "latency_s": res["latency_s"],
+                "input_tokens": res["input_tokens"], "output_tokens": res["output_tokens"],
+            })
         except common.JevError as e:
             failures.append((row["id"], e.code))
         if i % 25 == 0 or i == len(rows):
@@ -145,6 +157,11 @@ def main(argv=None):
             4,
             f"- 참고: F1 최고 k = **{best[0]}** (F1 {best[1]['f1']:.4f}) — 최종 k는 결과 검토 후 확정\n",
         )
+
+    perf = common.summarize_perf(calls)
+    report.append("## Latency / 토큰 / 비용 (1회 요청 = 4카테고리)\n")
+    report.append(common.render_perf_md(perf, args.price_in, args.price_out))
+
     if failures:
         report.append("## 호출 실패 집계\n")
         for code, n in Counter(c for _, c in failures).items():
@@ -160,12 +177,15 @@ def main(argv=None):
         header = ["id", "gold_yes", "yes_count"]
         for k in KEYS:
             header += [f"{k}_verdict", f"{k}_prob"]
+        header += ["latency_s", "input_tokens", "output_tokens", "total_tokens"]
         w.writerow(header)
         for r in records:
             line = [r["id"], r["gold"], r["yes_count"]]
             for k in KEYS:
                 v, prob = r["cats"][k]
                 line += [v, f"{prob:.4f}"]
+            line += [f"{r['latency_s']:.3f}", r["input_tokens"], r["output_tokens"],
+                     r["input_tokens"] + r["output_tokens"]]
             w.writerow(line)
 
     print("\n" + text)

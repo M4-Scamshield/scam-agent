@@ -42,6 +42,8 @@ def main(argv=None):
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--delay", type=float, default=0.0, help="호출 간 지연(초)")
     p.add_argument("--timeout", type=int, default=30)
+    p.add_argument("--price-in", type=float, default=None, help="입력 토큰 단가($/1M), 비용 계산용")
+    p.add_argument("--price-out", type=float, default=None, help="출력 토큰 단가($/1M), 비용 계산용")
     p.add_argument("--out", default=str(HERE / "results"))
     args = p.parse_args(argv)
 
@@ -49,16 +51,22 @@ def main(argv=None):
     rows = common.load_dataset(args.data, limit=args.limit, shuffle=args.shuffle, seed=args.seed)
     print(f"[Plan1] 평가 대상 {len(rows)}건", flush=True)
 
-    pairs, preds, failures = [], [], []
+    pairs, preds, failures, calls = [], [], [], []
     for i, row in enumerate(rows, 1):
         try:
-            ans = common.ask(QUESTION, [row["transcript"]], timeout=args.timeout)["voice_phishing"]
+            res = common.ask(QUESTION, [row["transcript"]], timeout=args.timeout)
+            ans = res["answers"]["voice_phishing"]
             pred_yes = ans["verdict"] == "Yes"
+            lat, it, ot = res["latency_s"], res["input_tokens"], res["output_tokens"]
             pairs.append((row["gold"], pred_yes))
-            preds.append((row["id"], row["gold"], ans["verdict"], f"{ans['probability']:.4f}", ""))
+            calls.append({"latency_s": lat, "input_tokens": it, "output_tokens": ot})
+            preds.append(
+                (row["id"], row["gold"], ans["verdict"], f"{ans['probability']:.4f}",
+                 f"{lat:.3f}", it, ot, it + ot, "")
+            )
         except common.JevError as e:
             failures.append((row["id"], e.code))
-            preds.append((row["id"], row["gold"], "", "", e.code))
+            preds.append((row["id"], row["gold"], "", "", "", "", "", "", e.code))
         if i % 25 == 0 or i == len(rows):
             print(f"  진행 {i}/{len(rows)} (실패 {len(failures)})", flush=True)
         if args.delay:
@@ -66,6 +74,7 @@ def main(argv=None):
 
     cm = common.confusion(pairs)
     m = common.metrics(cm)
+    perf = common.summarize_perf(calls)
 
     report = (
         "# Plan 1 결과 — Jev 단독 단일 종합 판단\n\n"
@@ -75,6 +84,8 @@ def main(argv=None):
         + common.render_confusion_md(cm)
         + "\n## 지표\n\n"
         + common.render_metrics_md(m)
+        + "\n## Latency / 토큰 / 비용\n\n"
+        + common.render_perf_md(perf, args.price_in, args.price_out)
     )
     if failures:
         from collections import Counter
@@ -88,7 +99,8 @@ def main(argv=None):
     out_dir.mkdir(parents=True, exist_ok=True)
     with open(out_dir / "predictions.csv", "w", encoding="utf-8-sig", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["id", "gold_yes", "pred_verdict", "prob_yes", "error"])
+        w.writerow(["id", "gold_yes", "pred_verdict", "prob_yes",
+                    "latency_s", "input_tokens", "output_tokens", "total_tokens", "error"])
         w.writerows(preds)
 
     print("\n" + report)

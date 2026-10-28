@@ -79,9 +79,12 @@ def _config():
 
 
 def ask(questions: dict, transcript, *, timeout=30, max_retries=5, base_delay=2.0) -> dict:
-    """System One에 questions를 보내고 {key: {"verdict","probability"}}를 반환.
+    """System One에 questions를 보내고 결과·latency·토큰 사용량을 반환.
 
     questions: {key: {"type":"choice","instructions":str,"criteria":{"Yes","No"}}}
+    반환: {"answers": {key: {"verdict","probability"}}, "latency_s": float,
+          "input_tokens": int, "output_tokens": int}
+    latency_s는 성공한 요청의 왕복 시간(429 백오프 대기는 제외)이다.
     429는 지수 백오프로 재시도하고, 그 외 오류는 JevError로 올린다.
     """
     api_key, base_url, model = _config()
@@ -95,9 +98,11 @@ def ask(questions: dict, transcript, *, timeout=30, max_retries=5, base_delay=2.
     attempt = 0
     while True:
         request = Request(base_url + "/v1/systemone", data=body, headers=headers, method="POST")
+        start = time.perf_counter()
         try:
             with urlopen(request, timeout=timeout) as response:
                 raw = json.load(response)
+            latency_s = time.perf_counter() - start
             break
         except HTTPError as exc:
             if exc.code == 429 and attempt < max_retries:
@@ -115,12 +120,16 @@ def ask(questions: dict, transcript, *, timeout=30, max_retries=5, base_delay=2.
             raise JevError("BAD_JSON", "Jev 응답이 유효한 JSON이 아님") from exc
 
     try:
-        answers = raw["answers"]
-        out = {}
-        for key, ans in answers.items():
-            prob = float(ans["probabilities"]["Yes"])
-            out[key] = {"verdict": ans["choice"], "probability": prob}
-        return out
+        parsed = {}
+        for key, ans in raw["answers"].items():
+            parsed[key] = {"verdict": ans["choice"], "probability": float(ans["probabilities"]["Yes"])}
+        usage = raw.get("usage") or {}
+        return {
+            "answers": parsed,
+            "latency_s": latency_s,
+            "input_tokens": int(usage.get("input_tokens") or 0),
+            "output_tokens": int(usage.get("output_tokens") or 0),
+        }
     except (KeyError, TypeError, ValueError) as exc:
         raise JevError("BAD_OUTPUT", "Jev 응답 형식이 예상과 다름") from exc
 
@@ -169,6 +178,54 @@ def render_metrics_md(m):
         f"- Recall: **{m['recall']:.4f}**\n"
         f"- F1: {m['f1']:.4f}\n"
     )
+
+
+def summarize_perf(calls):
+    """calls: [{latency_s, input_tokens, output_tokens}] -> latency·토큰 요약."""
+    import math
+
+    n = len(calls)
+    if not n:
+        return None
+    lat = sorted(c["latency_s"] for c in calls)
+
+    def pct(p):
+        return lat[min(n - 1, max(0, int(math.ceil(p / 100 * n)) - 1))]
+
+    it = [c["input_tokens"] for c in calls]
+    ot = [c["output_tokens"] for c in calls]
+    tot = [i + o for i, o in zip(it, ot)]
+    return {
+        "n": n,
+        "latency_avg": sum(lat) / n, "latency_min": lat[0], "latency_max": lat[-1],
+        "latency_p50": pct(50), "latency_p95": pct(95),
+        "in_avg": sum(it) / n, "out_avg": sum(ot) / n, "tot_avg": sum(tot) / n,
+        "in_sum": sum(it), "out_sum": sum(ot), "tot_sum": sum(tot),
+    }
+
+
+def render_perf_md(perf, price_in=None, price_out=None):
+    """Latency·토큰·(가격 지정 시) 비용을 Markdown으로."""
+    if not perf:
+        return "- 성공한 호출이 없어 Latency/토큰을 측정하지 못했습니다.\n"
+    lines = [
+        f"- 측정 호출 수: **{perf['n']}**",
+        f"- Latency(초): 평균 **{perf['latency_avg']:.3f}**, 중앙값 {perf['latency_p50']:.3f}, "
+        f"p95 {perf['latency_p95']:.3f}, 범위 {perf['latency_min']:.3f}~{perf['latency_max']:.3f}",
+        f"- 입력 토큰: 평균 **{perf['in_avg']:.1f}**, 합계 {perf['in_sum']}",
+        f"- 출력 토큰: 평균 **{perf['out_avg']:.1f}**, 합계 {perf['out_sum']}",
+        f"- 총 토큰: 평균 **{perf['tot_avg']:.1f}**, 합계 {perf['tot_sum']}",
+    ]
+    if price_in is not None or price_out is not None:
+        pin, pout = price_in or 0.0, price_out or 0.0
+        cost = perf["in_sum"] / 1e6 * pin + perf["out_sum"] / 1e6 * pout
+        lines.append(
+            f"- 비용(단가 입력 ${pin}/1M · 출력 ${pout}/1M): 총 **${cost:.4f}**, "
+            f"1회 평균 ${cost / perf['n']:.6f}"
+        )
+    else:
+        lines.append("- 비용: 토큰 단가(`--price-in`/`--price-out`, $/1M tokens) 미지정 — 토큰 수만 기록")
+    return "\n".join(lines) + "\n"
 
 
 def write_text(out_dir, name, text):
