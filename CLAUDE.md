@@ -6,7 +6,7 @@
 
 ## 공유 스킬 사용
 
-`.claude/skills/`의 각 스킬은 `.agents/skills/`의 원본 폴더로 연결되어 있다.
+`.claude/skills/`의 각 스킬은 `.agents/skills/`의 원본 지침을 읽어 적용하는 Claude Code 래퍼 스킬이다. 스킬 내용과 스크립트의 단일 출처는 `.agents/skills/`다.
 
 | 작업 | Claude Code 명령 | 원본 지침 |
 |---|---|---|

@@ -24,9 +24,9 @@ change의 proposal·spec·design에서 관련 상위 설계와 기준 문서를 
 
 ## 도구별 진입점과 공유 원본
 
-공통 작업 안내는 AGENTS.md, 스킬 지침과 스크립트는 `.agents/skills/`에서 관리한다. [CLAUDE.md](../../CLAUDE.md)는 AGENTS를 import하고 Claude Code의 호출 방법만 안내한다. `.claude/skills/<skill-name>`은 해당 `.agents/skills/<skill-name>` 폴더를 가리키는 상대 심볼릭 링크다. 원본을 수정하면 두 도구가 같은 내용을 사용한다.
+공통 작업 안내는 AGENTS.md, 스킬 지침과 스크립트의 단일 출처는 `.agents/skills/`에서 관리한다. [CLAUDE.md](../../CLAUDE.md)는 AGENTS를 import하고 Claude Code의 호출 방법만 안내한다. `.claude/skills/<skill-name>/SKILL.md`은 해당 `.agents/skills/<skill-name>`의 원본 지침을 읽어 적용하는 Claude Code 래퍼 스킬이다(심볼릭 링크가 Windows 등에서 보존되지 않아 래퍼로 둔다). 원본을 수정하면 두 도구가 같은 내용을 사용한다.
 
-스킬을 추가·이동·삭제하면 Claude의 연결과 README의 호출 안내도 맞춘다. 심볼릭 링크가 보존되지 않는 환경에서는 CLAUDE에 연결한 원본 SKILL.md를 직접 읽어 적용한다. Codex용 `agents/openai.yaml`은 Codex UI 메타데이터이며 공통 절차는 SKILL.md에 둔다.
+스킬을 추가·이동·삭제하면 Claude 래퍼 스킬과 README의 호출 안내도 맞춘다. 래퍼 스킬은 frontmatter(`name`·`description`)만 원본과 맞추고 본문·스크립트는 복제하지 않으며, 호출 시 연결된 원본 SKILL.md를 읽어 적용한다. Codex용 `agents/openai.yaml`은 Codex UI 메타데이터이며 공통 절차는 SKILL.md에 둔다.
 
 ## 문서 상태
 

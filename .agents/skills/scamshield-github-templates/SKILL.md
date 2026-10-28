@@ -50,4 +50,4 @@ Lead individual issue/PR drafts with the concrete problem and resulting behavior
 
 Templates or drafts do not authorize publishing, pushing, or merging. Follow the user's requested actions and existing session authorization without adding duplicate approvals. When publication is requested, verify repository/base/head and matching existing items first. Use exact multiline text via a temporary file and gh --body-file. Report the returned URL; do not blindly repeat creation when the outcome is uncertain.
 
-Apply [documentation synchronization](../scamshield-docs-sync/SKILL.md) when guidance or work records change. Share the same skill through the repository's .claude/skills symlink.
+Apply [documentation synchronization](../scamshield-docs-sync/SKILL.md) when guidance or work records change. Share the same skill through the repository's .claude/skills wrapper skill.
