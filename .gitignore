@@ -9,3 +9,7 @@ __pycache__/
 
 # Local IDE settings
 .idea/
+
+# 실험 원본 데이터(개인정보·통화 원문)와 상세 결과는 커밋하지 않는다
+experiments/data/
+experiments/**/results/*_detail.*
