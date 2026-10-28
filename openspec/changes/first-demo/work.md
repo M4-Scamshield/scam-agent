@@ -1,5 +1,7 @@
 # 첫 데모 진행과 검증
 
+> 역사 기록: 이 문서는 2026-10-12 데모 범위의 요구·적용·검증을 보존한다. 현재 구조는 [2AS change](../jev-gemini-two-agent/proposal.md)와 [현행 계약](../../../docs/design/state-and-graph.md)을 따른다. 당시 계약은 [이전 스펙](https://github.com/M4-Scamshield/scam-agent/blob/9ae72bb/docs/design/state-and-graph.md)에서 확인한다.
+
 ## 현재 진행
 
 2026-10-12 현재: [이슈 #1](https://github.com/M4-Scamshield/scam-agent/issues/1)의 데모 구현·API 없는 검사·실제 Gemini 안내/Tool Calling·최종 WARN 검증을 완료했다. 사용자가 로컬 `.env`에 제공한 키로 실제 호출했다. first-demo의 이번 데모 인수조건을 충족했으며 후속 Agent 런타임 전환·실제 Jev/기관/STT·운영 기능은 제외한다. 아래 날짜별 설계 기록은 당시 관찰을 보존한다.
@@ -30,7 +32,7 @@ API 없는 테스트·CLI·설치 SDK 전송 대역 검사와 실제 Gemini 세 
 
 사용자 요청에 따라 현재 브랜치 `junyheon/1/cli-call-demo`에서 구현을 시작했다. 이슈 #1 본문을 GitHub REST API로 읽고 현재 로컬 스펙·tasks/work와 비교했다. 기존 미커밋 문서 10개를 유지하며 기존 change를 이어간다. 키 존재 여부만 확인했으며 GEMINI_API_KEY/GOOGLE_API_KEY는 현재 실행 환경에 없다.
 
-[State](../../../scamshield/state.py)·[Graph](../../../scamshield/graph.py)·[Fake Jev](../../../scamshield/jev.py)·[Mock 조회](../../../scamshield/tools.py)·[Agent 대역](../../../scamshield/roles.py)을 작성했다. 동일 InMemorySaver/thread_id와 sync checkpoint, utterance 소비·전체 목록 교체·turn 실행 값 초기화, 선택/실행 분리·결과 후 재판단·VERIFY 종료를 구현했다. 모델/Tool 자동 실행 loop·운영 복구는 추가하지 않았다.
+[State](../../../scamshield/state.py)·[Graph](../../../scamshield/graph.py)·[Fake Jev](../../../scamshield/jev.py)·[당시 Mock 조회](https://github.com/M4-Scamshield/scam-agent/blob/9ae72bb/scamshield/tools.py)·[당시 Agent 대역](https://github.com/M4-Scamshield/scam-agent/blob/9ae72bb/scamshield/roles.py)을 작성했다. 동일 InMemorySaver/thread_id와 sync checkpoint, utterance 소비·전체 목록 교체·turn 실행 값 초기화, 선택/실행 분리·결과 후 재판단·VERIFY 종료를 구현했다. 모델/Tool 자동 실행 loop·운영 복구는 추가하지 않았다.
 
 1단계 실행: `.venv/bin/python -m pytest -q` → **10 passed**. [Graph 검사](../../../tests/test_graph.py)로 세 발화의 Node 순서·risk/phase·실제 Mock 실행 1회·Jev 총 4회, 선택 요청의 실행 전 checkpoint, 대화/결과 중복 없는 누적·통화 분리, 최신 해당 Mock 결과/FOUND/실패 반영·재판단 VERIFY 종료·다음 turn 한도 초기화를 확인했다. 이 결과는 Agent 대역 검사이며 Gemini 호출 검증이 아니다. 다음은 Gemini 연결·CLI와 API 없는 연결 검증이다.
 
@@ -346,6 +348,6 @@ PR URL과 최신 인계 상태를 컨텍스트·tasks·OpenSpec 인덱스에 반
 
 ## 2026-10-13 — LangGraph 실행 구조도 추출
 
-사용자 요청으로 수동 도식이 아니라 컴파일된 `build_graph(DemoRoles())`에서 LangGraph의 `get_graph().draw_mermaid_png()`를 호출해 [실행 구조도](../../../docs/architecture/scamshield-langgraph.png)를 생성했다. 기존 조건부 Edge는 목적지 메타데이터가 없어 내장 렌더러에서 분기선이 누락됐으므로 [graph.py](../../../scamshield/graph.py)의 두 `add_conditional_edges`에 실제 `path_map`을 명시했다. 이는 시각화·정적 그래프 탐색용 메타데이터이며 라우팅 함수의 반환값과 실행 동작은 바꾸지 않는다.
+사용자 요청으로 수동 도식이 아니라 컴파일된 `build_graph(DemoRoles())`에서 LangGraph의 `get_graph().draw_mermaid_png()`를 호출해 [당시 실행 구조도](https://github.com/M4-Scamshield/scam-agent/blob/9ae72bb/docs/architecture/scamshield-langgraph.png)를 생성했다. 기존 조건부 Edge는 목적지 메타데이터가 없어 내장 렌더러에서 분기선이 누락됐으므로 [graph.py](../../../scamshield/graph.py)의 두 `add_conditional_edges`에 실제 `path_map`을 명시했다. 이는 시각화·정적 그래프 탐색용 메타데이터이며 라우팅 함수의 반환값과 실행 동작은 바꾸지 않는다.
 
 렌더링은 `uv.lock`의 LangChain 1.4.4·LangGraph 1.2.14·Pydantic 2.14.0을 맞춘 저장소 내부 임시 환경에서 수행했다. 생성된 PNG를 직접 열어 START → update_context → detect_with_jev, 네 조건 분기, verify_agent → tool_execution, tool_execution → detect_with_jev 재판단 루프가 표시되는지 확인했다. 같은 환경의 전체 API 없는 검사 결과는 **31 passed**이며 Python 3.14에서 Google GenAI 내부 deprecated 타입 경고 1건이 있었지만 실패는 없었다. 실제 Gemini API는 호출하지 않았다.

@@ -1,8 +1,10 @@
 # ScamShield
 
-한국어 통화의 보이스피싱 위험을 탐지하고, 통화 상태에 따라 사용자 대응과 외부 검증을 수행하는 졸업프로젝트다. 목적과 합의된 MVP 범위는 [프로젝트 컨텍스트](docs/project-context.md)에 있다.
+한국어 통화의 보이스피싱 여부를 판단하고 탐지 시 분석과 대응 안내를 제공하는 졸업프로젝트다. 목적과 합의된 MVP 범위는 [프로젝트 컨텍스트](docs/project-context.md)에 있다.
 
-현재 [CLI 통화 데모](scamshield/cli.py)를 구현했다. LangGraph·InMemorySaver가 통화별 대화와 조회 결과를 유지하고 Fake Jev·Mock 사건번호 조회로 검증 후 경고 흐름을 보여준다. Suspect 안내와 Verify Tool Calling은 같은 Gemini 모델을 역할별로 한 번씩 호출한다. API 없는 검사와 실제 Gemini 세 발화 데모를 완료했다. 상세 기준은 [MVP 전체 스펙](docs/design/state-and-graph.md), 실행 근거와 후속 사항은 [작업 기록](openspec/changes/first-demo/work.md)에 있다.
+현재 구조는 **Jev 탐지 + Gemini 분석·대응의 2AS**다. 완성된 STT 텍스트를 Jev에 보내 Yes/No와 P(Yes)를 State에 저장한다. Yes이면 Gemini가 대화와 Jev 결과를 받아 탐지 근거 요약과 대응 안내를 저장하고, No이면 LLM 호출 없이 종료한다. [State·Graph 계약](docs/design/state-and-graph.md)과 [실행 근거](openspec/changes/jev-gemini-two-agent/work.md)를 따른다.
+
+![컴파일된 2AS LangGraph](docs/architecture/scamshield-langgraph.png)
 
 ## 작업 시작
 
@@ -30,86 +32,62 @@ uv lock --check --offline
 
 .venv, IDE 개인 설정(.idea), 실행 캐시와 .env는 Git에서 제외한다.
 
-## CLI 데모 실행
+## CLI 실행
 
-API 없이 전체 흐름부터 확인하려면 다음 명령을 사용한다. `--offline`은 Agent 대역을 쓰며 Gemini 호출 검증에 해당하지 않는다.
+API 없이 연결 흐름을 확인한다. 두 역할 모두 명시적인 대역이며 실제 모델 검증이 아니다.
 
 ```sh
 uv run --locked python -m scamshield --offline --auto
 ```
 
-실제 Gemini 실행은 실행할 셸에 `GEMINI_API_KEY` 환경변수를 설정한 뒤 진행한다. 키를 코드·문서·채팅에 적지 않는다. `.env`를 자동으로 읽지 않으며 키가 없으면 오류로 종료한다. 기본 모델은 `gemini-3.8-flash`이고 `GEMINI_MODEL` 환경변수로 변경할 수 있다. 계정의 모델 접근·한도는 실제 호출로 확인해야 한다.
-
-로컬 파일로 설정하려면 [.env.example](.env.example)을 `.env`로 복사하고 키를 채운 뒤 uv에 파일을 명시한다. `.env`는 Git에서 제외되어 있다. 기본 캐시 경로의 권한 오류가 나면 아래처럼 임시 캐시 경로를 사용한다.
-
-```sh
-uv --cache-dir /private/tmp/scamshield-uv-cache run --locked --env-file .env python -m scamshield --auto
-```
-
-Gemini 호출 실패 시 HTTP 코드·상태와 API 오류 요약을 출력한다. 키와 요청 전체는 출력하지 않는다. 출력은 실패 원인을 확인하기 위한 것이며 실제 인증 성공을 뜻하지 않는다.
-
-```sh
-uv run --locked python -m scamshield
-```
-
-각 입력에서 Enter를 누르면 준비된 발화를 사용한다. 직접 입력하려면 `--auto`를 빼고 실행한다. `.env` 파일을 사용하는 직접 입력 명령은 다음과 같다.
-
-```sh
-uv --cache-dir /private/tmp/scamshield-uv-cache run --locked --env-file .env python -m scamshield
-```
-
-CLI는 세 번 입력한 뒤 종료한다. 이 제한은 데모 CLI의 시나리오에만 있으며 CallDemo/Graph의 통화별 입력 횟수 제한은 아니다. 세 발화 자동 실행은 다음 명령을 사용한다.
-
-```sh
-uv run --locked python -m scamshield --auto
-```
-
-| 준비된 발화 | 기대 실행 |
-|---|---|
-| 안녕하세요. 서울중앙지검입니다. | OBSERVE 0.1 |
-| 고객님 계좌가 범죄에 연루되었습니다. | SUSPECT 0.5 → 확인 행동 안내 |
-| 사건번호는 2026-12345입니다. | VERIFY 0.7 → Tool 선택 → 독립 Mock 실행 → 재판단 WARN 0.9 → 고정 경고 |
-
-## Jev API 키 설정
-
-2026-10-23 [TypeSafe 공식 Quick start](https://docs.typesafe.ai/introduction/quickstart)와 [SDK 환경변수](https://docs.typesafe.ai/sdk/python/api/constants)를 확인했다. [TypeSafe 콘솔의 API Keys](https://console.typesafe.ai/keys)에서 로그인 후 키를 발급하고, Git에서 제외된 로컬 `.env`의 `TYPESAFE_API_KEY=` 오른쪽에 키만 입력한다. `Bearer ` 접두사는 넣지 않는다. 기존 `.env`의 Gemini 설정은 유지한다.
+실제 모델을 사용하려면 [.env.example](.env.example)의 이름에 맞춰 로컬 `.env`에 키를 등록한다. 기존 Gemini 설정은 유지하고 [TypeSafe 콘솔](https://console.typesafe.ai/keys)에서 발급한 키를 `TYPESAFE_API_KEY=` 뒤에 입력한다. 키 자체만 넣으며 `Bearer `는 붙이지 않는다. `.env`는 Git에서 제외되고 자동으로 읽지 않는다.
 
 ```dotenv
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-3.8-flash
 TYPESAFE_API_KEY=
 TYPESAFE_BASE_URL=https://api.typesafe.ai
 TYPESAFE_DEFAULT_MODEL=jev-latest
 ```
 
-위 이름은 공식 SDK가 읽는 환경변수다. 실제 HTTP 호출은 `POST https://api.typesafe.ai/v1/systemone`에 `Authorization: Bearer <키>`를 전달한다([공식 API 문서](https://docs.typesafe.ai/api/system-one)). `.env`를 실행 환경에 전달하려면 기존과 같이 `uv run --locked --env-file .env ...`를 사용한다. 키는 채팅·소스·문서에 적지 않는다.
+Jev 설정 이름과 기본값은 [TypeSafe 공식 기준](https://docs.typesafe.ai/sdk/python/api/constants)에 맞췄다. 실제 연결은 표준 HTTP를 사용한다. Gemini는 Yes일 때만 설정·호출되므로 No 경로에는 Gemini 키가 필요하지 않다. 키·인증 헤더·API 오류 본문을 출력하거나 커밋하지 않는다.
 
-이번 설정은 키 등록 준비이며 SDK 설치·실제 Jev 호출·인증 검증은 포함하지 않는다. 현재 CLI는 계속 Fake Jev를 사용하므로 환경변수만 채워도 실제 Jev로 전환되지는 않는다.
+```sh
+uv run --locked --env-file .env python -m scamshield --auto
+uv run --locked --env-file .env python -m scamshield --text "안전계좌로 지금 송금하세요."
+```
 
-## 현재 데모의 역할과 한계
+`--auto` 없이 실행하면 세 번 입력받으며 Enter는 준비된 문장을 사용한다. `--text`는 STT 결과에 해당하는 텍스트 한 건을 입력한다. 실제 STT 수신은 아직 없다. Graph 입력 인터페이스는 다음과 같다.
 
-| 부분 | 현재 구현 |
-|---|---|
-| 상대방 발화 | [DEMO_UTTERANCES](scamshield/state.py)의 하드코딩된 세 문장 또는 직접 입력. 상대방 AI·실제 통화·STT는 없음 |
-| 위험 판단 | [Fake Jev](scamshield/jev.py)의 데모 문구/조회 결과 기반 규칙 |
-| 확인 행동 안내 | 실제 Gemini가 대화와 State를 읽어 생성 |
-| 조회 요청 선택 | 실제 Gemini Tool Calling으로 대화의 사건번호와 case_lookup을 선택 |
-| 조회 실행 | [Mock case_lookup](scamshield/tools.py). `2026-00001`만 FOUND, 나머지는 NOT_FOUND |
-| 최종 경고 | Fake Jev가 WARN을 판단하면 고정 문구 출력 |
+```python
+from scamshield.gemini import GeminiAnalyst
+from scamshield.graph import CallPipeline
+from scamshield.jev import JevClient
 
-현재 Fake Jev의 VERIFY 진입은 정해진 의심 맥락과 `2026-12345`에 맞춰져 있다. `2026-00001`을 입력하는 것만으로는 조회 단계에 진입하지 않는다. 사건번호 일부를 선택한 요청은 실행 전에 거부한다. 자유로운 통화 내용에 대한 실제 탐지 성능을 확인하는 데모는 아니다.
+pipeline = CallPipeline(JevClient.from_env(), GeminiAnalyst())
+result = pipeline.run_turn("call-1", "완성된 STT 텍스트")
+```
 
-실제 통화 연결에서는 상대방과 사용자 양쪽 발화를 STT로 받고 화자를 구분해 같은 통화에 누적해야 한다. 현재 transcript는 화자 정보 없는 문자열 목록이며 STT 입력 계약과 Agent 실행 런타임 전환은 [후속 범위](docs/design/state-and-graph.md#남은-준비와-후속-범위)다.
+정상 결과는 `{callId, jev_decision: {verdict, probability}, analysis}`다. probability는 항상 P(Yes)이며 analysis는 Yes일 때 `{reason, response}`, No일 때 None이다. 같은 인스턴스·callId를 재사용하면 전체 대화가 누적된다. 실제 모델의 출력은 고정 시나리오가 아니다.
 
-Node 순서·phase/risk·Tool 요청/결과·안내와 대화/조회 누적 개수를 출력한다. 새 실행마다 고유 callId를 생성하고 같은 시나리오에서는 같은 thread를 사용한다. InMemorySaver의 상태는 프로세스 생존 동안 유지하며 프로세스를 종료하면 사라진다. 실행 오류가 나면 시나리오를 중단하고 명령을 다시 실행해 새 통화로 시작한다. 자동 재시도·Agent 실행 런타임·실제 탐지/기관 조회·STT/프론트·운영 복구/동시 처리는 구현 범위에 포함하지 않는다.
+캐시 권한 문제가 있으면 `uv --cache-dir .venv/uv-cache run ...`으로 실행한다. Windows에서 uv가 PATH에 없고 로컬 가상환경에 설치되어 있다면 `.venv\Scripts\python.exe -m uv`를 사용할 수 있다. 한글 출력은 `python -X utf8 -m scamshield ...`로 실행할 수 있다.
 
-## 코드 검증
+## 현재 범위
+
+phase·Suspect/Verify·Mock case_lookup·조회 후 재판단을 제거했다. 두 역할의 Protocol, 실제 Jev HTTP·Gemini JSON schema 연결, Yes/No 조건 분기와 통화별 InMemorySaver를 구현했다. State는 최신 판단/분석만 저장하며 이전 분석이 다음 No에 남지 않는다. 실패는 오류로 반환하고 자동 재시도·offline 대체를 하지 않는다.
+
+전체 대화는 프로세스 내에서만 유지된다. CLI의 세 입력 제한은 데모 설정이며 Graph의 turn 한도가 아니다. 실제 STT·화자 정보·partial 처리·Kafka·조회 도구·웹 서버·UI·영구 저장·동시 입력/복구는 후속 범위다.
+
+## 코드 검증과 그래프 출력
 
 ```sh
 uv run --locked pytest -q
+uv run --locked python -m scamshield.export_graph
 ```
 
-모든 테스트는 API 없이 실행한다. 핵심 Graph 시나리오·통화별 상태 유지/분리·Tool 선택/실행 분리·결과 반영·turn당 Tool 최대 1회와 결과 후 재판단 1회를 확인한다. Gemini 응답 대역과 실제 SDK의 전송 대역 검사는 실제 모델 호출 검증과 구분한다.
+테스트는 API 없이 Yes/No 경로·이전 안내 초기화·통화 분리·HTTP/SDK 요청 변환·입출력 오류·CLI를 확인한다. 실제 연결과 테스트 결과는 [work](openspec/changes/jev-gemini-two-agent/work.md)에 구분한다. 탐지 성능이나 확률 보정을 검증한 것은 아니다.
 
-최신 코드 검증은 API 없는 31개 검사다. 실제 Gemini 성공 기록은 사건번호 부분 문자열 수정 이전 실행이며, 해당 수정 후에는 API 없는 회귀 검사와 CLI를 확인했다. 실행 시점별 근거는 [work](openspec/changes/first-demo/work.md)에 구분해 남겼다.
+그래프 출력은 실제 컴파일된 LangGraph에서 [Mermaid 원본](docs/architecture/scamshield-langgraph.mmd)과 PNG를 생성한다. PNG 렌더링에는 Mermaid.ink 네트워크 접근이 필요하며 그래프 구조만 전송하고 모델은 호출하지 않는다.
 
 ## 문서 검사
 

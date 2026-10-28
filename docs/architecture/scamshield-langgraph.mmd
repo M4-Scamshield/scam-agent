@@ -1,0 +1,19 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	update_context(update_context)
+	detect_with_jev(detect_with_jev)
+	respond_with_llm(respond_with_llm)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> update_context;
+	detect_with_jev -. &nbsp;No&nbsp; .-> __end__;
+	detect_with_jev -. &nbsp;Yes&nbsp; .-> respond_with_llm;
+	update_context --> detect_with_jev;
+	respond_with_llm --> __end__;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc

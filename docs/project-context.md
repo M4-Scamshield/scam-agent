@@ -1,5 +1,15 @@
 # 사용자 제공 프로젝트 컨텍스트
 
+## 현재 확정 방향 — 2AS
+
+2026-10-23 사용자가 기존 아키텍처를 변경했다. Jev에 STT 결과를 보내 보이스피싱 Yes/No와 확률을 받아 State에 저장한다. Yes이면 전체 대화와 그 결과를 Gemini에 전달해 근거 요약과 대응 안내를 남기고, No이면 아무 대응 없이 종료한다. 기존 Suspect/Verify·phase·Mock 조회 구조를 이번 구현에서 대체한다. 실제 STT 제품을 연결하기 전 텍스트 입력 인터페이스부터 만든다. 불필요한 코드 제거와 최종 그래프 출력도 요청했다.
+
+현재 계약은 [2AS State·Graph](design/state-and-graph.md), 구현 상태는 [아키텍처](architecture/overview.md), 검증과 다음 행동은 [2AS work](../openspec/changes/jev-gemini-two-agent/work.md)를 따른다.
+
+## 이전 구조의 사용자 맥락
+
+아래는 2AS 전환 이전의 사용자 결정과 미정 사항을 보존한 역사 자료다. 현재 구조와 충돌하는 phase·조회·역할 정책은 위의 2AS 방향으로 대체됐으며, 후속 초안은 자동 채택되지 않는다.
+
 출처: 2026-10-10 사용자가 전달한 「ScamShield — 실시간 보이스피싱 탐지 및 Stateful Multi-Agent 대응 시스템」과 후속 State·LangGraph 설계 요청. 아래 내용은 전달된 방향을 보존한 것이며, 구현 완료 보고가 아니다. 상세 계약의 기준은 [ScamShield MVP 전체 스펙](design/state-and-graph.md)에 있다.
 
 ## 목적과 첫 완료 조건

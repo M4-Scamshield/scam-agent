@@ -1,5 +1,7 @@
 # 데모 구현 방향
 
+> 역사 기록: 이 문서는 2026-10-12 데모 범위의 요구·적용·검증을 보존한다. 현재 구조는 [2AS change](../jev-gemini-two-agent/proposal.md)와 [현행 계약](../../../docs/design/state-and-graph.md)을 따른다. 당시 계약은 [이전 스펙](https://github.com/M4-Scamshield/scam-agent/blob/9ae72bb/docs/design/state-and-graph.md)에서 확인한다.
+
 [전체 스펙](../../../docs/design/state-and-graph.md)의 공통 State/Node 구조를 그대로 구현했다. 이번 리뷰 반영은 데모 실행을 막는 모호함을 줄이고 복구/동시 입력/timeout 검증을 첫 범위에서 제외하는 설계 변경이다. 코드별 책임은 [현재 데모 구성](../../../docs/architecture/overview.md)에 있다.
 
 Fake Jev는 호출 횟수 대신 누적 transcript·이전 phase·해당 사건번호의 최신 결과를 읽는 고정 규칙으로 구현한다. 데모 risk 0~1·VERIFY 기준 0.6과 phase별 0.1/0.5/0.7/0.9를 사용한다. Mock NOT_FOUND와 정해진 기관 사칭 대화를 함께 반영하는 재판단으로 WARN을 보여준다.

@@ -1,5 +1,7 @@
 # 첫 데모 작업 목록
 
+> 역사 기록: 이 문서는 2026-10-12 데모 범위의 요구·적용·검증을 보존한다. 현재 구조는 [2AS change](../jev-gemini-two-agent/proposal.md)와 [현행 계약](../../../docs/design/state-and-graph.md)을 따른다. 당시 계약은 [이전 스펙](https://github.com/M4-Scamshield/scam-agent/blob/9ae72bb/docs/design/state-and-graph.md)에서 확인한다.
+
 상태: 완료 — 이번 데모 구현·API 없는 검사·실제 Gemini 안내/Tool Calling·최종 WARN을 확인했다. 아래 과거 설계 체크는 당시 문서 반영의 근거이며 현재 구현 완료와 구분한다. 실행 근거는 [work](work.md)에 있다. 미체크 항목은 후속 범위다.
 
 ## 설계·준비의 진행 이력
