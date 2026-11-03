@@ -8,7 +8,7 @@ from scamshield.state import PipelineError
 
 YES = {"verdict": "Yes", "probability": 0.92}
 NO = {"verdict": "No", "probability": 0.08}
-ANALYSIS = {"reason": "기관 사칭과 안전계좌 송금 요구가 있습니다.", "response": "송금을 중단하고 공식 연락처로 확인하세요."}
+ANALYSIS = {"is_phishing": True, "reason": "기관 사칭과 안전계좌 송금 요구가 있습니다.", "response": "송금을 중단하고 공식 연락처로 확인하세요."}
 
 
 def pipeline_for(decision=YES):
@@ -39,6 +39,17 @@ def test_yes_passes_decision_and_whole_transcript_to_llm_and_saves_analysis():
         "utterance": None, "transcript": ["안전계좌로 송금하세요."], "jev_decision": YES, "analysis": None,
     })
     assert pipeline.state("fraud")["analysis"] == ANALYSIS
+
+
+def test_gemini_false_rejudgment_saves_no_response_and_keeps_jev_yes():
+    pipeline, _, analyst = pipeline_for()
+    analyst.analyze.return_value = {"is_phishing": False, "reason": "기관명 언급뿐 구체적 피싱 정황은 없습니다."}
+    result = pipeline.run_turn("maybe", "서울중앙지검에서 안내드립니다.")
+    # Gemini 재판단은 오탐: 대응(response)은 없지만 Jev의 Yes verdict는 그대로 보존된다.
+    assert result["jev_decision"] == YES
+    assert result["analysis"]["is_phishing"] is False
+    assert result["analysis"]["response"] is None
+    assert pipeline.state("maybe")["analysis"]["response"] is None
 
 
 def test_yes_then_no_clears_analysis_and_isolates_calls():
@@ -93,7 +104,11 @@ def test_provider_failure_is_error_not_no_and_cannot_resume_failed_call():
     detector.detect.assert_called_once()
 
 
-@pytest.mark.parametrize("analysis", [None, {}, {"reason": " ", "response": "안내"}, {"reason": "근거", "response": ""}])
+@pytest.mark.parametrize("analysis", [
+    None, {}, {"reason": " ", "response": "안내"}, {"reason": "근거", "response": ""},
+    {"is_phishing": True, "reason": "근거", "response": ""},  # 피싱인데 대응 없음
+    {"is_phishing": False, "reason": "근거", "response": "대응"},  # 오탐인데 대응 있음
+])
 def test_bad_llm_analysis_is_not_saved(analysis):
     pipeline, _, analyst = pipeline_for()
     analyst.analyze.return_value = analysis

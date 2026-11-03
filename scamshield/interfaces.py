@@ -31,6 +31,7 @@ class OfflineAnalyst:
 
     def analyze(self, state: ScamState) -> dict:
         return {
+            "is_phishing": True,
             "reason": "[OFFLINE 대역] 준비된 의심 문구 규칙으로 Yes 경로를 확인했습니다.",
             "response": "[OFFLINE 대역] 송금과 개인정보 제공을 보류하고 기관의 공식 연락처로 확인하세요.",
         }

@@ -68,7 +68,7 @@ pipeline = CallPipeline(JevClient.from_env(), GeminiAnalyst())
 result = pipeline.run_turn("call-1", "완성된 STT 텍스트")
 ```
 
-정상 결과는 `{callId, jev_decision: {verdict, probability}, analysis}`다. probability는 항상 P(Yes)이며 analysis는 Yes일 때 `{reason, response}`, No일 때 None이다. 같은 인스턴스·callId를 재사용하면 전체 대화가 누적된다. 실제 모델의 출력은 고정 시나리오가 아니다.
+정상 결과는 `{callId, jev_decision: {verdict, probability}, analysis}`다. probability는 항상 P(Yes)이며 analysis는 Yes일 때 `{is_phishing, reason, response}`, No일 때 None이다. is_phishing은 Gemini가 Jev의 Yes를 재판단한 결과이고, response는 피싱(True)일 때만 대응 안내를 담고 오탐(False)이면 None이다. 같은 인스턴스·callId를 재사용하면 전체 대화가 누적된다. 실제 모델의 출력은 고정 시나리오가 아니다.
 
 캐시 권한 문제가 있으면 `uv --cache-dir .venv/uv-cache run ...`으로 실행한다. Windows에서 uv가 PATH에 없고 로컬 가상환경에 설치되어 있다면 `.venv\Scripts\python.exe -m uv`를 사용할 수 있다. 한글 출력은 `python -X utf8 -m scamshield ...`로 실행할 수 있다.
 

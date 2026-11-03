@@ -77,8 +77,13 @@ class NodeTracer:
         analysis = self.state.get("analysis")
         print("[LLM 응답]" + ("  ← 이 노드에서 갱신됨" if changed_llm else ""))
         if analysis:
+            verdict = "피싱(True)" if analysis["is_phishing"] else "오탐/피싱 아님(False)"
+            print(f"    재판단(is_phishing): {verdict}")
             print(f"    분석(reason)  : {analysis['reason']}")
-            print(f"    대응(response): {analysis['response']}")
+            if analysis["response"]:
+                print(f"    대응(response): {analysis['response']}")
+            else:
+                print("    대응(response): None (오탐 · 대응 없이 다음 발화 대기)")
         else:
             print("    (없음 · No 경로이거나 아직 분석 전)")
 

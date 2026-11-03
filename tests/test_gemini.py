@@ -10,7 +10,7 @@ from scamshield.graph import CallPipeline
 from scamshield.state import LLMAnalysis, PipelineError
 
 STATE = {"transcript": ["안전계좌로 송금하세요."], "jev_decision": {"verdict": "Yes", "probability": 0.9}, "analysis": None}
-ANALYSIS = {"reason": "안전계좌로 송금을 요구합니다.", "response": "송금하지 말고 공식 연락처로 확인하세요."}
+ANALYSIS = {"is_phishing": True, "reason": "안전계좌로 송금을 요구합니다.", "response": "송금하지 말고 공식 연락처로 확인하세요."}
 
 
 def test_llm_receives_transcript_and_jev_result_in_single_structured_call():
@@ -42,7 +42,11 @@ def test_yes_without_gemini_key_fails_explicitly(monkeypatch):
     assert error.value.code == "MISSING_API_KEY"
 
 
-@pytest.mark.parametrize("raw", [None, {"reason": " ", "response": "안내"}, {"reason": "근거"}])
+@pytest.mark.parametrize("raw", [
+    None, {"reason": " ", "response": "안내"}, {"reason": "근거"},
+    {"is_phishing": True, "reason": "근거"},  # 피싱인데 대응 없음
+    {"is_phishing": False, "reason": "근거", "response": "대응"},  # 오탐인데 대응 있음
+])
 def test_invalid_structured_response_is_rejected(raw):
     model = Mock()
     model.with_structured_output.return_value.invoke.return_value = raw
