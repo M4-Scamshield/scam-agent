@@ -12,7 +12,8 @@ Graph의 각 노드가 실행될 때마다 현재 노드 단계·Jev 응답·LLM
   # 실제 Jev·Gemini 호출(.env의 키 필요)
   uv run --locked --env-file .env python -X utf8 -m tests.test_pipeline
 
-입력 중 빈 줄·exit·quit를 넣거나 Ctrl+C/Ctrl+D를 누르면 종료한다.
+그래프가 끝나면 다시 발화를 입력받으며, '종료'(또는 exit/quit)를 넣거나
+Ctrl+C/Ctrl+D를 누르면 종료한다. 빈 줄은 종료가 아니라 재입력이다.
 """
 
 import argparse
@@ -117,18 +118,22 @@ def run(argv: list[str] | None = None) -> int:
 
     print(f"모드: {mode}")
     print(f"callId: {call_id}")
-    print("보이스피싱 데이터(STT 텍스트)를 한 줄씩 입력하세요. 빈 줄·exit·quit로 종료합니다.")
+    print("보이스피싱 데이터(STT 텍스트)를 한 줄씩 입력하세요. '종료'를 입력하면 끝납니다.")
 
     turn = 0
     while True:
         try:
-            utterance = input("\n발화 입력 > ").strip()
+            utterance = input("\n발화 입력 ('종료' 입력 시 종료) > ").strip()
         except (EOFError, KeyboardInterrupt):
             print("\n입력이 중단되었습니다.")
             break
-        if not utterance or utterance.lower() in {"exit", "quit"}:
+        if utterance in {"종료", "exit", "quit"}:
             print("종료합니다.")
             break
+        if not utterance:
+            # 빈 줄은 종료가 아니라 재입력. 그래프가 끝나면 계속 다음 발화를 받는다.
+            print("빈 입력입니다. 발화를 입력하거나 '종료'로 끝내세요.")
+            continue
 
         turn += 1
         print(f"\n╔═ 턴 {turn} · 입력: {utterance}")
