@@ -14,8 +14,13 @@ def print_node(name: str, update: dict) -> None:
         decision = update["jev_decision"]
         print(f"    verdict={decision['verdict']} probability(Yes)={decision['probability']}")
     if update.get("analysis"):
-        print("    분석: " + update["analysis"]["reason"])
-        print("    대응: " + update["analysis"]["response"])
+        analysis = update["analysis"]
+        print(f"    재판단: {'피싱' if analysis['is_phishing'] else '오탐(피싱 아님)'}")
+        print("    분석: " + analysis["reason"])
+        if analysis["response"]:
+            print("    대응: " + analysis["response"])
+        else:
+            print("    대응: (오탐으로 판단 · 대응 없이 다음 발화 대기)")
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -12,12 +12,12 @@
 flowchart TD
     S([STT 텍스트 입력]) --> U[update_context: 대화 누적·이번 결과 초기화]
     U --> J[detect_with_jev: Jev Yes/No와 확률 저장]
-    J -->|Yes| G[respond_with_llm: Gemini 분석·대응 저장]
+    J -->|Yes| G[respond_with_llm: Gemini 재판단·대응 저장]
     J -->|No| E([종료])
     G --> E
 ```
 
-두 판단 역할은 Jev 탐지와 Gemini 분석·대응이다. update_context는 입력 처리 Node다. 이전 verify_agent·tool_execution·warn Node와 조회 후 Jev 재판단은 없다. 한 turn에 Jev는 1회, Gemini는 Yes이면 1회·No이면 0회다. 자동 재시도와 모델 실패 시 offline 전환은 없다.
+두 판단 역할은 Jev 탐지와 Gemini 재판단·대응이다. update_context는 입력 처리 Node다. 이전 verify_agent·tool_execution·warn Node와 조회 후 Jev 재판단은 없다. 한 turn에 Jev는 1회, Gemini는 Yes이면 1회·No이면 0회다. Gemini가 오탐(is_phishing=False)으로 판단하면 대응 없이 turn을 끝내고, 그래프 안에서 되돌아가는 대신 다음 STT 발화가 새 turn으로 들어와 누적된 transcript로 다시 판단한다. 자동 재시도와 모델 실패 시 offline 전환은 없다.
 
 ## 인터페이스와 State
 
@@ -28,9 +28,9 @@ flowchart TD
 | utterance | 이번 발화. 대화에 추가한 뒤 None | 입력 경계·update_context |
 | transcript: list[str] | 통화 전체 텍스트. 기존 목록 + 새 발화로 전체 교체 | update_context |
 | jev_decision: dict 또는 None | 이번 판정. 새 turn에는 None | 초기화·detect_with_jev |
-| analysis: dict 또는 None | 이번 분석과 안내. 새 turn에는 None | 초기화·respond_with_llm |
+| analysis: dict 또는 None | 이번 재판단(is_phishing)·근거·대응. 새 turn에는 None | 초기화·respond_with_llm |
 
-`jev_decision = {verdict: "Yes" 또는 "No", probability: 숫자}`다. probability는 항상 **P(보이스피싱/Yes)**이며 0~1의 유한 숫자다. No의 확률이나 confidence와 혼용하지 않는다. `analysis = {reason: 문자열, response: 문자열}`이며 둘 다 공백만 있는 값을 거부한다. reason은 대화에서 확인되는 근거와 한계의 요약이고 response는 사용자 대응 안내다. Gemini가 Jev 내부 추론을 직접 알거나 기관 조회를 한 것처럼 설명하지 않는다.
+`jev_decision = {verdict: "Yes" 또는 "No", probability: 숫자}`다. probability는 항상 **P(보이스피싱/Yes)**이며 0~1의 유한 숫자다. No의 확률이나 confidence와 혼용하지 않는다. `analysis = {is_phishing: 불리언, reason: 문자열, response: 문자열 또는 None}`이다. is_phishing은 Gemini가 Jev의 Yes를 전체 대화로 재판단한 결론이다. reason은 대화에서 확인되는 근거와 한계의 요약이며 공백만 있는 값을 거부한다. response는 is_phishing이 True일 때만 사용자 대응 안내를 담고, False(오탐)이면 None이다. True인데 response가 비었거나 False인데 response가 있으면 오류다. Gemini가 Jev 내부 추론을 직접 알거나 기관 조회를 한 것처럼 설명하지 않는다.
 
 기존 `phase`, `risk`, `verification_results`, `tool_request`, `verification_attempted`는 제거한다. 새 State는 기존 checkpoint와 호환되지 않는다. InMemorySaver를 새 프로세스에서 시작하고 같은 인스턴스·callId로 순차 호출할 때만 누적한다. 새 callId는 상태가 분리된다. 상태/의존성 입력/관찰 callback에는 복사본을 사용해 외부 변경을 차단한다. 영구 저장·프로세스 공유·동시 입력·cleanup은 구현하지 않는다.
 
@@ -47,9 +47,9 @@ flowchart TD
 
 ## Gemini 분석·대응
 
-[GeminiAnalyst](../../scamshield/gemini.py)는 전체 transcript와 저장된 jev_decision을 함께 전달한다. [LangChain 공식 structured output](https://docs.langchain.com/oss/python/integrations/chat/google_generative_ai#structured-output)의 `method="json_schema"`로 `reason/response`를 받는다. Tool을 bind하거나 실행하지 않는다.
+[GeminiAnalyst](../../scamshield/gemini.py)는 전체 transcript와 저장된 jev_decision을 함께 전달한다. 프롬프트는 Jev의 Yes가 오탐일 수 있다고 보고 전체 통화를 다시 읽어 재판단하게 한다. 결론은 `is_phishing`(True/False)에 담고 근거는 `reason`에 남긴다. 여전히 피싱(True)이면 `response`에 대응 안내를 적고, 오탐(False)이면 `response`를 비운다(None). [LangChain 공식 structured output](https://docs.langchain.com/oss/python/integrations/chat/google_generative_ai#structured-output)의 `method="json_schema"`로 `is_phishing/reason/response`를 받는다. Tool을 bind하거나 실행하지 않는다.
 
-`GEMINI_API_KEY`와 선택적인 `GEMINI_MODEL`을 사용한다. 기존 기본값 gemini-3.8-flash·Developer API·max_retries=0·timeout=120초·thinking_level=low를 유지한다. 모델 설정과 키 확인은 첫 Yes 때만 하므로 No 경로는 Gemini 키가 없어도 동작한다. Gemini가 Jev 판정을 다시 덮어쓰지 않는다.
+`GEMINI_API_KEY`와 선택적인 `GEMINI_MODEL`을 사용한다. 기존 기본값 gemini-3.8-flash·Developer API·max_retries=0·timeout=120초·thinking_level=low를 유지한다. 모델 설정과 키 확인은 첫 Yes 때만 하므로 No 경로는 Gemini 키가 없어도 동작한다. Gemini는 통화를 재판단해 `reason/response`에 반영하지만, State의 jev_decision(Yes/No·확률)은 덮어쓰지 않고 Jev를 다시 호출하지도 않는다.
 
 ## 종료와 오류
 
