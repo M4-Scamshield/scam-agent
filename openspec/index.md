@@ -20,6 +20,18 @@
 
 공통 설계의 기준은 `docs/design/`, 현재 구현 설명은 `docs/architecture/`에 둔다. change 문서는 해당 변경의 요구와 적용 방법·진행을 담고 상위 문서로 연결한다. 변경이 반영되면 관련 기준 문서를 갱신하고, 본문의 관련 문서 항목에서 해당 change와 검증 기록으로 연결한다.
 
+## 면접 사칭 통화 합성 데이터 — 완료·새 대본 재평가 완료
+
+2026-11-07 사용자 요청에 따라 지원자와 피싱범의 1대1 면접 사기 통화 100건을 작성했고, 후속 요청으로 비교용 정상 면접 100건과 실제 Plan1 평가를 추가했다. 각각 50~100문장·7,451문장이며 20개 주제·100개 직무와 경력 사례를 사용한다. 200건 실제 Jev 평가에서 TP 100·TN 100·FP 0·FN 0·실패 0을 확인했다. [사기 안내](../datasets/interview_phishing/README.md), [정상·혼합 평가 안내](../datasets/interview_normal/README.md), [분석과 결과](../docs/analysis/interview-phishing-dataset.md)에 형식·합성 문답 공유·평가 한계가 있다. 발표 PPTX·실제 음성·다자 통화·실측 일반화 성능은 미확인이다.
+
+2026-11-14 후속 요청으로 [새 면접 대본 100건](../datasets/interview_holdout/README.md)(사기·정상 각 50건·8~12발화)을 기존 문답 복사 없이 작성하고 같은 Plan1으로 평가했다. TP 50·TN 48·FP 2·FN 0·실패 0, 정확도 98%다. 실행 전 해시를 동결하고 결과 확인 뒤 대본·정답·프롬프트를 조정하지 않았다. [새 평가 분석](../docs/analysis/interview-holdout-eval.md)에 기존 100% 감사·오탐 사례·짧은 대본과 단일 작성자라는 한계가 있다.
+
+- [proposal](changes/interview-phishing-dataset/proposal.md): 요청·범위·완료 조건.
+- [spec](changes/interview-phishing-dataset/spec.md): 수량·문장·화자·평가 입력 요구.
+- [design](changes/interview-phishing-dataset/design.md): 사례 조합·문답 순서·정답 분리.
+- [tasks](changes/interview-phishing-dataset/tasks.md): 실제 완료 범위.
+- [work](changes/interview-phishing-dataset/work.md): 생성·검사·한계와 다음 행동.
+
 ## Jev·Gemini 2AS — 인터페이스 범위 완료
 
 2026-10-23 사용자 요청으로 기존 phase/조회 구조를 Jev Yes/No·확률 → Yes일 때 Gemini 분석·대응 구조로 전환했다. 2026-10-27 API 없는 테스트 50개·실제 Jev Yes/No 연결·문서 검사·컴파일된 그래프 출력을 확인했다. Gemini 실제 생성은 504/503으로 성공 미확인이며 후속 확인 사항이다. 실제 STT·조회 도구는 이번 범위 밖이다.

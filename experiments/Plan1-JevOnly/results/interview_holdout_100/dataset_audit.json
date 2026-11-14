@@ -1,0 +1,28 @@
+{
+  "old_pair_same_position_text_fraction_mean": 0.6426914674989452,
+  "old_pair_same_position_text_fraction_range": [
+    0.49019607843137253,
+    0.76
+  ],
+  "new_csv_gold_and_transcript_checks": "PASS",
+  "new_source_reproducible": "PASS",
+  "mutations_rejected": [
+    "missing_call",
+    "invalid_label",
+    "invalid_evidence_turn",
+    "extra_header_field"
+  ],
+  "new_turn_distribution_per_class": {
+    "phishing": {
+      "10": 20,
+      "12": 10,
+      "8": 20
+    },
+    "normal": {
+      "8": 20,
+      "10": 20,
+      "12": 10
+    }
+  },
+  "note": "No model training or fine-tuning occurs in Plan1. Shared templates limit representativeness; not proof of training/test leakage."
+}

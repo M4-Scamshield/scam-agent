@@ -1,0 +1,35 @@
+{
+  "frozen_before_api_at": "2026-11-14T04:56:37.158968+00:00",
+  "configured_model_alias": "jev-latest",
+  "resolved_model_version": null,
+  "model_version_note": "Existing Plan1/common.ask does not retain API model field; alias may resolve differently from 2026-11-07.",
+  "question_type": "choice",
+  "prediction_rule": "Unmodified API Yes/No choice; no threshold tuning",
+  "input": "transcript only; no IDs, gold, scenario, evidence or rationale in model state",
+  "n": 100,
+  "class_counts": {
+    "phishing": 50,
+    "normal": 50
+  },
+  "seed": 261114,
+  "repeated_measurements": false,
+  "prompt_sha256": "c77c9cb1a0a5dcb8fa3524c72619c3f11533f1c24b21608ab1bcfc0624e27ecd",
+  "sha256": {
+    "datasets/interview_holdout/scenarios.txt": "d3c9f94555b5b57df11bbc0578b614d4064555b41c70f8e0b46a8cd4d915355c",
+    "datasets/interview_holdout/inputs.json": "b21969fd8648aa05f2aeb013b4905ef6aca49fb41762624fc1c36310d0037f0a",
+    "datasets/interview_holdout/answers.json": "6601a0cd122c9eed9671d8540c428b056d12a855696e53e5cbb55e43210d6b29",
+    "datasets/interview_holdout/validation_report.json": "87ccab8ae4fdeeff6a7a5a4c9144d5281bcfec48cfd5d0d23a8dc4e72a1c44a0",
+    "experiments/data/interview_holdout_100.csv": "5207d00360a29aa32d24e640c60e419635665d5deae7e9783146f00608525ac1",
+    "experiments/build_interview_holdout.py": "47e48fe81668b72bf060e91b7417a6624717784736cd8a9576b2db553d323ad0",
+    "experiments/Plan1-JevOnly/plan1_jev_only.py": "aa035c09eff29f3c1a9844a9cdc02a92bb7cc007dae83143f62bdc3b20f87679",
+    "experiments/common.py": "d59fe0d90b255a45cd096cec8adb328f8bc73c345cf6fcc16d714adcd49af490",
+    "scamshield/jev.py": "202125b3b219e625e2a9ec5bff4d7421665b4f9377b65b0c067f00459e022df0"
+  },
+  "command": "uv --cache-dir /private/tmp/scamshield-uv-cache run --locked --no-sync --env-file .env python -X utf8 experiments/Plan1-JevOnly/plan1_jev_only.py --data experiments/data/interview_holdout_100.csv --delay 0.15 --timeout 30 --out experiments/Plan1-JevOnly/results/interview_holdout_100",
+  "limitations": [
+    "One agent authored and annotated all scripts; no independent human review.",
+    "New scenarios and utterances, but some fraud mechanisms and safety cues overlap with old data.",
+    "100 short scenes, 8–12 turns, differ from the previous 200 long calls, 50–100 sentences.",
+    "This is a fresh evaluation set in this workspace, not a proven unseen model-training corpus."
+  ]
+}

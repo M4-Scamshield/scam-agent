@@ -1,0 +1,89 @@
+{
+  "completed_at_utc": "2026-11-14T05:26:30.441406+00:00",
+  "planned": 100,
+  "success": 100,
+  "failures": [],
+  "confusion": {
+    "tp": 50,
+    "fp": 2,
+    "tn": 48,
+    "fn": 0
+  },
+  "metrics": {
+    "accuracy": 0.98,
+    "precision": 0.9615384615384616,
+    "recall": 1.0,
+    "f1": 0.9803921568627451,
+    "n": 100,
+    "specificity": 0.96,
+    "false_positive_rate": 0.040000000000000036
+  },
+  "wilson_95_ci": {
+    "accuracy": [
+      0.929988209271456,
+      0.9944980324498376
+    ],
+    "recall": [
+      0.9286524008666414,
+      1.0
+    ],
+    "specificity": [
+      0.8653990931249297,
+      0.9889611156723802
+    ]
+  },
+  "performance_from_prediction_csv": {
+    "n": 100,
+    "latency_avg": 0.22922999999999993,
+    "latency_min": 0.198,
+    "latency_max": 0.388,
+    "latency_p50": 0.221,
+    "latency_p95": 0.28,
+    "in_avg": 717.98,
+    "out_avg": 34.0,
+    "tot_avg": 751.98,
+    "in_sum": 71798,
+    "out_sum": 3400,
+    "tot_sum": 75198
+  },
+  "prob_yes_by_class": {
+    "phishing": {
+      "min": 0.75,
+      "max": 1.0,
+      "mean": 0.9540000000000002
+    },
+    "normal": {
+      "min": 0.0,
+      "max": 0.99,
+      "mean": 0.060799999999999986
+    }
+  },
+  "error_cases": [
+    {
+      "call_id": "holdout_049",
+      "source_id": "script_076",
+      "label": "normal",
+      "scenario": "금융 상담원 면접의 안전계좌 문구",
+      "rationale": "안전계좌와 송금 요구는 피싱 사례에 대한 지식 질문이다.",
+      "evidence_turn_ids": [],
+      "prediction": "Yes",
+      "prob_yes": 0.99,
+      "error_type": "FP"
+    },
+    {
+      "call_id": "holdout_095",
+      "source_id": "script_093",
+      "label": "normal",
+      "scenario": "인사 면접의 채용 사기 제보 처리",
+      "rationale": "제삼자의 사기 의심 연락을 어떻게 처리할지 묻는 직무 면접이다.",
+      "evidence_turn_ids": [],
+      "prediction": "Yes",
+      "prob_yes": 0.71,
+      "error_type": "FP"
+    }
+  ],
+  "run_manifest_sha256": "0006debddd92c9cf9b6b22b0a73e2556ad775112155e286eb8cfa5651abdc07a",
+  "predictions_sha256": "a02dcd9a19fe9aa01c3de517ea3be9cba1f4bc15c2be678d4368f33fc4b4d336",
+  "post_run_frozen_inputs_verified": true,
+  "note": "Wilson intervals reflect binomial sampling only; authored synthetic cases are not a random sample of real calls."
+}

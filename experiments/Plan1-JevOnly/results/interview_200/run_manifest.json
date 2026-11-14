@@ -1,0 +1,26 @@
+{
+  "configured_model_alias": "jev-latest",
+  "resolved_model_version": null,
+  "model_version_note": "기존 Plan1과 common.ask가 응답 model 필드를 저장하지 않음",
+  "question_type": "choice",
+  "positive_label": "Yes",
+  "prediction_rule": "API가 반환한 choice verdict 사용",
+  "transcript_format": "A/B 화자와 본문만 줄바꿈으로 연결한 문자열을 원소 하나의 배열로 전달",
+  "call_id_or_gold_sent_to_model": false,
+  "calls": 200,
+  "seed_for_dataset_order": 261107,
+  "prompt_sha256": "c77c9cb1a0a5dcb8fa3524c72619c3f11533f1c24b21608ab1bcfc0624e27ecd",
+  "sha256": {
+    "datasets/interview_phishing/interview_phishing_100.json": "67b77a45be13750840bba9b5cd5fb75d89b4507caf5527b3a4adf832d5b861f9",
+    "datasets/interview_normal/interview_normal_100.json": "686de1098c36bbb2e28f30b6232d2b12014e2622524f7177c34c547f765d9e89",
+    "datasets/interview_normal/interview_comparison_200_inputs.json": "5f355aa004cafa8e7f97c4fb6c064ab00bc580d4f5acad96562fd65923d3b56c",
+    "datasets/interview_normal/interview_comparison_200_answers.json": "5317bd4a5fe7c235001781eca6794ad7815071cd4d9c052fbc4527bd58b07e2f",
+    "experiments/data/interview_200_plan1.csv": "471e2fbf3557bfe5b3c070149dc1c6b4dd5cf1360ef9dfffe14866993dfd6342",
+    "experiments/Plan1-JevOnly/plan1_jev_only.py": "aa035c09eff29f3c1a9844a9cdc02a92bb7cc007dae83143f62bdc3b20f87679",
+    "experiments/common.py": "d59fe0d90b255a45cd096cec8adb328f8bc73c345cf6fcc16d714adcd49af490",
+    "experiments/build_normal_interview_dataset.py": "ce95f808d421cf4195ab353d52c15d2163458f830ecc870d23fe71d7a6432850",
+    "experiments/Plan1-JevOnly/results/visualization/visualize_confusion.py": "107ea1ac8381de5405cbfa5affa0efdd583c7418e58eca59eeb00d7ecaa3044b"
+  },
+  "command": "uv --cache-dir /private/tmp/scamshield-uv-cache run --locked --no-sync --env-file .env python -X utf8 experiments/Plan1-JevOnly/plan1_jev_only.py --data experiments/data/interview_200_plan1.csv --delay 0.15 --timeout 30 --out experiments/Plan1-JevOnly/results/interview_200",
+  "visualization_command": "MPLCONFIGDIR=/private/tmp/scamshield-matplotlib XDG_CACHE_HOME=/private/tmp/scamshield-font-cache .venv/bin/python experiments/Plan1-JevOnly/results/visualization/visualize_confusion.py --predictions experiments/Plan1-JevOnly/results/interview_200/predictions.csv --out experiments/Plan1-JevOnly/results/interview_200/confusion_matrix.png --title 'Jev-only: Interview calls (N=200)'"
+}

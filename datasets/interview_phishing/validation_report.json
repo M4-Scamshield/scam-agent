@@ -1,0 +1,160 @@
+{
+  "status": "PASS",
+  "call_count": 100,
+  "total_sentences": 7451,
+  "sentence_count_min": 50,
+  "sentence_count_max": 100,
+  "sentence_count_mean": 74.51,
+  "distinct_sentence_counts": 51,
+  "sentence_count_distribution": {
+    "50": 2,
+    "51": 2,
+    "52": 2,
+    "53": 2,
+    "54": 2,
+    "55": 2,
+    "56": 2,
+    "57": 2,
+    "58": 2,
+    "59": 2,
+    "60": 2,
+    "61": 2,
+    "62": 2,
+    "63": 2,
+    "64": 2,
+    "65": 2,
+    "66": 2,
+    "67": 2,
+    "68": 2,
+    "69": 2,
+    "70": 2,
+    "71": 2,
+    "72": 2,
+    "73": 2,
+    "74": 2,
+    "75": 2,
+    "76": 2,
+    "77": 2,
+    "78": 2,
+    "79": 2,
+    "80": 2,
+    "81": 2,
+    "82": 2,
+    "83": 2,
+    "84": 2,
+    "85": 2,
+    "86": 2,
+    "87": 2,
+    "88": 2,
+    "89": 2,
+    "90": 2,
+    "91": 2,
+    "92": 2,
+    "93": 2,
+    "94": 2,
+    "95": 2,
+    "96": 2,
+    "97": 2,
+    "98": 2,
+    "99": 1,
+    "100": 1
+  },
+  "speaker_counts": {
+    "피싱범": 3701,
+    "나": 3750
+  },
+  "scenario_counts": {
+    "account_rental": 5,
+    "background_fee": 5,
+    "certificate_fee": 5,
+    "credit_check": 5,
+    "crypto_test": 5,
+    "equipment_deposit": 5,
+    "gift_card": 5,
+    "identity_package": 5,
+    "interview_penalty": 5,
+    "medical_fee": 5,
+    "otp_payroll": 5,
+    "payroll_login": 5,
+    "phone_installment": 5,
+    "purchase_rebate": 5,
+    "refund_deposit": 5,
+    "remote_control": 5,
+    "salary_card": 5,
+    "support_fee": 5,
+    "training_fee": 5,
+    "transfer_test": 5
+  },
+  "outcome_counts": {
+    "independent_verification": 20,
+    "postponed": 20,
+    "refused": 20,
+    "unresolved": 20,
+    "disconnected": 20
+  },
+  "distinct_jobs": 100,
+  "distinct_sectors": 20,
+  "first_evidence_sentence_min": 11,
+  "first_evidence_sentence_max": 77,
+  "duplicate_full_calls": 0,
+  "unique_sentence_texts": 2343,
+  "unique_sentence_ratio": 0.3145,
+  "most_repeated_sentences": [
+    {
+      "text": "이제 면접과 함께 확인할 입사 준비 절차를 안내하겠습니다.",
+      "count": 100
+    },
+    {
+      "text": "먼저 설명을 듣고 제가 확인할 부분을 여쭤보겠습니다.",
+      "count": 100
+    },
+    {
+      "text": "준비 절차에 대한 질문은 남겨두고 직무 면접을 조금 더 이어가겠습니다.",
+      "count": 80
+    },
+    {
+      "text": "업무 질문에는 답하되 안내하신 조건에 동의한 것은 아닙니다.",
+      "count": 80
+    },
+    {
+      "text": "오늘 설명하신 내용은 따로 적어 두겠습니다.",
+      "count": 49
+    },
+    {
+      "text": "잘 모르는 업무를 혼자 맡게 되면 어떻게 하실 건가요?",
+      "count": 39
+    },
+    {
+      "text": "참고할 자료와 확인할 담당자를 먼저 찾겠습니다.",
+      "count": 39
+    },
+    {
+      "text": "동시에 다른 공고에도 지원하고 계신가요?",
+      "count": 38
+    },
+    {
+      "text": "몇 군데 함께 보고 있지만 업무 내용과 조건을 비교해 결정하려고 합니다.",
+      "count": 38
+    },
+    {
+      "text": "입사 초기에 가장 먼저 익히고 싶은 것은 무엇인가요?",
+      "count": 37
+    }
+  ],
+  "evaluation_input_role_assignment": "50통화는 A가 지원자이고 나머지 50통화는 B가 지원자",
+  "checks": [
+    "JSON 구조",
+    "100통화",
+    "50~100문장",
+    "각 통화 2화자",
+    "한 항목 한 문장",
+    "문장 번호 연속",
+    "주석 위치",
+    "전체 대화 중복 없음",
+    "통화 내 같은 문장 반복 없음",
+    "평가 입력과 원본 일치",
+    "정답 주석 분리"
+  ],
+  "semantic_review": "구조 검사는 대화의 자연스러움이나 독립적인 정답 검증을 보장하지 않음",
+  "model_evaluation_performed": false
+}

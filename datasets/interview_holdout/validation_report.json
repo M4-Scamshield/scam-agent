@@ -1,0 +1,39 @@
+{
+  "seed": 261114,
+  "calls": 100,
+  "labels": {
+    "phishing": 50,
+    "normal": 50
+  },
+  "turns": 960,
+  "turn_count_distribution": {
+    "8": 40,
+    "10": 40,
+    "12": 20
+  },
+  "old_full_call_duplicates": 0,
+  "old_long_utterance_exact_matches": 0,
+  "new_long_utterance_duplicates": 0,
+  "long_utterance_min_normalized_chars": 15,
+  "interviewer_speaker_counts": {
+    "phishing": {
+      "B": 25,
+      "A": 25
+    },
+    "normal": {
+      "B": 25,
+      "A": 25
+    }
+  },
+  "sha256": {
+    "datasets/interview_holdout/inputs.json": "b21969fd8648aa05f2aeb013b4905ef6aca49fb41762624fc1c36310d0037f0a",
+    "datasets/interview_holdout/answers.json": "6601a0cd122c9eed9671d8540c428b056d12a855696e53e5cbb55e43210d6b29",
+    "experiments/data/interview_holdout_100.csv": "5207d00360a29aa32d24e640c60e419635665d5deae7e9783146f00608525ac1"
+  },
+  "source_sha256": "d3c9f94555b5b57df11bbc0578b614d4064555b41c70f8e0b46a8cd4d915355c",
+  "limitations": [
+    "동일 에이전트 작성·라벨링; 독립적인 사람 검수 없음",
+    "Exact-match checks do not prove semantic independence or model-training absence",
+    "8–18 turns, not the original 50–100 sentence condition; synthetic text only"
+  ]
+}

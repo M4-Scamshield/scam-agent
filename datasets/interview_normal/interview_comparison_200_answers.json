@@ -1,0 +1,1405 @@
+{
+  "schema_version": "1.0",
+  "answers": [
+    {
+      "call_id": "eval_001",
+      "label": "normal",
+      "source_call_id": "normal_interview_039",
+      "paired_group_id": "interview_039",
+      "scenario_id": "normal_identity_package"
+    },
+    {
+      "call_id": "eval_002",
+      "label": "normal",
+      "source_call_id": "normal_interview_079",
+      "paired_group_id": "interview_079",
+      "scenario_id": "normal_gift_card"
+    },
+    {
+      "call_id": "eval_003",
+      "label": "normal",
+      "source_call_id": "normal_interview_003",
+      "paired_group_id": "interview_003",
+      "scenario_id": "normal_training_fee"
+    },
+    {
+      "call_id": "eval_004",
+      "label": "normal",
+      "source_call_id": "normal_interview_004",
+      "paired_group_id": "interview_004",
+      "scenario_id": "normal_training_fee"
+    },
+    {
+      "call_id": "eval_005",
+      "label": "phishing",
+      "source_call_id": "interview_060",
+      "paired_group_id": "interview_060",
+      "scenario_id": "crypto_test"
+    },
+    {
+      "call_id": "eval_006",
+      "label": "normal",
+      "source_call_id": "normal_interview_057",
+      "paired_group_id": "interview_057",
+      "scenario_id": "normal_crypto_test"
+    },
+    {
+      "call_id": "eval_007",
+      "label": "normal",
+      "source_call_id": "normal_interview_067",
+      "paired_group_id": "interview_067",
+      "scenario_id": "normal_salary_card"
+    },
+    {
+      "call_id": "eval_008",
+      "label": "phishing",
+      "source_call_id": "interview_062",
+      "paired_group_id": "interview_062",
+      "scenario_id": "credit_check"
+    },
+    {
+      "call_id": "eval_009",
+      "label": "normal",
+      "source_call_id": "normal_interview_049",
+      "paired_group_id": "interview_049",
+      "scenario_id": "normal_transfer_test"
+    },
+    {
+      "call_id": "eval_010",
+      "label": "normal",
+      "source_call_id": "normal_interview_054",
+      "paired_group_id": "interview_054",
+      "scenario_id": "normal_purchase_rebate"
+    },
+    {
+      "call_id": "eval_011",
+      "label": "phishing",
+      "source_call_id": "interview_081",
+      "paired_group_id": "interview_081",
+      "scenario_id": "interview_penalty"
+    },
+    {
+      "call_id": "eval_012",
+      "label": "normal",
+      "source_call_id": "normal_interview_017",
+      "paired_group_id": "interview_017",
+      "scenario_id": "normal_medical_fee"
+    },
+    {
+      "call_id": "eval_013",
+      "label": "phishing",
+      "source_call_id": "interview_080",
+      "paired_group_id": "interview_080",
+      "scenario_id": "gift_card"
+    },
+    {
+      "call_id": "eval_014",
+      "label": "phishing",
+      "source_call_id": "interview_044",
+      "paired_group_id": "interview_044",
+      "scenario_id": "account_rental"
+    },
+    {
+      "call_id": "eval_015",
+      "label": "phishing",
+      "source_call_id": "interview_025",
+      "paired_group_id": "interview_025",
+      "scenario_id": "certificate_fee"
+    },
+    {
+      "call_id": "eval_016",
+      "label": "normal",
+      "source_call_id": "normal_interview_066",
+      "paired_group_id": "interview_066",
+      "scenario_id": "normal_salary_card"
+    },
+    {
+      "call_id": "eval_017",
+      "label": "phishing",
+      "source_call_id": "interview_092",
+      "paired_group_id": "interview_092",
+      "scenario_id": "phone_installment"
+    },
+    {
+      "call_id": "eval_018",
+      "label": "normal",
+      "source_call_id": "normal_interview_042",
+      "paired_group_id": "interview_042",
+      "scenario_id": "normal_account_rental"
+    },
+    {
+      "call_id": "eval_019",
+      "label": "phishing",
+      "source_call_id": "interview_035",
+      "paired_group_id": "interview_035",
+      "scenario_id": "remote_control"
+    },
+    {
+      "call_id": "eval_020",
+      "label": "phishing",
+      "source_call_id": "interview_100",
+      "paired_group_id": "interview_100",
+      "scenario_id": "refund_deposit"
+    },
+    {
+      "call_id": "eval_021",
+      "label": "phishing",
+      "source_call_id": "interview_053",
+      "paired_group_id": "interview_053",
+      "scenario_id": "purchase_rebate"
+    },
+    {
+      "call_id": "eval_022",
+      "label": "phishing",
+      "source_call_id": "interview_065",
+      "paired_group_id": "interview_065",
+      "scenario_id": "credit_check"
+    },
+    {
+      "call_id": "eval_023",
+      "label": "normal",
+      "source_call_id": "normal_interview_046",
+      "paired_group_id": "interview_046",
+      "scenario_id": "normal_transfer_test"
+    },
+    {
+      "call_id": "eval_024",
+      "label": "phishing",
+      "source_call_id": "interview_072",
+      "paired_group_id": "interview_072",
+      "scenario_id": "payroll_login"
+    },
+    {
+      "call_id": "eval_025",
+      "label": "phishing",
+      "source_call_id": "interview_085",
+      "paired_group_id": "interview_085",
+      "scenario_id": "interview_penalty"
+    },
+    {
+      "call_id": "eval_026",
+      "label": "normal",
+      "source_call_id": "normal_interview_022",
+      "paired_group_id": "interview_022",
+      "scenario_id": "normal_certificate_fee"
+    },
+    {
+      "call_id": "eval_027",
+      "label": "phishing",
+      "source_call_id": "interview_054",
+      "paired_group_id": "interview_054",
+      "scenario_id": "purchase_rebate"
+    },
+    {
+      "call_id": "eval_028",
+      "label": "phishing",
+      "source_call_id": "interview_084",
+      "paired_group_id": "interview_084",
+      "scenario_id": "interview_penalty"
+    },
+    {
+      "call_id": "eval_029",
+      "label": "normal",
+      "source_call_id": "normal_interview_040",
+      "paired_group_id": "interview_040",
+      "scenario_id": "normal_identity_package"
+    },
+    {
+      "call_id": "eval_030",
+      "label": "phishing",
+      "source_call_id": "interview_095",
+      "paired_group_id": "interview_095",
+      "scenario_id": "phone_installment"
+    },
+    {
+      "call_id": "eval_031",
+      "label": "phishing",
+      "source_call_id": "interview_009",
+      "paired_group_id": "interview_009",
+      "scenario_id": "equipment_deposit"
+    },
+    {
+      "call_id": "eval_032",
+      "label": "normal",
+      "source_call_id": "normal_interview_010",
+      "paired_group_id": "interview_010",
+      "scenario_id": "normal_equipment_deposit"
+    },
+    {
+      "call_id": "eval_033",
+      "label": "phishing",
+      "source_call_id": "interview_055",
+      "paired_group_id": "interview_055",
+      "scenario_id": "purchase_rebate"
+    },
+    {
+      "call_id": "eval_034",
+      "label": "normal",
+      "source_call_id": "normal_interview_076",
+      "paired_group_id": "interview_076",
+      "scenario_id": "normal_gift_card"
+    },
+    {
+      "call_id": "eval_035",
+      "label": "normal",
+      "source_call_id": "normal_interview_030",
+      "paired_group_id": "interview_030",
+      "scenario_id": "normal_otp_payroll"
+    },
+    {
+      "call_id": "eval_036",
+      "label": "normal",
+      "source_call_id": "normal_interview_058",
+      "paired_group_id": "interview_058",
+      "scenario_id": "normal_crypto_test"
+    },
+    {
+      "call_id": "eval_037",
+      "label": "normal",
+      "source_call_id": "normal_interview_094",
+      "paired_group_id": "interview_094",
+      "scenario_id": "normal_phone_installment"
+    },
+    {
+      "call_id": "eval_038",
+      "label": "normal",
+      "source_call_id": "normal_interview_035",
+      "paired_group_id": "interview_035",
+      "scenario_id": "normal_remote_control"
+    },
+    {
+      "call_id": "eval_039",
+      "label": "normal",
+      "source_call_id": "normal_interview_092",
+      "paired_group_id": "interview_092",
+      "scenario_id": "normal_phone_installment"
+    },
+    {
+      "call_id": "eval_040",
+      "label": "normal",
+      "source_call_id": "normal_interview_045",
+      "paired_group_id": "interview_045",
+      "scenario_id": "normal_account_rental"
+    },
+    {
+      "call_id": "eval_041",
+      "label": "normal",
+      "source_call_id": "normal_interview_019",
+      "paired_group_id": "interview_019",
+      "scenario_id": "normal_medical_fee"
+    },
+    {
+      "call_id": "eval_042",
+      "label": "normal",
+      "source_call_id": "normal_interview_011",
+      "paired_group_id": "interview_011",
+      "scenario_id": "normal_background_fee"
+    },
+    {
+      "call_id": "eval_043",
+      "label": "phishing",
+      "source_call_id": "interview_036",
+      "paired_group_id": "interview_036",
+      "scenario_id": "identity_package"
+    },
+    {
+      "call_id": "eval_044",
+      "label": "phishing",
+      "source_call_id": "interview_003",
+      "paired_group_id": "interview_003",
+      "scenario_id": "training_fee"
+    },
+    {
+      "call_id": "eval_045",
+      "label": "phishing",
+      "source_call_id": "interview_049",
+      "paired_group_id": "interview_049",
+      "scenario_id": "transfer_test"
+    },
+    {
+      "call_id": "eval_046",
+      "label": "phishing",
+      "source_call_id": "interview_048",
+      "paired_group_id": "interview_048",
+      "scenario_id": "transfer_test"
+    },
+    {
+      "call_id": "eval_047",
+      "label": "phishing",
+      "source_call_id": "interview_097",
+      "paired_group_id": "interview_097",
+      "scenario_id": "refund_deposit"
+    },
+    {
+      "call_id": "eval_048",
+      "label": "normal",
+      "source_call_id": "normal_interview_015",
+      "paired_group_id": "interview_015",
+      "scenario_id": "normal_background_fee"
+    },
+    {
+      "call_id": "eval_049",
+      "label": "phishing",
+      "source_call_id": "interview_002",
+      "paired_group_id": "interview_002",
+      "scenario_id": "training_fee"
+    },
+    {
+      "call_id": "eval_050",
+      "label": "phishing",
+      "source_call_id": "interview_068",
+      "paired_group_id": "interview_068",
+      "scenario_id": "salary_card"
+    },
+    {
+      "call_id": "eval_051",
+      "label": "normal",
+      "source_call_id": "normal_interview_009",
+      "paired_group_id": "interview_009",
+      "scenario_id": "normal_equipment_deposit"
+    },
+    {
+      "call_id": "eval_052",
+      "label": "phishing",
+      "source_call_id": "interview_088",
+      "paired_group_id": "interview_088",
+      "scenario_id": "support_fee"
+    },
+    {
+      "call_id": "eval_053",
+      "label": "normal",
+      "source_call_id": "normal_interview_008",
+      "paired_group_id": "interview_008",
+      "scenario_id": "normal_equipment_deposit"
+    },
+    {
+      "call_id": "eval_054",
+      "label": "phishing",
+      "source_call_id": "interview_058",
+      "paired_group_id": "interview_058",
+      "scenario_id": "crypto_test"
+    },
+    {
+      "call_id": "eval_055",
+      "label": "phishing",
+      "source_call_id": "interview_040",
+      "paired_group_id": "interview_040",
+      "scenario_id": "identity_package"
+    },
+    {
+      "call_id": "eval_056",
+      "label": "normal",
+      "source_call_id": "normal_interview_095",
+      "paired_group_id": "interview_095",
+      "scenario_id": "normal_phone_installment"
+    },
+    {
+      "call_id": "eval_057",
+      "label": "phishing",
+      "source_call_id": "interview_075",
+      "paired_group_id": "interview_075",
+      "scenario_id": "payroll_login"
+    },
+    {
+      "call_id": "eval_058",
+      "label": "phishing",
+      "source_call_id": "interview_057",
+      "paired_group_id": "interview_057",
+      "scenario_id": "crypto_test"
+    },
+    {
+      "call_id": "eval_059",
+      "label": "phishing",
+      "source_call_id": "interview_006",
+      "paired_group_id": "interview_006",
+      "scenario_id": "equipment_deposit"
+    },
+    {
+      "call_id": "eval_060",
+      "label": "normal",
+      "source_call_id": "normal_interview_075",
+      "paired_group_id": "interview_075",
+      "scenario_id": "normal_payroll_login"
+    },
+    {
+      "call_id": "eval_061",
+      "label": "normal",
+      "source_call_id": "normal_interview_021",
+      "paired_group_id": "interview_021",
+      "scenario_id": "normal_certificate_fee"
+    },
+    {
+      "call_id": "eval_062",
+      "label": "phishing",
+      "source_call_id": "interview_024",
+      "paired_group_id": "interview_024",
+      "scenario_id": "certificate_fee"
+    },
+    {
+      "call_id": "eval_063",
+      "label": "phishing",
+      "source_call_id": "interview_082",
+      "paired_group_id": "interview_082",
+      "scenario_id": "interview_penalty"
+    },
+    {
+      "call_id": "eval_064",
+      "label": "normal",
+      "source_call_id": "normal_interview_016",
+      "paired_group_id": "interview_016",
+      "scenario_id": "normal_medical_fee"
+    },
+    {
+      "call_id": "eval_065",
+      "label": "normal",
+      "source_call_id": "normal_interview_027",
+      "paired_group_id": "interview_027",
+      "scenario_id": "normal_otp_payroll"
+    },
+    {
+      "call_id": "eval_066",
+      "label": "normal",
+      "source_call_id": "normal_interview_091",
+      "paired_group_id": "interview_091",
+      "scenario_id": "normal_phone_installment"
+    },
+    {
+      "call_id": "eval_067",
+      "label": "phishing",
+      "source_call_id": "interview_001",
+      "paired_group_id": "interview_001",
+      "scenario_id": "training_fee"
+    },
+    {
+      "call_id": "eval_068",
+      "label": "normal",
+      "source_call_id": "normal_interview_086",
+      "paired_group_id": "interview_086",
+      "scenario_id": "normal_support_fee"
+    },
+    {
+      "call_id": "eval_069",
+      "label": "normal",
+      "source_call_id": "normal_interview_087",
+      "paired_group_id": "interview_087",
+      "scenario_id": "normal_support_fee"
+    },
+    {
+      "call_id": "eval_070",
+      "label": "phishing",
+      "source_call_id": "interview_063",
+      "paired_group_id": "interview_063",
+      "scenario_id": "credit_check"
+    },
+    {
+      "call_id": "eval_071",
+      "label": "phishing",
+      "source_call_id": "interview_086",
+      "paired_group_id": "interview_086",
+      "scenario_id": "support_fee"
+    },
+    {
+      "call_id": "eval_072",
+      "label": "phishing",
+      "source_call_id": "interview_052",
+      "paired_group_id": "interview_052",
+      "scenario_id": "purchase_rebate"
+    },
+    {
+      "call_id": "eval_073",
+      "label": "normal",
+      "source_call_id": "normal_interview_033",
+      "paired_group_id": "interview_033",
+      "scenario_id": "normal_remote_control"
+    },
+    {
+      "call_id": "eval_074",
+      "label": "normal",
+      "source_call_id": "normal_interview_056",
+      "paired_group_id": "interview_056",
+      "scenario_id": "normal_crypto_test"
+    },
+    {
+      "call_id": "eval_075",
+      "label": "normal",
+      "source_call_id": "normal_interview_096",
+      "paired_group_id": "interview_096",
+      "scenario_id": "normal_refund_deposit"
+    },
+    {
+      "call_id": "eval_076",
+      "label": "phishing",
+      "source_call_id": "interview_043",
+      "paired_group_id": "interview_043",
+      "scenario_id": "account_rental"
+    },
+    {
+      "call_id": "eval_077",
+      "label": "normal",
+      "source_call_id": "normal_interview_037",
+      "paired_group_id": "interview_037",
+      "scenario_id": "normal_identity_package"
+    },
+    {
+      "call_id": "eval_078",
+      "label": "phishing",
+      "source_call_id": "interview_031",
+      "paired_group_id": "interview_031",
+      "scenario_id": "remote_control"
+    },
+    {
+      "call_id": "eval_079",
+      "label": "phishing",
+      "source_call_id": "interview_091",
+      "paired_group_id": "interview_091",
+      "scenario_id": "phone_installment"
+    },
+    {
+      "call_id": "eval_080",
+      "label": "normal",
+      "source_call_id": "normal_interview_041",
+      "paired_group_id": "interview_041",
+      "scenario_id": "normal_account_rental"
+    },
+    {
+      "call_id": "eval_081",
+      "label": "normal",
+      "source_call_id": "normal_interview_007",
+      "paired_group_id": "interview_007",
+      "scenario_id": "normal_equipment_deposit"
+    },
+    {
+      "call_id": "eval_082",
+      "label": "phishing",
+      "source_call_id": "interview_026",
+      "paired_group_id": "interview_026",
+      "scenario_id": "otp_payroll"
+    },
+    {
+      "call_id": "eval_083",
+      "label": "normal",
+      "source_call_id": "normal_interview_085",
+      "paired_group_id": "interview_085",
+      "scenario_id": "normal_interview_penalty"
+    },
+    {
+      "call_id": "eval_084",
+      "label": "normal",
+      "source_call_id": "normal_interview_071",
+      "paired_group_id": "interview_071",
+      "scenario_id": "normal_payroll_login"
+    },
+    {
+      "call_id": "eval_085",
+      "label": "normal",
+      "source_call_id": "normal_interview_070",
+      "paired_group_id": "interview_070",
+      "scenario_id": "normal_salary_card"
+    },
+    {
+      "call_id": "eval_086",
+      "label": "phishing",
+      "source_call_id": "interview_012",
+      "paired_group_id": "interview_012",
+      "scenario_id": "background_fee"
+    },
+    {
+      "call_id": "eval_087",
+      "label": "normal",
+      "source_call_id": "normal_interview_069",
+      "paired_group_id": "interview_069",
+      "scenario_id": "normal_salary_card"
+    },
+    {
+      "call_id": "eval_088",
+      "label": "normal",
+      "source_call_id": "normal_interview_059",
+      "paired_group_id": "interview_059",
+      "scenario_id": "normal_crypto_test"
+    },
+    {
+      "call_id": "eval_089",
+      "label": "phishing",
+      "source_call_id": "interview_013",
+      "paired_group_id": "interview_013",
+      "scenario_id": "background_fee"
+    },
+    {
+      "call_id": "eval_090",
+      "label": "phishing",
+      "source_call_id": "interview_047",
+      "paired_group_id": "interview_047",
+      "scenario_id": "transfer_test"
+    },
+    {
+      "call_id": "eval_091",
+      "label": "normal",
+      "source_call_id": "normal_interview_048",
+      "paired_group_id": "interview_048",
+      "scenario_id": "normal_transfer_test"
+    },
+    {
+      "call_id": "eval_092",
+      "label": "phishing",
+      "source_call_id": "interview_076",
+      "paired_group_id": "interview_076",
+      "scenario_id": "gift_card"
+    },
+    {
+      "call_id": "eval_093",
+      "label": "phishing",
+      "source_call_id": "interview_023",
+      "paired_group_id": "interview_023",
+      "scenario_id": "certificate_fee"
+    },
+    {
+      "call_id": "eval_094",
+      "label": "phishing",
+      "source_call_id": "interview_005",
+      "paired_group_id": "interview_005",
+      "scenario_id": "training_fee"
+    },
+    {
+      "call_id": "eval_095",
+      "label": "phishing",
+      "source_call_id": "interview_045",
+      "paired_group_id": "interview_045",
+      "scenario_id": "account_rental"
+    },
+    {
+      "call_id": "eval_096",
+      "label": "phishing",
+      "source_call_id": "interview_016",
+      "paired_group_id": "interview_016",
+      "scenario_id": "medical_fee"
+    },
+    {
+      "call_id": "eval_097",
+      "label": "normal",
+      "source_call_id": "normal_interview_029",
+      "paired_group_id": "interview_029",
+      "scenario_id": "normal_otp_payroll"
+    },
+    {
+      "call_id": "eval_098",
+      "label": "phishing",
+      "source_call_id": "interview_004",
+      "paired_group_id": "interview_004",
+      "scenario_id": "training_fee"
+    },
+    {
+      "call_id": "eval_099",
+      "label": "normal",
+      "source_call_id": "normal_interview_026",
+      "paired_group_id": "interview_026",
+      "scenario_id": "normal_otp_payroll"
+    },
+    {
+      "call_id": "eval_100",
+      "label": "phishing",
+      "source_call_id": "interview_042",
+      "paired_group_id": "interview_042",
+      "scenario_id": "account_rental"
+    },
+    {
+      "call_id": "eval_101",
+      "label": "normal",
+      "source_call_id": "normal_interview_077",
+      "paired_group_id": "interview_077",
+      "scenario_id": "normal_gift_card"
+    },
+    {
+      "call_id": "eval_102",
+      "label": "phishing",
+      "source_call_id": "interview_018",
+      "paired_group_id": "interview_018",
+      "scenario_id": "medical_fee"
+    },
+    {
+      "call_id": "eval_103",
+      "label": "phishing",
+      "source_call_id": "interview_010",
+      "paired_group_id": "interview_010",
+      "scenario_id": "equipment_deposit"
+    },
+    {
+      "call_id": "eval_104",
+      "label": "normal",
+      "source_call_id": "normal_interview_013",
+      "paired_group_id": "interview_013",
+      "scenario_id": "normal_background_fee"
+    },
+    {
+      "call_id": "eval_105",
+      "label": "phishing",
+      "source_call_id": "interview_038",
+      "paired_group_id": "interview_038",
+      "scenario_id": "identity_package"
+    },
+    {
+      "call_id": "eval_106",
+      "label": "normal",
+      "source_call_id": "normal_interview_001",
+      "paired_group_id": "interview_001",
+      "scenario_id": "normal_training_fee"
+    },
+    {
+      "call_id": "eval_107",
+      "label": "normal",
+      "source_call_id": "normal_interview_023",
+      "paired_group_id": "interview_023",
+      "scenario_id": "normal_certificate_fee"
+    },
+    {
+      "call_id": "eval_108",
+      "label": "phishing",
+      "source_call_id": "interview_017",
+      "paired_group_id": "interview_017",
+      "scenario_id": "medical_fee"
+    },
+    {
+      "call_id": "eval_109",
+      "label": "normal",
+      "source_call_id": "normal_interview_089",
+      "paired_group_id": "interview_089",
+      "scenario_id": "normal_support_fee"
+    },
+    {
+      "call_id": "eval_110",
+      "label": "phishing",
+      "source_call_id": "interview_096",
+      "paired_group_id": "interview_096",
+      "scenario_id": "refund_deposit"
+    },
+    {
+      "call_id": "eval_111",
+      "label": "phishing",
+      "source_call_id": "interview_074",
+      "paired_group_id": "interview_074",
+      "scenario_id": "payroll_login"
+    },
+    {
+      "call_id": "eval_112",
+      "label": "phishing",
+      "source_call_id": "interview_059",
+      "paired_group_id": "interview_059",
+      "scenario_id": "crypto_test"
+    },
+    {
+      "call_id": "eval_113",
+      "label": "normal",
+      "source_call_id": "normal_interview_050",
+      "paired_group_id": "interview_050",
+      "scenario_id": "normal_transfer_test"
+    },
+    {
+      "call_id": "eval_114",
+      "label": "phishing",
+      "source_call_id": "interview_033",
+      "paired_group_id": "interview_033",
+      "scenario_id": "remote_control"
+    },
+    {
+      "call_id": "eval_115",
+      "label": "normal",
+      "source_call_id": "normal_interview_099",
+      "paired_group_id": "interview_099",
+      "scenario_id": "normal_refund_deposit"
+    },
+    {
+      "call_id": "eval_116",
+      "label": "normal",
+      "source_call_id": "normal_interview_098",
+      "paired_group_id": "interview_098",
+      "scenario_id": "normal_refund_deposit"
+    },
+    {
+      "call_id": "eval_117",
+      "label": "phishing",
+      "source_call_id": "interview_083",
+      "paired_group_id": "interview_083",
+      "scenario_id": "interview_penalty"
+    },
+    {
+      "call_id": "eval_118",
+      "label": "phishing",
+      "source_call_id": "interview_066",
+      "paired_group_id": "interview_066",
+      "scenario_id": "salary_card"
+    },
+    {
+      "call_id": "eval_119",
+      "label": "normal",
+      "source_call_id": "normal_interview_093",
+      "paired_group_id": "interview_093",
+      "scenario_id": "normal_phone_installment"
+    },
+    {
+      "call_id": "eval_120",
+      "label": "normal",
+      "source_call_id": "normal_interview_025",
+      "paired_group_id": "interview_025",
+      "scenario_id": "normal_certificate_fee"
+    },
+    {
+      "call_id": "eval_121",
+      "label": "normal",
+      "source_call_id": "normal_interview_078",
+      "paired_group_id": "interview_078",
+      "scenario_id": "normal_gift_card"
+    },
+    {
+      "call_id": "eval_122",
+      "label": "normal",
+      "source_call_id": "normal_interview_002",
+      "paired_group_id": "interview_002",
+      "scenario_id": "normal_training_fee"
+    },
+    {
+      "call_id": "eval_123",
+      "label": "normal",
+      "source_call_id": "normal_interview_051",
+      "paired_group_id": "interview_051",
+      "scenario_id": "normal_purchase_rebate"
+    },
+    {
+      "call_id": "eval_124",
+      "label": "phishing",
+      "source_call_id": "interview_061",
+      "paired_group_id": "interview_061",
+      "scenario_id": "credit_check"
+    },
+    {
+      "call_id": "eval_125",
+      "label": "phishing",
+      "source_call_id": "interview_041",
+      "paired_group_id": "interview_041",
+      "scenario_id": "account_rental"
+    },
+    {
+      "call_id": "eval_126",
+      "label": "normal",
+      "source_call_id": "normal_interview_053",
+      "paired_group_id": "interview_053",
+      "scenario_id": "normal_purchase_rebate"
+    },
+    {
+      "call_id": "eval_127",
+      "label": "phishing",
+      "source_call_id": "interview_078",
+      "paired_group_id": "interview_078",
+      "scenario_id": "gift_card"
+    },
+    {
+      "call_id": "eval_128",
+      "label": "normal",
+      "source_call_id": "normal_interview_081",
+      "paired_group_id": "interview_081",
+      "scenario_id": "normal_interview_penalty"
+    },
+    {
+      "call_id": "eval_129",
+      "label": "normal",
+      "source_call_id": "normal_interview_100",
+      "paired_group_id": "interview_100",
+      "scenario_id": "normal_refund_deposit"
+    },
+    {
+      "call_id": "eval_130",
+      "label": "phishing",
+      "source_call_id": "interview_056",
+      "paired_group_id": "interview_056",
+      "scenario_id": "crypto_test"
+    },
+    {
+      "call_id": "eval_131",
+      "label": "phishing",
+      "source_call_id": "interview_069",
+      "paired_group_id": "interview_069",
+      "scenario_id": "salary_card"
+    },
+    {
+      "call_id": "eval_132",
+      "label": "normal",
+      "source_call_id": "normal_interview_020",
+      "paired_group_id": "interview_020",
+      "scenario_id": "normal_medical_fee"
+    },
+    {
+      "call_id": "eval_133",
+      "label": "phishing",
+      "source_call_id": "interview_034",
+      "paired_group_id": "interview_034",
+      "scenario_id": "remote_control"
+    },
+    {
+      "call_id": "eval_134",
+      "label": "phishing",
+      "source_call_id": "interview_039",
+      "paired_group_id": "interview_039",
+      "scenario_id": "identity_package"
+    },
+    {
+      "call_id": "eval_135",
+      "label": "phishing",
+      "source_call_id": "interview_032",
+      "paired_group_id": "interview_032",
+      "scenario_id": "remote_control"
+    },
+    {
+      "call_id": "eval_136",
+      "label": "normal",
+      "source_call_id": "normal_interview_074",
+      "paired_group_id": "interview_074",
+      "scenario_id": "normal_payroll_login"
+    },
+    {
+      "call_id": "eval_137",
+      "label": "normal",
+      "source_call_id": "normal_interview_073",
+      "paired_group_id": "interview_073",
+      "scenario_id": "normal_payroll_login"
+    },
+    {
+      "call_id": "eval_138",
+      "label": "phishing",
+      "source_call_id": "interview_094",
+      "paired_group_id": "interview_094",
+      "scenario_id": "phone_installment"
+    },
+    {
+      "call_id": "eval_139",
+      "label": "normal",
+      "source_call_id": "normal_interview_065",
+      "paired_group_id": "interview_065",
+      "scenario_id": "normal_credit_check"
+    },
+    {
+      "call_id": "eval_140",
+      "label": "normal",
+      "source_call_id": "normal_interview_043",
+      "paired_group_id": "interview_043",
+      "scenario_id": "normal_account_rental"
+    },
+    {
+      "call_id": "eval_141",
+      "label": "phishing",
+      "source_call_id": "interview_089",
+      "paired_group_id": "interview_089",
+      "scenario_id": "support_fee"
+    },
+    {
+      "call_id": "eval_142",
+      "label": "phishing",
+      "source_call_id": "interview_008",
+      "paired_group_id": "interview_008",
+      "scenario_id": "equipment_deposit"
+    },
+    {
+      "call_id": "eval_143",
+      "label": "phishing",
+      "source_call_id": "interview_011",
+      "paired_group_id": "interview_011",
+      "scenario_id": "background_fee"
+    },
+    {
+      "call_id": "eval_144",
+      "label": "normal",
+      "source_call_id": "normal_interview_072",
+      "paired_group_id": "interview_072",
+      "scenario_id": "normal_payroll_login"
+    },
+    {
+      "call_id": "eval_145",
+      "label": "phishing",
+      "source_call_id": "interview_015",
+      "paired_group_id": "interview_015",
+      "scenario_id": "background_fee"
+    },
+    {
+      "call_id": "eval_146",
+      "label": "phishing",
+      "source_call_id": "interview_022",
+      "paired_group_id": "interview_022",
+      "scenario_id": "certificate_fee"
+    },
+    {
+      "call_id": "eval_147",
+      "label": "phishing",
+      "source_call_id": "interview_029",
+      "paired_group_id": "interview_029",
+      "scenario_id": "otp_payroll"
+    },
+    {
+      "call_id": "eval_148",
+      "label": "normal",
+      "source_call_id": "normal_interview_038",
+      "paired_group_id": "interview_038",
+      "scenario_id": "normal_identity_package"
+    },
+    {
+      "call_id": "eval_149",
+      "label": "phishing",
+      "source_call_id": "interview_051",
+      "paired_group_id": "interview_051",
+      "scenario_id": "purchase_rebate"
+    },
+    {
+      "call_id": "eval_150",
+      "label": "normal",
+      "source_call_id": "normal_interview_083",
+      "paired_group_id": "interview_083",
+      "scenario_id": "normal_interview_penalty"
+    },
+    {
+      "call_id": "eval_151",
+      "label": "normal",
+      "source_call_id": "normal_interview_052",
+      "paired_group_id": "interview_052",
+      "scenario_id": "normal_purchase_rebate"
+    },
+    {
+      "call_id": "eval_152",
+      "label": "phishing",
+      "source_call_id": "interview_099",
+      "paired_group_id": "interview_099",
+      "scenario_id": "refund_deposit"
+    },
+    {
+      "call_id": "eval_153",
+      "label": "normal",
+      "source_call_id": "normal_interview_005",
+      "paired_group_id": "interview_005",
+      "scenario_id": "normal_training_fee"
+    },
+    {
+      "call_id": "eval_154",
+      "label": "phishing",
+      "source_call_id": "interview_090",
+      "paired_group_id": "interview_090",
+      "scenario_id": "support_fee"
+    },
+    {
+      "call_id": "eval_155",
+      "label": "normal",
+      "source_call_id": "normal_interview_047",
+      "paired_group_id": "interview_047",
+      "scenario_id": "normal_transfer_test"
+    },
+    {
+      "call_id": "eval_156",
+      "label": "phishing",
+      "source_call_id": "interview_073",
+      "paired_group_id": "interview_073",
+      "scenario_id": "payroll_login"
+    },
+    {
+      "call_id": "eval_157",
+      "label": "normal",
+      "source_call_id": "normal_interview_082",
+      "paired_group_id": "interview_082",
+      "scenario_id": "normal_interview_penalty"
+    },
+    {
+      "call_id": "eval_158",
+      "label": "normal",
+      "source_call_id": "normal_interview_063",
+      "paired_group_id": "interview_063",
+      "scenario_id": "normal_credit_check"
+    },
+    {
+      "call_id": "eval_159",
+      "label": "normal",
+      "source_call_id": "normal_interview_060",
+      "paired_group_id": "interview_060",
+      "scenario_id": "normal_crypto_test"
+    },
+    {
+      "call_id": "eval_160",
+      "label": "phishing",
+      "source_call_id": "interview_007",
+      "paired_group_id": "interview_007",
+      "scenario_id": "equipment_deposit"
+    },
+    {
+      "call_id": "eval_161",
+      "label": "phishing",
+      "source_call_id": "interview_098",
+      "paired_group_id": "interview_098",
+      "scenario_id": "refund_deposit"
+    },
+    {
+      "call_id": "eval_162",
+      "label": "phishing",
+      "source_call_id": "interview_037",
+      "paired_group_id": "interview_037",
+      "scenario_id": "identity_package"
+    },
+    {
+      "call_id": "eval_163",
+      "label": "normal",
+      "source_call_id": "normal_interview_014",
+      "paired_group_id": "interview_014",
+      "scenario_id": "normal_background_fee"
+    },
+    {
+      "call_id": "eval_164",
+      "label": "normal",
+      "source_call_id": "normal_interview_006",
+      "paired_group_id": "interview_006",
+      "scenario_id": "normal_equipment_deposit"
+    },
+    {
+      "call_id": "eval_165",
+      "label": "normal",
+      "source_call_id": "normal_interview_084",
+      "paired_group_id": "interview_084",
+      "scenario_id": "normal_interview_penalty"
+    },
+    {
+      "call_id": "eval_166",
+      "label": "phishing",
+      "source_call_id": "interview_021",
+      "paired_group_id": "interview_021",
+      "scenario_id": "certificate_fee"
+    },
+    {
+      "call_id": "eval_167",
+      "label": "normal",
+      "source_call_id": "normal_interview_012",
+      "paired_group_id": "interview_012",
+      "scenario_id": "normal_background_fee"
+    },
+    {
+      "call_id": "eval_168",
+      "label": "normal",
+      "source_call_id": "normal_interview_036",
+      "paired_group_id": "interview_036",
+      "scenario_id": "normal_identity_package"
+    },
+    {
+      "call_id": "eval_169",
+      "label": "phishing",
+      "source_call_id": "interview_077",
+      "paired_group_id": "interview_077",
+      "scenario_id": "gift_card"
+    },
+    {
+      "call_id": "eval_170",
+      "label": "normal",
+      "source_call_id": "normal_interview_088",
+      "paired_group_id": "interview_088",
+      "scenario_id": "normal_support_fee"
+    },
+    {
+      "call_id": "eval_171",
+      "label": "normal",
+      "source_call_id": "normal_interview_061",
+      "paired_group_id": "interview_061",
+      "scenario_id": "normal_credit_check"
+    },
+    {
+      "call_id": "eval_172",
+      "label": "normal",
+      "source_call_id": "normal_interview_064",
+      "paired_group_id": "interview_064",
+      "scenario_id": "normal_credit_check"
+    },
+    {
+      "call_id": "eval_173",
+      "label": "normal",
+      "source_call_id": "normal_interview_031",
+      "paired_group_id": "interview_031",
+      "scenario_id": "normal_remote_control"
+    },
+    {
+      "call_id": "eval_174",
+      "label": "normal",
+      "source_call_id": "normal_interview_097",
+      "paired_group_id": "interview_097",
+      "scenario_id": "normal_refund_deposit"
+    },
+    {
+      "call_id": "eval_175",
+      "label": "normal",
+      "source_call_id": "normal_interview_018",
+      "paired_group_id": "interview_018",
+      "scenario_id": "normal_medical_fee"
+    },
+    {
+      "call_id": "eval_176",
+      "label": "phishing",
+      "source_call_id": "interview_064",
+      "paired_group_id": "interview_064",
+      "scenario_id": "credit_check"
+    },
+    {
+      "call_id": "eval_177",
+      "label": "normal",
+      "source_call_id": "normal_interview_080",
+      "paired_group_id": "interview_080",
+      "scenario_id": "normal_gift_card"
+    },
+    {
+      "call_id": "eval_178",
+      "label": "normal",
+      "source_call_id": "normal_interview_032",
+      "paired_group_id": "interview_032",
+      "scenario_id": "normal_remote_control"
+    },
+    {
+      "call_id": "eval_179",
+      "label": "phishing",
+      "source_call_id": "interview_093",
+      "paired_group_id": "interview_093",
+      "scenario_id": "phone_installment"
+    },
+    {
+      "call_id": "eval_180",
+      "label": "normal",
+      "source_call_id": "normal_interview_024",
+      "paired_group_id": "interview_024",
+      "scenario_id": "normal_certificate_fee"
+    },
+    {
+      "call_id": "eval_181",
+      "label": "normal",
+      "source_call_id": "normal_interview_034",
+      "paired_group_id": "interview_034",
+      "scenario_id": "normal_remote_control"
+    },
+    {
+      "call_id": "eval_182",
+      "label": "phishing",
+      "source_call_id": "interview_030",
+      "paired_group_id": "interview_030",
+      "scenario_id": "otp_payroll"
+    },
+    {
+      "call_id": "eval_183",
+      "label": "normal",
+      "source_call_id": "normal_interview_090",
+      "paired_group_id": "interview_090",
+      "scenario_id": "normal_support_fee"
+    },
+    {
+      "call_id": "eval_184",
+      "label": "normal",
+      "source_call_id": "normal_interview_055",
+      "paired_group_id": "interview_055",
+      "scenario_id": "normal_purchase_rebate"
+    },
+    {
+      "call_id": "eval_185",
+      "label": "phishing",
+      "source_call_id": "interview_087",
+      "paired_group_id": "interview_087",
+      "scenario_id": "support_fee"
+    },
+    {
+      "call_id": "eval_186",
+      "label": "phishing",
+      "source_call_id": "interview_028",
+      "paired_group_id": "interview_028",
+      "scenario_id": "otp_payroll"
+    },
+    {
+      "call_id": "eval_187",
+      "label": "normal",
+      "source_call_id": "normal_interview_028",
+      "paired_group_id": "interview_028",
+      "scenario_id": "normal_otp_payroll"
+    },
+    {
+      "call_id": "eval_188",
+      "label": "normal",
+      "source_call_id": "normal_interview_062",
+      "paired_group_id": "interview_062",
+      "scenario_id": "normal_credit_check"
+    },
+    {
+      "call_id": "eval_189",
+      "label": "phishing",
+      "source_call_id": "interview_027",
+      "paired_group_id": "interview_027",
+      "scenario_id": "otp_payroll"
+    },
+    {
+      "call_id": "eval_190",
+      "label": "phishing",
+      "source_call_id": "interview_019",
+      "paired_group_id": "interview_019",
+      "scenario_id": "medical_fee"
+    },
+    {
+      "call_id": "eval_191",
+      "label": "phishing",
+      "source_call_id": "interview_071",
+      "paired_group_id": "interview_071",
+      "scenario_id": "payroll_login"
+    },
+    {
+      "call_id": "eval_192",
+      "label": "phishing",
+      "source_call_id": "interview_070",
+      "paired_group_id": "interview_070",
+      "scenario_id": "salary_card"
+    },
+    {
+      "call_id": "eval_193",
+      "label": "normal",
+      "source_call_id": "normal_interview_044",
+      "paired_group_id": "interview_044",
+      "scenario_id": "normal_account_rental"
+    },
+    {
+      "call_id": "eval_194",
+      "label": "normal",
+      "source_call_id": "normal_interview_068",
+      "paired_group_id": "interview_068",
+      "scenario_id": "normal_salary_card"
+    },
+    {
+      "call_id": "eval_195",
+      "label": "phishing",
+      "source_call_id": "interview_050",
+      "paired_group_id": "interview_050",
+      "scenario_id": "transfer_test"
+    },
+    {
+      "call_id": "eval_196",
+      "label": "phishing",
+      "source_call_id": "interview_014",
+      "paired_group_id": "interview_014",
+      "scenario_id": "background_fee"
+    },
+    {
+      "call_id": "eval_197",
+      "label": "phishing",
+      "source_call_id": "interview_020",
+      "paired_group_id": "interview_020",
+      "scenario_id": "medical_fee"
+    },
+    {
+      "call_id": "eval_198",
+      "label": "phishing",
+      "source_call_id": "interview_046",
+      "paired_group_id": "interview_046",
+      "scenario_id": "transfer_test"
+    },
+    {
+      "call_id": "eval_199",
+      "label": "phishing",
+      "source_call_id": "interview_067",
+      "paired_group_id": "interview_067",
+      "scenario_id": "salary_card"
+    },
+    {
+      "call_id": "eval_200",
+      "label": "phishing",
+      "source_call_id": "interview_079",
+      "paired_group_id": "interview_079",
+      "scenario_id": "gift_card"
+    }
+  ]
+}
