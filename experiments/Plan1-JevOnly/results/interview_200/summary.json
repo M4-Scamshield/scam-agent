@@ -1,0 +1,57 @@
+{
+  "recorded_on": "2026-11-07T19:08:06",
+  "experiment": "Plan1-JevOnly / synthetic interview 200",
+  "requested_calls": 200,
+  "successful_calls": 200,
+  "failed_calls": 0,
+  "class_counts": {
+    "normal": 100,
+    "phishing": 100
+  },
+  "confusion_matrix": {
+    "tp": 100,
+    "fp": 0,
+    "tn": 100,
+    "fn": 0
+  },
+  "metrics": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "n": 200,
+    "specificity": 1.0,
+    "false_positive_rate": 0.0,
+    "false_negative_rate": 0.0
+  },
+  "performance": {
+    "n": 200,
+    "latency_avg": 0.24373999999999998,
+    "latency_min": 0.184,
+    "latency_max": 0.529,
+    "latency_p50": 0.215,
+    "latency_p95": 0.365,
+    "in_avg": 2308.085,
+    "out_avg": 34.0,
+    "tot_avg": 2342.085,
+    "in_sum": 461617,
+    "out_sum": 6800,
+    "tot_sum": 468417
+  },
+  "prob_yes_range": {
+    "phishing": {
+      "min": 0.9,
+      "max": 1.0
+    },
+    "normal": {
+      "min": 0.0,
+      "max": 0.06
+    }
+  },
+  "failures": [],
+  "evaluation": "전체 통화별 1회 choice verdict 평가, 200개 서로 다른 통화의 첫 측정, 별도 반복 측정 없음",
+  "limitations": [
+    "같은 직무·경력·길이를 공유하는 합성 정상/사기 변형으로 실제 통화 일반화 성능이 아님",
+    "기존 Plan1이 응답의 실제 모델 버전을 저장하지 않아 설정 별칭만 확인 가능"
+  ]
+}

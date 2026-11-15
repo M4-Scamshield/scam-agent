@@ -1,0 +1,954 @@
+{
+  "calls": [
+    {
+      "call_id": "holdout_001",
+      "source_id": "script_100",
+      "label": "normal",
+      "scenario": "경력직 면접의 추천인 연락 동의",
+      "rationale": "추천인 확인은 동의와 연락 범위를 정하는 절차이며 개인 계정 접근을 요구하지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_002",
+      "source_id": "script_097",
+      "label": "normal",
+      "scenario": "포트폴리오 저작권 면접 질문",
+      "rationale": "저작권 관련 근거 제출을 요청하며 협박이나 합의금 요구는 없다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_003",
+      "source_id": "script_006",
+      "label": "phishing",
+      "scenario": "쇼핑몰 운영 면접의 실거래 과제",
+      "rationale": "직무 테스트를 빌미로 지원자 자금으로 개인 상점의 주문을 선결제하게 한다.",
+      "evidence_turn_ids": [
+        7,
+        9
+      ]
+    },
+    {
+      "call_id": "holdout_004",
+      "source_id": "script_063",
+      "label": "normal",
+      "scenario": "면접 일정 변경 긴급 안내",
+      "rationale": "시간 압박은 면접 일정 조정에 관한 것이며 결제나 비밀 유지 요구가 없다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_005",
+      "source_id": "script_028",
+      "label": "phishing",
+      "scenario": "면접 취소 위약금 사칭",
+      "rationale": "참여하지 않은 유료 교육 계약을 주장하며 면접 취소에 금전을 즉시 요구한다.",
+      "evidence_turn_ids": [
+        9,
+        11
+      ]
+    },
+    {
+      "call_id": "holdout_006",
+      "source_id": "script_075",
+      "label": "normal",
+      "scenario": "본인 개인 계정으로 로그인하는 면접장 PC",
+      "rationale": "개인 로그인 문제를 지원자가 제기하고 면접관이 일회용 발표 방식을 안내한다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_007",
+      "source_id": "script_089",
+      "label": "normal",
+      "scenario": "과제 보상 상품권 지급",
+      "rationale": "상품권은 면접관이 지원자에게 지급하는 보상이며 지원자의 코드 구매·전송 요구가 없다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_008",
+      "source_id": "script_013",
+      "label": "phishing",
+      "scenario": "렌더링 노드 등록을 빙자한 결제",
+      "rationale": "그래픽 면접 과제로 지원자 카드에 유료 자원을 생성하고 통제권을 넘기게 한다.",
+      "evidence_turn_ids": [
+        7,
+        9
+      ]
+    },
+    {
+      "call_id": "holdout_009",
+      "source_id": "script_055",
+      "label": "normal",
+      "scenario": "화상 면접의 회의방 비밀번호",
+      "rationale": "회의실 접속 암호를 면접관이 지원자에게 알려 주는 상황이다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_010",
+      "source_id": "script_021",
+      "label": "phishing",
+      "scenario": "채용검증 출금동의 ARS",
+      "rationale": "면접 본인확인이라고 속여 자동출금 동의 ARS를 승인시킨다.",
+      "evidence_turn_ids": [
+        9,
+        11
+      ]
+    },
+    {
+      "call_id": "holdout_011",
+      "source_id": "script_046",
+      "label": "phishing",
+      "scenario": "채용 중단 복구를 위한 해제 코드",
+      "rationale": "계정 오류 복구로 가장하여 지원자의 은행 알림에 나온 실제 이체 승인번호를 수집한다.",
+      "evidence_turn_ids": [
+        5,
+        7
+      ]
+    },
+    {
+      "call_id": "holdout_012",
+      "source_id": "script_008",
+      "label": "phishing",
+      "scenario": "프로필 등록용 휴대폰 개통",
+      "rationale": "채용을 구실로 지원자 명의의 회선을 개통하고 유심을 넘기게 한다.",
+      "evidence_turn_ids": [
+        7,
+        9
+      ]
+    },
+    {
+      "call_id": "holdout_013",
+      "source_id": "script_052",
+      "label": "normal",
+      "scenario": "보안 관제 면접의 원격제어 대응",
+      "rationale": "원격제어 앱은 침해 대응 사례의 소재이며 설치나 개인 단말 제어 요구가 없다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_014",
+      "source_id": "script_003",
+      "label": "phishing",
+      "scenario": "면접 녹화 점검을 빙자한 원격 조작",
+      "rationale": "화상 면접 점검 중 지원자의 은행 앱을 원격으로 조작하려 한다.",
+      "evidence_turn_ids": [
+        7,
+        9
+      ]
+    },
+    {
+      "call_id": "holdout_015",
+      "source_id": "script_056",
+      "label": "normal",
+      "scenario": "보안카드 분실 처리 역할극",
+      "rationale": "면접관은 가상의 고객 상황을 제시하며 실제 보안카드 정보를 받지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_016",
+      "source_id": "script_064",
+      "label": "normal",
+      "scenario": "게임 QA의 계정 공유 금지 논의",
+      "rationale": "계정 양도와 비밀번호는 QA 정책에 관한 대화이며 실제 자격증명 요청이 없다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_017",
+      "source_id": "script_037",
+      "label": "phishing",
+      "scenario": "재택 모니터링 면접의 로그인 QR",
+      "rationale": "메신저 계정 연동으로 위장한 로그인 QR 승인을 요구하고 로그인 기기 경고를 무시시킨다.",
+      "evidence_turn_ids": [
+        5,
+        7
+      ]
+    },
+    {
+      "call_id": "holdout_018",
+      "source_id": "script_032",
+      "label": "phishing",
+      "scenario": "채용검사 결과를 빌미로 한 사설 조회비",
+      "rationale": "확인할 수 없는 신용 불량 기록을 주장하며 개인 명의 입금과 확인 차단을 요구한다.",
+      "evidence_turn_ids": [
+        5,
+        7
+      ]
+    },
+    {
+      "call_id": "holdout_019",
+      "source_id": "script_082",
+      "label": "normal",
+      "scenario": "연구 면접의 데이터 반출 금지",
+      "rationale": "기밀유지는 연구자료 접근에 대한 제한이며 자금이나 계정 탈취와 연결되지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_020",
+      "source_id": "script_096",
+      "label": "normal",
+      "scenario": "회사 제공 클라우드 과제 계정",
+      "rationale": "회사 계정과 제한된 과제 자원을 사용하며 개인 카드나 광범위한 토큰을 요구하지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_021",
+      "source_id": "script_036",
+      "label": "phishing",
+      "scenario": "근로계약 전자서명 문자 가로채기",
+      "rationale": "근로계약 서명으로 위장해 지원자 명의 금융거래의 인증번호를 요구한다.",
+      "evidence_turn_ids": [
+        5,
+        7
+      ]
+    },
+    {
+      "call_id": "holdout_022",
+      "source_id": "script_095",
+      "label": "normal",
+      "scenario": "프리랜서 면접의 계약금 협상",
+      "rationale": "계약금은 발주사가 작업자에게 지급하는 대가이며 돈의 방향이 지원자 수령이다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_023",
+      "source_id": "script_091",
+      "label": "normal",
+      "scenario": "쇼핑몰 면접의 테스트 주문 취소",
+      "rationale": "과제는 사내 데모몰의 가상 잔액으로 진행되어 개인 자금이 나가지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_024",
+      "source_id": "script_042",
+      "label": "phishing",
+      "scenario": "디자이너 면접의 라이선스 활성화 코드",
+      "rationale": "회사 프로그램 등록을 구실로 지원자 개인 결제와 사용권 코드 전달을 요구한다.",
+      "evidence_turn_ids": [
+        5,
+        7
+      ]
+    },
+    {
+      "call_id": "holdout_025",
+      "source_id": "script_043",
+      "label": "phishing",
+      "scenario": "숙소 배정 면접의 보증금",
+      "rationale": "기숙사 제공 채용을 내세워 주소와 계약서를 숨기고 개인 계좌로 보증금을 받으려 한다.",
+      "evidence_turn_ids": [
+        5,
+        7
+      ]
+    },
+    {
+      "call_id": "holdout_026",
+      "source_id": "script_039",
+      "label": "phishing",
+      "scenario": "교육 보조 면접의 학생 결제 대납",
+      "rationale": "면접 점수와 환급 약속을 이용해 관계없는 학생의 수강료를 개인 자금으로 대납시킨다.",
+      "evidence_turn_ids": [
+        5,
+        7
+      ]
+    },
+    {
+      "call_id": "holdout_027",
+      "source_id": "script_090",
+      "label": "normal",
+      "scenario": "면접 자료 열람용 일회용 코드",
+      "rationale": "면접관이 제공한 자료 접근 코드를 지원자가 입력하며 개인 계정의 비밀값이 아니다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_028",
+      "source_id": "script_011",
+      "label": "phishing",
+      "scenario": "채용 보증보험의 담당자 선납",
+      "rationale": "입사 전 보험 가입을 핑계로 보장 내역 없이 담당자 개인 계좌에 선납시킨다.",
+      "evidence_turn_ids": [
+        7,
+        9
+      ]
+    },
+    {
+      "call_id": "holdout_029",
+      "source_id": "script_079",
+      "label": "normal",
+      "scenario": "QA 면접의 유료 앱 테스트 환경",
+      "rationale": "테스트 구매 비용과 회사 제공 계정을 논의하며 개인 선결제를 요구하지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_030",
+      "source_id": "script_025",
+      "label": "phishing",
+      "scenario": "포트폴리오 저작권 분쟁 합의금",
+      "rationale": "면접 중 확인되지 않은 저작권 분쟁을 내세워 개인 계좌 즉시 송금과 외부 확인 금지를 요구한다.",
+      "evidence_turn_ids": [
+        9,
+        11
+      ]
+    },
+    {
+      "call_id": "holdout_031",
+      "source_id": "script_058",
+      "label": "normal",
+      "scenario": "입사 검진 기관 직접 예약",
+      "rationale": "검진비 정산과 기관 예약을 설명하며 면접 담당자가 개인 수취나 인증정보를 요구하지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_032",
+      "source_id": "script_044",
+      "label": "phishing",
+      "scenario": "중개 면접의 자격증 발급비",
+      "rationale": "존재를 확인할 수 없는 자격을 합격 필수라고 주장하고 개인 송금과 외부 확인 금지를 요구한다.",
+      "evidence_turn_ids": [
+        5,
+        7
+      ]
+    },
+    {
+      "call_id": "holdout_033",
+      "source_id": "script_005",
+      "label": "phishing",
+      "scenario": "면접 사례비 초과 지급 반환",
+      "rationale": "사례비를 잘못 보냈다고 주장하며 입금 확인 없이 다른 사람 계좌로 반환을 요구한다.",
+      "evidence_turn_ids": [
+        7,
+        9
+      ]
+    },
+    {
+      "call_id": "holdout_034",
+      "source_id": "script_030",
+      "label": "phishing",
+      "scenario": "지원금 수령 은행 방문 지시",
+      "rationale": "면접 보너스를 빌미로 현금 인출과 전달 및 은행 직원에게 용도 은폐를 요구한다.",
+      "evidence_turn_ids": [
+        9,
+        11
+      ]
+    },
+    {
+      "call_id": "holdout_035",
+      "source_id": "script_001",
+      "label": "phishing",
+      "scenario": "재택 교정 면접의 작업 슬롯 예치",
+      "rationale": "채용을 빌미로 설명 확인 전 개인 명의 수취인에게 반환 조건부 금전을 보내게 한다.",
+      "evidence_turn_ids": [
+        7,
+        9
+      ]
+    },
+    {
+      "call_id": "holdout_036",
+      "source_id": "script_034",
+      "label": "phishing",
+      "scenario": "온라인 판매 면접의 구매자 환불",
+      "rationale": "수취 사실이 없는 거래의 환불을 지원자에게 떠넘기고 제삼자 송금을 유도한다.",
+      "evidence_turn_ids": [
+        5,
+        7
+      ]
+    },
+    {
+      "call_id": "holdout_037",
+      "source_id": "script_073",
+      "label": "normal",
+      "scenario": "면접 과제의 구매 전환 계산",
+      "rationale": "상품 구매는 주어진 가상 표의 계산 대상이며 지원자에게 구매를 요구하지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_038",
+      "source_id": "script_098",
+      "label": "normal",
+      "scenario": "현금 취급 직무의 모의 금액 대조",
+      "rationale": "현금 전달은 모의 상황 문제이며 실제 인출이나 제삼자 전달 요구가 없다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_039",
+      "source_id": "script_088",
+      "label": "normal",
+      "scenario": "계약직 면접의 보증보험 문의",
+      "rationale": "보증보험 요건을 사전에 서면 검토하며 담당자 개인 계좌 납입 요구가 없다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_040",
+      "source_id": "script_033",
+      "label": "phishing",
+      "scenario": "보안 면접용 MDM의 인증서 우회",
+      "rationale": "사내 점검을 빌미로 출처 불명 앱에 접근성 권한을 주고 은행 경고를 우회시킨다.",
+      "evidence_turn_ids": [
+        5,
+        7
+      ]
+    },
+    {
+      "call_id": "holdout_041",
+      "source_id": "script_072",
+      "label": "normal",
+      "scenario": "정보보안 면접의 비밀유지 계약",
+      "rationale": "채용 과제의 기밀유지와 법률 검토 가능성을 설명하며 금전 요구는 없다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_042",
+      "source_id": "script_035",
+      "label": "phishing",
+      "scenario": "유료 채용 패스의 개인 계좌 우회",
+      "rationale": "면접 합격을 보장한다며 채용권을 판매하고 회사 확인을 차단한다.",
+      "evidence_turn_ids": [
+        5,
+        7
+      ]
+    },
+    {
+      "call_id": "holdout_043",
+      "source_id": "script_061",
+      "label": "normal",
+      "scenario": "주니어 면접의 개인 메일 MFA",
+      "rationale": "지원자가 자기 메일 보안을 설명할 뿐 면접관이 비밀번호나 코드를 수집하지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_044",
+      "source_id": "script_029",
+      "label": "phishing",
+      "scenario": "급여 카드 발급의 체크카드 수거",
+      "rationale": "급여 계좌 점검 명목으로 체크카드와 비밀번호를 넘기게 한다.",
+      "evidence_turn_ids": [
+        9,
+        11
+      ]
+    },
+    {
+      "call_id": "holdout_045",
+      "source_id": "script_071",
+      "label": "normal",
+      "scenario": "광고 면접의 계정 권한 최소화",
+      "rationale": "광고 계정 권한은 설계 질문이며 지원자 계정이나 결제수단을 넘겨받지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_046",
+      "source_id": "script_040",
+      "label": "phishing",
+      "scenario": "임원 면접 출장비 정산 링크",
+      "rationale": "출장비 선지급으로 위장해 개인 은행의 비밀번호와 보안카드 전체를 수집한다.",
+      "evidence_turn_ids": [
+        5,
+        7
+      ]
+    },
+    {
+      "call_id": "holdout_047",
+      "source_id": "script_017",
+      "label": "phishing",
+      "scenario": "개발자 면접용 저장소 토큰",
+      "rationale": "과제 제출을 구실로 개인 저장소의 광범위한 접근 토큰과 결제 권한을 요구한다.",
+      "evidence_turn_ids": [
+        7,
+        9
+      ]
+    },
+    {
+      "call_id": "holdout_048",
+      "source_id": "script_020",
+      "label": "phishing",
+      "scenario": "합격서 발급 전 단말 할부",
+      "rationale": "합격 조건으로 지원자 명의의 할부 기기를 구입해 제삼자에게 넘기게 한다.",
+      "evidence_turn_ids": [
+        7,
+        9
+      ]
+    },
+    {
+      "call_id": "holdout_049",
+      "source_id": "script_076",
+      "label": "normal",
+      "scenario": "금융 상담원 면접의 안전계좌 문구",
+      "rationale": "안전계좌와 송금 요구는 피싱 사례에 대한 지식 질문이다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_050",
+      "source_id": "script_069",
+      "label": "normal",
+      "scenario": "지정 채용 사이트의 본인 인증",
+      "rationale": "지원자가 채용 사이트에서 직접 인증하고 면접관은 결과 상태만 확인한다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_051",
+      "source_id": "script_048",
+      "label": "phishing",
+      "scenario": "택배 채용 면접의 보증인 인증",
+      "rationale": "근무 보증인 확인을 빙자해 가족 명의 금융 인증과 알림 차단을 요구한다.",
+      "evidence_turn_ids": [
+        5,
+        7
+      ]
+    },
+    {
+      "call_id": "holdout_052",
+      "source_id": "script_086",
+      "label": "normal",
+      "scenario": "테스터 채용의 보안 앱 회사 기기 설치",
+      "rationale": "회사 소유 시험 단말의 보안 앱 설치와 초기화에 관한 업무 안내다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_053",
+      "source_id": "script_002",
+      "label": "phishing",
+      "scenario": "채용 포털을 가장한 은행 연결",
+      "rationale": "지원자 확인을 구실로 외부 페이지에 인터넷뱅킹 자격증명과 OTP를 입력시킨다.",
+      "evidence_turn_ids": [
+        7,
+        9
+      ]
+    },
+    {
+      "call_id": "holdout_054",
+      "source_id": "script_060",
+      "label": "normal",
+      "scenario": "장비 수령 보증 문서",
+      "rationale": "회사 자산 반출 확인서에 대한 면접 질의이며 금전 예치나 접근수단 요구가 없다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_055",
+      "source_id": "script_078",
+      "label": "normal",
+      "scenario": "통역 면접의 환율 구두 문제",
+      "rationale": "해외 송금 관련 문장은 통역 시험 지문이며 실제 거래를 시키지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_056",
+      "source_id": "script_014",
+      "label": "phishing",
+      "scenario": "현장 면접 장소 확정 수수료",
+      "rationale": "면접 장소를 공개하지 않은 채 담당자 개인 QR로 예약금을 요구한다.",
+      "evidence_turn_ids": [
+        7,
+        9
+      ]
+    },
+    {
+      "call_id": "holdout_057",
+      "source_id": "script_045",
+      "label": "phishing",
+      "scenario": "번역 면접 계약의 보관금",
+      "rationale": "기밀자료 열람을 이유로 계약 내용 제공 전 개인 자금의 송금을 요구한다.",
+      "evidence_turn_ids": [
+        5,
+        7
+      ]
+    },
+    {
+      "call_id": "holdout_058",
+      "source_id": "script_099",
+      "label": "normal",
+      "scenario": "면접 일정용 QR의 채용 페이지 확인",
+      "rationale": "QR은 지원자가 공고에서 확인한 채용 페이지의 일정 선택이며 결제·로그인 승인 요구가 없다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_059",
+      "source_id": "script_074",
+      "label": "normal",
+      "scenario": "인터뷰 사례비 중복 지급 확인",
+      "rationale": "지급 오류에 대해 회계 확인을 기다리며 개인 계좌 반환을 요구하지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_060",
+      "source_id": "script_066",
+      "label": "normal",
+      "scenario": "기숙사 사용료와 급여 공제 협의",
+      "rationale": "숙소 조건과 합격 후 계약 검토에 관한 면접이며 선입금 요구가 없다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_061",
+      "source_id": "script_067",
+      "label": "normal",
+      "scenario": "교육비 반환 약정에 대한 질문",
+      "rationale": "교육비 분쟁 가능성이 있는 계약을 검토하는 대화로 즉시 자금 편취 증거는 없다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_062",
+      "source_id": "script_084",
+      "label": "normal",
+      "scenario": "지원자 명의 전화번호 정정",
+      "rationale": "변경 대상은 채용 지원서 연락처이며 금융 계정의 번호를 바꾸지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_063",
+      "source_id": "script_068",
+      "label": "normal",
+      "scenario": "배달 면접의 개인 장비 조건",
+      "rationale": "개인 장비와 보험 조건에 대한 설명이며 판매자 지정·개인 송금 강요가 없다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_064",
+      "source_id": "script_022",
+      "label": "phishing",
+      "scenario": "프리랜서 통역 면접의 송금 환율 검사",
+      "rationale": "언어 테스트라고 하면서 개인 돈을 제삼자에게 해외 송금하게 한다.",
+      "evidence_turn_ids": [
+        9,
+        11
+      ]
+    },
+    {
+      "call_id": "holdout_065",
+      "source_id": "script_065",
+      "label": "normal",
+      "scenario": "외국계 면접의 외화 급여 선택",
+      "rationale": "외화 수취 계좌와 환율 적용일을 협의할 뿐 환전 후 제삼자 송금을 시키지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_066",
+      "source_id": "script_041",
+      "label": "phishing",
+      "scenario": "입사 전 보안등급 상향 예치",
+      "rationale": "보안등급 심사를 명목으로 대출 실행금의 개인 계좌 이체를 요구한다.",
+      "evidence_turn_ids": [
+        5,
+        7
+      ]
+    },
+    {
+      "call_id": "holdout_067",
+      "source_id": "script_057",
+      "label": "normal",
+      "scenario": "면접 과제용 테스트 카드",
+      "rationale": "샌드박스 결제와 문서의 가짜 카드값을 쓰며 개인 결제수단을 요구하지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_068",
+      "source_id": "script_026",
+      "label": "phishing",
+      "scenario": "계약금 수령을 빙자한 돈 받기 링크",
+      "rationale": "채용 계약금을 받으려면 외부 페이지에서 은행 인증서 파일과 암호를 제출하라고 한다.",
+      "evidence_turn_ids": [
+        9,
+        11
+      ]
+    },
+    {
+      "call_id": "holdout_069",
+      "source_id": "script_092",
+      "label": "normal",
+      "scenario": "교통비 영수증 금액 정정",
+      "rationale": "면접 비용을 실제 영수증과 대조하는 정산이며 지원자에게 선반환을 요구하지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_070",
+      "source_id": "script_009",
+      "label": "phishing",
+      "scenario": "근태 계정 복구 코드 수집",
+      "rationale": "신규 계정 설정인 것처럼 지원자 개인 메일의 복구 코드를 수집한다.",
+      "evidence_turn_ids": [
+        7,
+        9
+      ]
+    },
+    {
+      "call_id": "holdout_071",
+      "source_id": "script_059",
+      "label": "normal",
+      "scenario": "회계 면접의 잘못된 계좌 환불 원칙",
+      "rationale": "잘못된 송금 반환은 면접 질문 속 상황이며 실제 개인 이체 요구가 없다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_072",
+      "source_id": "script_024",
+      "label": "phishing",
+      "scenario": "외국계 면접의 급여 계정 보안 해제",
+      "rationale": "채용 보안 설정을 명목으로 은행의 지연이체와 이상거래 차단을 해제시키고 제삼자 계좌 등록을 유도한다.",
+      "evidence_turn_ids": [
+        9,
+        11
+      ]
+    },
+    {
+      "call_id": "holdout_073",
+      "source_id": "script_077",
+      "label": "normal",
+      "scenario": "검사 전 금식 안내와 검진비",
+      "rationale": "건강검진 준비와 회사 정산 방식에 대한 면접 후 안내이다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_074",
+      "source_id": "script_053",
+      "label": "normal",
+      "scenario": "면접비 계좌 제출",
+      "rationale": "사례비 지급을 위한 수취 계좌 정보만 서면 제출하며 자금·접근수단 양도를 요구하지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_075",
+      "source_id": "script_023",
+      "label": "phishing",
+      "scenario": "취업 지원금 신청의 선입금",
+      "rationale": "채용과 지원금 지급을 결부해 증빙 없이 담당자에게 선입금을 요구한다.",
+      "evidence_turn_ids": [
+        9,
+        11
+      ]
+    },
+    {
+      "call_id": "holdout_076",
+      "source_id": "script_087",
+      "label": "normal",
+      "scenario": "특수 자격증 요구와 지원 철회",
+      "rationale": "직무 요건이 맞지 않아 지원을 종료할 뿐 자격 판매나 송금을 유도하지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_077",
+      "source_id": "script_080",
+      "label": "normal",
+      "scenario": "이전 회사 신용정보 취급 경험",
+      "rationale": "신용조회는 이전 직무 경험 설명의 대상이며 현재 지원자의 금융정보를 조회하지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_078",
+      "source_id": "script_050",
+      "label": "phishing",
+      "scenario": "채용 일정 관리자 명의의 번호 변경",
+      "rationale": "채용 알림 수신 설정이라고 속여 개인 은행 계정의 연락처를 상대방 번호로 변경하게 한다.",
+      "evidence_turn_ids": [
+        5,
+        7
+      ]
+    },
+    {
+      "call_id": "holdout_079",
+      "source_id": "script_027",
+      "label": "phishing",
+      "scenario": "면접 플랫폼 실명 확인의 신분증 재촬영",
+      "rationale": "채용 계정 확인을 구실로 금융 앱의 신분증 촬영과 얼굴 인증을 실시간 대행시킨다.",
+      "evidence_turn_ids": [
+        9,
+        11
+      ]
+    },
+    {
+      "call_id": "holdout_080",
+      "source_id": "script_012",
+      "label": "phishing",
+      "scenario": "온라인 시험 계정의 카드 확인",
+      "rationale": "평가 계정 인증으로 위장해 카드번호 유효기간 CVC를 구두로 수집한다.",
+      "evidence_turn_ids": [
+        7,
+        9
+      ]
+    },
+    {
+      "call_id": "holdout_081",
+      "source_id": "script_010",
+      "label": "phishing",
+      "scenario": "급여 수령 지갑의 복구 문구",
+      "rationale": "급여 계좌 설정을 빙자해 가상자산 지갑의 복구 문구를 전달받으려 한다.",
+      "evidence_turn_ids": [
+        7,
+        9
+      ]
+    },
+    {
+      "call_id": "holdout_082",
+      "source_id": "script_007",
+      "label": "phishing",
+      "scenario": "정산 보조 지원자의 계좌 중계",
+      "rationale": "면접 과제를 명목으로 개인 계좌에 제삼자 자금을 받아 다른 곳으로 전달시킨다.",
+      "evidence_turn_ids": [
+        7,
+        9
+      ]
+    },
+    {
+      "call_id": "holdout_083",
+      "source_id": "script_094",
+      "label": "normal",
+      "scenario": "대면 면접의 출입 보안 물품 보관",
+      "rationale": "면접 장소 출입을 위한 잠시 보관과 반환 절차이며 금융수단 접근을 요구하지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_084",
+      "source_id": "script_031",
+      "label": "phishing",
+      "scenario": "라이브커머스 면접의 결제 한도 시험",
+      "rationale": "한도 확인 실습으로 지원자의 휴대폰 소액결제를 발생시키고 구매 코드를 요구한다.",
+      "evidence_turn_ids": [
+        5,
+        7
+      ]
+    },
+    {
+      "call_id": "holdout_085",
+      "source_id": "script_016",
+      "label": "phishing",
+      "scenario": "비밀 프로젝트의 출금 검증",
+      "rationale": "비밀 채용을 핑계로 지원자 자금 이체와 외부 확인 차단을 요구한다.",
+      "evidence_turn_ids": [
+        7,
+        9
+      ]
+    },
+    {
+      "call_id": "holdout_086",
+      "source_id": "script_062",
+      "label": "normal",
+      "scenario": "회사의 원격 지원 절차 질문",
+      "rationale": "지원자는 사내 기기 원격 지원 경험을 말하며 본인 기기의 원격 조작이 진행되지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_087",
+      "source_id": "script_049",
+      "label": "phishing",
+      "scenario": "면접 합격 확인 전 환불 계좌 검사",
+      "rationale": "면접 예치금 환급을 주장하면서 지원자가 직접 입금하는 소액을 시작으로 추가 송금을 요구한다.",
+      "evidence_turn_ids": [
+        5,
+        7
+      ]
+    },
+    {
+      "call_id": "holdout_088",
+      "source_id": "script_047",
+      "label": "phishing",
+      "scenario": "회계 면접의 영수증 발급 연습",
+      "rationale": "업무 평가라고 속여 지원자 명의의 허위 결제와 환급 계좌 변경을 요구한다.",
+      "evidence_turn_ids": [
+        5,
+        7
+      ]
+    },
+    {
+      "call_id": "holdout_089",
+      "source_id": "script_083",
+      "label": "normal",
+      "scenario": "가상자산 서비스 면접의 지갑 복구 설계",
+      "rationale": "복구 문구는 설계 토론 대상이며 지원자 개인 지갑 정보를 요구하지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_090",
+      "source_id": "script_019",
+      "label": "phishing",
+      "scenario": "간편결제 한도 복원 명목의 QR",
+      "rationale": "면접비 지급으로 위장한 결제 QR을 승인하게 하고 결제 경고를 무시시킨다.",
+      "evidence_turn_ids": [
+        7,
+        9
+      ]
+    },
+    {
+      "call_id": "holdout_091",
+      "source_id": "script_070",
+      "label": "normal",
+      "scenario": "신분증 현장 대조",
+      "rationale": "면접장 신원 대조를 위해 현장에서 성명과 사진만 확인하는 안내다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_092",
+      "source_id": "script_051",
+      "label": "normal",
+      "scenario": "백엔드 면접의 OTP 장애 설계",
+      "rationale": "OTP는 시스템 설계의 주제이며 지원자의 실제 인증정보를 요구하지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_093",
+      "source_id": "script_015",
+      "label": "phishing",
+      "scenario": "추천인 확인을 빙자한 메신저 인증",
+      "rationale": "추천인 조회 명목으로 지원자의 개인 메신저 로그인 인증번호를 가로챈다.",
+      "evidence_turn_ids": [
+        7,
+        9
+      ]
+    },
+    {
+      "call_id": "holdout_094",
+      "source_id": "script_004",
+      "label": "phishing",
+      "scenario": "장비 구매 쿠폰을 가장한 상품권 전송",
+      "rationale": "장비 지원을 빌미로 환금 가능한 상품권 코드를 면접관에게 전달시킨다.",
+      "evidence_turn_ids": [
+        7,
+        9
+      ]
+    },
+    {
+      "call_id": "holdout_095",
+      "source_id": "script_093",
+      "label": "normal",
+      "scenario": "인사 면접의 채용 사기 제보 처리",
+      "rationale": "제삼자의 사기 의심 연락을 어떻게 처리할지 묻는 직무 면접이다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_096",
+      "source_id": "script_081",
+      "label": "normal",
+      "scenario": "파견 면접의 채용 업체 확인 요청",
+      "rationale": "채용 대행 관계와 확인 경로를 안내하며 의문 제기를 막지 않는다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_097",
+      "source_id": "script_054",
+      "label": "normal",
+      "scenario": "최종 면접 후 급여 협의",
+      "rationale": "급여와 통장 사본은 합격 후 행정 안내이며 즉시 인증정보나 송금 요구가 없다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_098",
+      "source_id": "script_018",
+      "label": "phishing",
+      "scenario": "마케팅 면접의 광고 계정 양도",
+      "rationale": "채용 실습 명목으로 개인 결제수단이 연결된 광고 계정의 관리자 권한을 넘기게 한다.",
+      "evidence_turn_ids": [
+        7,
+        9
+      ]
+    },
+    {
+      "call_id": "holdout_099",
+      "source_id": "script_085",
+      "label": "normal",
+      "scenario": "채용 연계 유료 교육에 대한 거절",
+      "rationale": "유료 과정 소개는 있으나 채용 보장·기만적 선입금·거절 방해가 없는 대화다.",
+      "evidence_turn_ids": []
+    },
+    {
+      "call_id": "holdout_100",
+      "source_id": "script_038",
+      "label": "phishing",
+      "scenario": "입사 전 외화 환전 대행",
+      "rationale": "채용 실습을 명목으로 개인 자금을 환전한 뒤 신원 불명 지갑으로 보내게 한다.",
+      "evidence_turn_ids": [
+        5,
+        7
+      ]
+    }
+  ]
+}
