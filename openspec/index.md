@@ -20,6 +20,16 @@
 
 공통 설계의 기준은 `docs/design/`, 현재 구현 설명은 `docs/architecture/`에 둔다. change 문서는 해당 변경의 요구와 적용 방법·진행을 담고 상위 문서로 연결한다. 변경이 반영되면 관련 기준 문서를 갱신하고, 본문의 관련 문서 항목에서 해당 change와 검증 기록으로 연결한다.
 
+## Jev 상태 감지·상태별 LLM 대응 — 진행 중(설계 제안)
+
+2026-11-15 사용자 요청으로 시작했다. KorCCVi에서 나온 대화 특징 F1~F6을 Jev가 상태로 감지하고, 켜진 상태별로 LLM이 대화 맥락을 보고 최종 판단과 대응을 한다. 2026-11-16 팀장과 이 구조로 전환하기로 협의했고 작업 이슈 [#13](https://github.com/M4-Scamshield/scam-agent/issues/13)을 등록했다. 상태별 LLM은 Claude API 에이전트로 쓴다. 구현 전이라 현재 2AS 계약을 아직 대체하지 않는다. 코드 변경, Jev 실제 호출, 평가는 하지 않았다.
+
+- [proposal](changes/jev-state-agents/proposal.md): 목적·범위·완료 조건.
+- [spec](changes/jev-state-agents/spec.md): 상태 정의·라우팅·LLM 계약·절대선.
+- [design](changes/jev-state-agents/design.md): 흐름·State 안·대안·미정 사항.
+- [tasks](changes/jev-state-agents/tasks.md): 진행과 남은 작업.
+- [work](changes/jev-state-agents/work.md): 경위·데이터 근거·다음 행동.
+
 ## KorCCVi 사기 수법 분석 — 분석 범위 완료
 
 2026-11-15 사용자 요청으로 KorCCVi 사기 706통화를 화자 표시 대본으로 만들었다. LLM 라벨러가 유형과 R1~R9·NEW 수법을 달았고, 유형별로 집계했다. 서비스 코드는 바꾸지 않았다. 2026-11-16 R·N을 행동 특징 F1~F6으로 다시 묶은 집계를 추가했다. 사람 검수, 정상 통화 비교, R 목록 개정은 후속이다. 결과는 [분석 문서](../docs/analysis/korccvi-scam-tactics.md)에 있다.

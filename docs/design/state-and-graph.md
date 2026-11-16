@@ -68,3 +68,4 @@ Yes/No 분기·이전 안내 초기화·대화 누적/통화 분리·입출력 �
 - [현재 아키텍처](../architecture/overview.md) · [입력 예제 흐름](mvp-flow.md) · [컨텍스트](../project-context.md)
 - [2AS proposal](../../openspec/changes/jev-gemini-two-agent/proposal.md) · [spec](../../openspec/changes/jev-gemini-two-agent/spec.md) · [design](../../openspec/changes/jev-gemini-two-agent/design.md)
 - [tasks](../../openspec/changes/jev-gemini-two-agent/tasks.md) · [검증 근거](../../openspec/changes/jev-gemini-two-agent/work.md)
+- 제안 중(미채택): [Jev 상태 감지·상태별 LLM 대응](../../openspec/changes/jev-state-agents/proposal.md)
