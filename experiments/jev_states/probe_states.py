@@ -5,7 +5,7 @@
 
 입력(재배포 금지 자료라 data/ 에만 둔다, Git 제외):
   data/korccvi/*_segment_manifest_merged.jsonl, data/korccvi_tactics/annotations/*.jsonl
-출력: experiments/jev_states/results/probe.json — call_id·정답 F·상태별 판단·확률·지연·토큰만 쓴다. 대본은 쓰지 않는다.
+출력: experiments/jev_states/results/<--out-name, 기본 probe.json> — call_id·정답 F·상태별 판단·확률·지연·토큰만 쓴다. 대본은 쓰지 않는다.
 
 실행:
   python3 experiments/jev_states/probe_states.py --dry-run          # 표본만 확인, API 호출 없음
@@ -53,14 +53,16 @@ STATES = {
            "겁을 주거나 미끼를 던져 판단을 서두르게 한다. 사건 연루·혐의 추궁·처벌·소환·계좌 동결 위협, "
            "시간 압박, 돈을 먼저 내야 받을 수 있는 혜택·저금리·고수익 약속이 포함된다.",
            "위협이나 미끼가 없거나, 일반 상품·일정 안내만 한다."),
-    "F5": ("고립",
-           "상대가 주변에 확인하거나 도움을 받지 못하게 한다. 비밀 유지 요구, 혼자 있는 곳으로 이동, 통화를 끊지 못하게 함, "
-           "은행원·가족에게 할 거짓말을 알려 줌, 직접 확인하지 말라고 함이 포함된다.",
-           "이런 고립 시도가 없거나, 통화 품질 때문에 조용한 곳을 권하기만 한다."),
-    "F6": ("권위 사칭",
-           "수사·금융기관의 권위로 통화를 공식 절차처럼 꾸민다. 기관명·직함·사건번호를 대며 전화로 조사함, 녹취 동의를 받음, "
-           "용의자를 아는지 물음이 포함된다.",
-           "소속만 밝히고 조사나 절차 연출은 없거나, 기관을 사칭하지 않는다."),
+    "F5": ("고립·의심 차단",
+           "상대가 주변에 확인하거나 의심하지 못하게 한다. 비밀 유지·신고하지 말라는 요구, 주변 사람을 피하거나 혼자 있는 곳으로 가게 함, "
+           "통화를 끊지 못하게 함, 은행원·가족·다른 담당자에게 할 말을 정해 줌, 직접 확인하지 말라고 함, "
+           "상대의 의심이나 걱정을 '안전하다·기록이 남지 않는다·문제없다'며 무마함이 포함된다.",
+           "이런 시도가 없거나, 통화 품질 때문에 조용한 곳을 권하기만 한다."),
+    "F6": ("권위·절차 연출",
+           "수사기관·금융회사·공공기관의 권위를 내세운다. 기관·회사명과 직함·이름을 대며 자신을 소개함, "
+           "사건번호·공문·규정·녹취 절차를 언급함, 전화로 조사하거나 특정 인물을 아는지 물음, "
+           "대형 금융그룹·정부 지원 상품이라고 내세움이 포함된다.",
+           "기관이나 회사를 내세우지 않는다."),
 }
 
 
@@ -125,6 +127,7 @@ def main():
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--timeout", type=int, default=60)
     p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--out-name", default="probe.json")
     args = p.parse_args()
 
     calls = sample(args.scam, args.normal, args.max_chars, args.seed)
@@ -151,7 +154,7 @@ def main():
     (HERE / "results").mkdir(exist_ok=True)
     out = {"model_env": "TYPESAFE_DEFAULT_MODEL", "questions": {k: v["instructions"] for k, v in questions.items()},
            "calls": results}
-    (HERE / "results" / "probe.json").write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
+    (HERE / "results" / args.out_name).write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
 if __name__ == "__main__":
