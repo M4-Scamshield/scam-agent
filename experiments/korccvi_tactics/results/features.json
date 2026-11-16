@@ -3,7 +3,7 @@
  "excluded": "판단불가",
  "multi_feature_calls": 608,
  "multi_feature_pct": 87.6,
- "f2_strong_pct": 29.0,
+ "f2_strong_pct": 28.5,
  "features": [
   {
    "code": "F1",
@@ -24,8 +24,8 @@
     "R2",
     "R3"
    ],
-   "calls": 247,
-   "calls_pct": 35.6,
+   "calls": 245,
+   "calls_pct": 35.3,
    "first_pos_median": 0.3
   },
   {
@@ -50,8 +50,8 @@
     "N8",
     "R6"
    ],
-   "calls": 542,
-   "calls_pct": 78.1,
+   "calls": 548,
+   "calls_pct": 79.0,
    "first_pos_median": 0.2
   },
   {
@@ -74,8 +74,8 @@
     "N3",
     "R8"
    ],
-   "calls": 579,
-   "calls_pct": 83.4,
+   "calls": 576,
+   "calls_pct": 83.0,
    "first_pos_median": 0.03
   }
  ]
