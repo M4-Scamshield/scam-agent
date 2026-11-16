@@ -20,6 +20,16 @@
 
 공통 설계의 기준은 `docs/design/`, 현재 구현 설명은 `docs/architecture/`에 둔다. change 문서는 해당 변경의 요구와 적용 방법·진행을 담고 상위 문서로 연결한다. 변경이 반영되면 관련 기준 문서를 갱신하고, 본문의 관련 문서 항목에서 해당 change와 검증 기록으로 연결한다.
 
+## KorCCVi 사기 수법 분석 — 분석 범위 완료
+
+2026-11-15 사용자 요청으로 KorCCVi 사기 706통화를 화자 표시 대본으로 만들었다. LLM 라벨러가 유형과 R1~R9·NEW 수법을 달았고, 유형별로 집계했다. 서비스 코드는 바꾸지 않았다. 2026-11-16 R·N을 행동 특징 F1~F6으로 다시 묶은 집계를 추가했다. 사람 검수, 정상 통화 비교, R 목록 개정은 후속이다. 결과는 [분석 문서](../docs/analysis/korccvi-scam-tactics.md)에 있다.
+
+- [proposal](changes/korccvi-scam-tactics/proposal.md): 목적·범위·완료 조건.
+- [spec](changes/korccvi-scam-tactics/spec.md): 대본·라벨·집계 계약.
+- [design](changes/korccvi-scam-tactics/design.md): 데이터 흐름·라벨러 선택.
+- [tasks](changes/korccvi-scam-tactics/tasks.md): 완료 범위와 후속.
+- [work](changes/korccvi-scam-tactics/work.md): 실행 근거·원문 검사·다음 행동.
+
 ## 면접 사칭 통화 합성 데이터 — 완료·새 대본 재평가 완료
 
 2026-11-07 사용자 요청에 따라 지원자와 피싱범의 1대1 면접 사기 통화 100건을 작성했고, 후속 요청으로 비교용 정상 면접 100건과 실제 Plan1 평가를 추가했다. 각각 50~100문장·7,451문장이며 20개 주제·100개 직무와 경력 사례를 사용한다. 200건 실제 Jev 평가에서 TP 100·TN 100·FP 0·FN 0·실패 0을 확인했다. [사기 안내](../datasets/interview_phishing/README.md), [정상·혼합 평가 안내](../datasets/interview_normal/README.md), [분석과 결과](../docs/analysis/interview-phishing-dataset.md)에 형식·합성 문답 공유·평가 한계가 있다. 발표 PPTX·실제 음성·다자 통화·실측 일반화 성능은 미확인이다.

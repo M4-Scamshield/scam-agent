@@ -14,3 +14,6 @@ __pycache__/
 experiments/data/
 # 실행 로그는 결과가 아니므로 제외(metrics.md/predictions.csv/figure만 커밋)
 experiments/**/results/*.log
+
+# 실험 데이터셋·임베딩·API 응답(재배포 금지 자료 포함)
+data/

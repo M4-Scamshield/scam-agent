@@ -1,0 +1,82 @@
+{
+ "calls": 694,
+ "excluded": "판단불가",
+ "multi_feature_calls": 608,
+ "multi_feature_pct": 87.6,
+ "f2_strong_pct": 29.0,
+ "features": [
+  {
+   "code": "F1",
+   "name": "자산 넘기기",
+   "elements": [
+    "R1",
+    "R5"
+   ],
+   "calls": 142,
+   "calls_pct": 20.5,
+   "first_pos_median": 0.28
+  },
+  {
+   "code": "F2",
+   "name": "정보 캐기",
+   "elements": [
+    "N4",
+    "R2",
+    "R3"
+   ],
+   "calls": 247,
+   "calls_pct": 35.6,
+   "first_pos_median": 0.3
+  },
+  {
+   "code": "F3",
+   "name": "통화 밖 이동",
+   "elements": [
+    "R4",
+    "R9"
+   ],
+   "calls": 128,
+   "calls_pct": 18.4,
+   "first_pos_median": 0.53
+  },
+  {
+   "code": "F4",
+   "name": "공포·미끼",
+   "elements": [
+    "N1",
+    "N10",
+    "N5",
+    "N6",
+    "N8",
+    "R6"
+   ],
+   "calls": 542,
+   "calls_pct": 78.1,
+   "first_pos_median": 0.2
+  },
+  {
+   "code": "F5",
+   "name": "고립·의심 차단",
+   "elements": [
+    "N7",
+    "N9",
+    "R7"
+   ],
+   "calls": 274,
+   "calls_pct": 39.5,
+   "first_pos_median": 0.37
+  },
+  {
+   "code": "F6",
+   "name": "권위·절차 연출",
+   "elements": [
+    "N2",
+    "N3",
+    "R8"
+   ],
+   "calls": 579,
+   "calls_pct": 83.4,
+   "first_pos_median": 0.03
+  }
+ ]
+}
