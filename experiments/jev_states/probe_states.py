@@ -44,7 +44,7 @@ STATES = {
     "F2": ("정보 캐기",
            "상대의 금융·인증 정보를 알아내려 한다. 인증번호·OTP·비밀번호·카드번호, 잔액·계좌 수·거래 은행·보유 자산, "
            "신분증 사본, 주민등록번호를 묻는다.",
-           "이름·생년월일로 본인 확인만 하거나, 이런 정보를 묻지 않는다."),
+           "이름·생년월일로 본인 확인만 하거나, 사건에 나온 계좌를 직접 만들었는지 추궁만 하거나, 이런 정보를 묻지 않는다."),
     "F3": ("통화 밖 이동",
            "상대를 이 통화 밖의 다른 채널이나 장소로 이끈다. 앱 설치, 링크·인터넷 주소 접속, 다른 전화번호로 걸기, "
            "메신저 대화, 특정 장소·지점으로 이동하라고 한다.",
@@ -52,18 +52,22 @@ STATES = {
     "F4": ("공포·미끼",
            "겁을 주거나 미끼를 던져 판단을 서두르게 한다. 사건 연루·혐의 추궁·처벌·소환·계좌 동결 위협, "
            "시간 압박, 돈을 먼저 내야 받을 수 있는 혜택·저금리·고수익 약속이 포함된다.",
-           "위협이나 미끼가 없거나, 일반 상품·일정 안내만 한다."),
+           "위협이나 미끼가 없거나, 일반 상품·일정 안내나 선입금 조건 없는 저금리·대출 제안만 한다."),
     "F5": ("고립·의심 차단",
            "상대가 주변에 확인하거나 의심하지 못하게 한다. 비밀 유지·신고하지 말라는 요구, 주변 사람을 피하거나 혼자 있는 곳으로 가게 함, "
-           "통화를 끊지 못하게 함, 은행원·가족·다른 담당자에게 할 말을 정해 줌, 직접 확인하지 말라고 함, "
-           "상대의 의심이나 걱정을 '안전하다·기록이 남지 않는다·문제없다'며 무마함이 포함된다.",
-           "이런 시도가 없거나, 통화 품질 때문에 조용한 곳을 권하기만 한다."),
+           "통화를 끊지 못하게 함, 은행원·가족·다른 담당자에게 할 말을 정해 줌, "
+           "직접 확인하지 말라고 함('기록이 남지 않으니 확인할 필요 없다' 등)이 포함된다.",
+           "이런 시도가 없거나, 통화 품질 때문에 조용한 곳을 권하거나, 의심에 해명하거나 안심시키기만 한다."),
     "F6": ("권위·절차 연출",
            "수사기관·금융회사·공공기관의 권위를 내세운다. 기관·회사명과 직함·이름을 대며 자신을 소개함, "
            "사건번호·공문·규정·녹취 절차를 언급함, 전화로 조사하거나 특정 인물을 아는지 물음, "
            "대형 금융그룹·정부 지원 상품이라고 내세움이 포함된다.",
            "기관이나 회사를 내세우지 않는다."),
 }
+
+
+# spec 정의에 맞춰 평가 정답에서 빼는 요소. F5의 단순 안심·의심 무마(N7)는 F5가 아니다(2026-11-16 결정).
+GOLD_EXCLUDE = {"F5": {"N7"}}
 
 
 def build_questions():
@@ -95,7 +99,7 @@ def load_normals():
     return sorted(calls, key=lambda c: c["call_id"])
 
 
-def sample(n_scam, n_normal, max_chars, seed):
+def sample(n_scam, n_normal, max_chars, seed, same_as=None):
     rng = random.Random(seed)
     rows, _ = load()
     gold = {}
@@ -103,8 +107,12 @@ def sample(n_scam, n_normal, max_chars, seed):
         if r["type"] == "판단불가":
             continue
         elems = {element(t) for t in r["tactics"]}
-        gold[r["call_id"]] = sorted(code for code, _, members in FEATURES if elems & members)
+        gold[r["call_id"]] = sorted(code for code, _, members in FEATURES if elems & (members - GOLD_EXCLUDE.get(code, set())))
     scams = [c for c in load_calls() if c["call_id"] in gold and c["chars"] <= max_chars]
+    if same_as:  # 이전 실행과 같은 통화로 비교한다
+        ids = [c["call_id"] for c in json.loads(Path(same_as).read_text(encoding="utf-8"))["calls"]]
+        by_id = {c["call_id"]: c for c in scams + load_normals()}
+        return [{"call_id": i, "scam": i in gold, "gold": gold.get(i, []), "lines": by_id[i]["lines"]} for i in ids]
     rng.shuffle(scams)
     picked = []
     # 출현율이 낮은 상태부터 2통화씩 먼저 넣어 상태마다 양성이 생기게 한다
@@ -128,9 +136,10 @@ def main():
     p.add_argument("--timeout", type=int, default=60)
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--out-name", default="probe.json")
+    p.add_argument("--same-as", help="이 결과 파일과 같은 call_id로 실행한다")
     args = p.parse_args()
 
-    calls = sample(args.scam, args.normal, args.max_chars, args.seed)
+    calls = sample(args.scam, args.normal, args.max_chars, args.seed, args.same_as)
     pos = collections.Counter(f for c in calls for f in c["gold"])
     print(f"calls={len(calls)} scam={sum(c['scam'] for c in calls)} chars={sum(sum(map(len, c['lines'])) for c in calls)}")
     print("gold positives:", dict(sorted(pos.items())))
