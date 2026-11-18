@@ -219,11 +219,26 @@ v2의 상태별 FN·FP를 모두 대본에서 확인했다. 원문은 로컬에�
 - 같은 날 "조사를 핑계로 조용한 곳으로 옮기게 하는 행동이 F3로만 잡히는 문제"는 이번 범위에서 빼기로 했다(사용자 결정). 큰 표본 평가에서 빈도를 보고 다시 정한다.
 - 자세한 표와 남은 FN·FP는 [버전별 변경 이력](../../../docs/analysis/jev-state-question-versions.md#정답-수정--f4의-n6n5-2026-11-18)에 있다.
 
+### v4 개발용 200통화 (2026-11-18)
+
+- 20통화 표본은 상태별 정답이 너무 적어 표본을 키웠다(사용자 결정, 200호출). 사기 120 + 정상 80통화이고, 기존 40통화는 뺐다. 비용은 입력 약 83만 토큰이다.
+- 질문과 정답은 고정했다. 이 200통화는 개발용이고, 남은 통화는 최종 확인용으로 둔다.
+- 결과([probe_v4_dev200.json](../../../experiments/jev_states/results/probe_v4_dev200.json), 실패 0)
+  - 재현: F1 64%, F2 81%, F3 86%, F4 94%, F5 76%, F6 98%
+  - 정상 Yes: F3 34%, F6 30%, F1·F2 각 4%, F4 2%, F5 0%
+  - 정상 80통화 중 50통화에서 상태가 켜진다. 그중 43통화는 F3·F6만 켜졌다. F1·F2·F4·F5가 켜진 정상 통화는 7통화다.
+- 정상 F3·F6 Yes는 상담원의 문자·링크·번호 안내와 회사 소개다. spec 정의대로의 판단이라, 지금 라우팅이면 정상 통화 대부분에서 에이전트가 불린다.
+- F1 FN 10건 중 5건은 예금 해지·대출 실행·자금 보관처럼 송금 직전의 준비 행동이다. spec F1에 없다.
+- 표와 원인은 [버전별 변경 이력](../../../docs/analysis/jev-state-question-versions.md#v4-개발용-200통화-2026-11-18)에 있다.
+
 버전별 변경 이유와 결과는 [Jev 상태 질문 버전별 변경 이력](../../../docs/analysis/jev-state-question-versions.md)에 모아 둔다.
 
 ## 다음 행동
 
-1. Jev 작업 커밋을 push하고 PR을 연다(사용자 확인 후). 브랜치를 나눌지도 정한다.
-2. KorCCVi 줄 단위 라벨로 평가 하네스를 만든다. F 재배정은 [regroup_features.py](../../../experiments/korccvi_tactics/regroup_features.py)를, 평가 정답 규칙은 [probe_states.py](../../../experiments/jev_states/probe_states.py)의 `gold_of`를 쓴다.
-3. API 없는 테스트를 먼저 쓰고 State·Graph·F1 에이전트·Mock tool을 구현한다.
-4. (보류) 조사를 핑계로 조용한 곳으로 옮기게 하는 행동이 F3로만 잡히는 문제는 큰 표본 평가에서 빈도를 본 뒤 다시 정한다.
+1. F3·F6만 켜졌을 때 에이전트를 부를지 정한다. 지금은 정상 80통화 중 43통화가 F3·F6만으로 에이전트를 부르고, 사기 120통화 중 15통화는 F3·F6만 켜진다.
+2. F1에 송금 직전 준비 행동(예금 해지·대출 실행·자금 보관)을 넣을지 정한다.
+3. 사기 통화의 F4·F6 FP와 F4 정답 규칙(N5·N6)을 표본 검수한다.
+4. Jev 작업 커밋을 push하고 PR을 연다(사용자 확인 후). 브랜치를 나눌지도 정한다.
+5. KorCCVi 줄 단위 라벨로 평가 하네스를 만든다. F 재배정은 [regroup_features.py](../../../experiments/korccvi_tactics/regroup_features.py)를, 평가 정답 규칙은 [probe_states.py](../../../experiments/jev_states/probe_states.py)의 `gold_of`를 쓴다.
+6. API 없는 테스트를 먼저 쓰고 State·Graph·F1 에이전트·Mock tool을 구현한다.
+7. (보류) 조사를 핑계로 조용한 곳으로 옮기게 하는 행동이 F3로만 잡히는 문제는 큰 표본 평가에서 빈도를 본 뒤 다시 정한다.

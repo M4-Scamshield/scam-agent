@@ -10,6 +10,8 @@
 실행:
   python3 experiments/jev_states/probe_states.py --dry-run          # 표본만 확인, API 호출 없음
   uv run --locked --env-file .env python -X utf8 experiments/jev_states/probe_states.py
+  # 개발용 200통화(2026-11-18): --scam 120 --normal 80 --max-chars 6000 --seed 2 --per-state 20 \
+  #   --exclude results/probe_v4.json results/probe_v4_seed1.json --out-name probe_v4_dev200.json
 """
 import argparse
 import collections
@@ -115,7 +117,7 @@ def load_normals():
     return sorted(calls, key=lambda c: c["call_id"])
 
 
-def sample(n_scam, n_normal, max_chars, seed, same_as=None):
+def sample(n_scam, n_normal, max_chars, seed, same_as=None, per_state=2, exclude=()):
     rng = random.Random(seed)
     rows, _ = load()
     gold = {}
@@ -123,19 +125,20 @@ def sample(n_scam, n_normal, max_chars, seed, same_as=None):
         if r["type"] == "판단불가":
             continue
         gold[r["call_id"]] = gold_of(r["tactics"])
-    scams = [c for c in load_calls() if c["call_id"] in gold and c["chars"] <= max_chars]
+    used = {c["call_id"] for f in exclude for c in json.loads(Path(f).read_text(encoding="utf-8"))["calls"]}
+    scams = [c for c in load_calls() if c["call_id"] in gold and c["chars"] <= max_chars and c["call_id"] not in used]
     if same_as:  # 이전 실행과 같은 통화로 비교한다
         ids = [c["call_id"] for c in json.loads(Path(same_as).read_text(encoding="utf-8"))["calls"]]
         by_id = {c["call_id"]: c for c in scams + load_normals()}
         return [{"call_id": i, "scam": i in gold, "gold": gold.get(i, []), "lines": by_id[i]["lines"]} for i in ids]
     rng.shuffle(scams)
     picked = []
-    # 출현율이 낮은 상태부터 2통화씩 먼저 넣어 상태마다 양성이 생기게 한다
+    # 출현율이 낮은 상태부터 per_state통화씩 먼저 넣어 상태마다 양성이 생기게 한다
     for code in ("F3", "F1", "F5", "F2"):
-        for c in [c for c in scams if code in gold[c["call_id"]] and c not in picked][:2]:
+        for c in [c for c in scams if code in gold[c["call_id"]] and c not in picked][:per_state]:
             picked.append(c)
     picked += [c for c in scams if c not in picked][: n_scam - len(picked)]
-    normals = [c for c in load_normals() if c["chars"] <= max_chars]
+    normals = [c for c in load_normals() if c["chars"] <= max_chars and c["call_id"] not in used]
     rng.shuffle(normals)
     out = [{"call_id": c["call_id"], "scam": True, "gold": gold[c["call_id"]], "lines": c["lines"]} for c in picked[:n_scam]]
     out += [{"call_id": c["call_id"], "scam": False, "gold": [], "lines": c["lines"]} for c in normals[:n_normal]]
@@ -152,9 +155,11 @@ def main():
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--out-name", default="probe.json")
     p.add_argument("--same-as", help="이 결과 파일과 같은 call_id로 실행한다")
+    p.add_argument("--per-state", type=int, default=2, help="F3·F1·F5·F2 양성 통화를 먼저 넣을 수")
+    p.add_argument("--exclude", nargs="*", default=[], help="이 결과 파일들의 통화는 뽑지 않는다")
     args = p.parse_args()
 
-    calls = sample(args.scam, args.normal, args.max_chars, args.seed, args.same_as)
+    calls = sample(args.scam, args.normal, args.max_chars, args.seed, args.same_as, args.per_state, args.exclude)
     pos = collections.Counter(f for c in calls for f in c["gold"])
     print(f"calls={len(calls)} scam={sum(c['scam'] for c in calls)} chars={sum(sum(map(len, c['lines'])) for c in calls)}")
     print("gold positives:", dict(sorted(pos.items())))
