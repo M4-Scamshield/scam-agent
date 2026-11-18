@@ -206,11 +206,24 @@ v2의 상태별 FN·FP를 모두 대본에서 확인했다. 원문은 로컬에�
   - 다른 상태의 재현은 같거나 0.5 근처에서 1건씩 뒤집혔다(실행 변동).
 - 상태별 표와 남은 문제는 [버전별 변경 이력](../../../docs/analysis/jev-state-question-versions.md#v4--f5-차단-행동과-f3-장소-이동-경계-2026-11-17)에 있다.
 
+### F4 정답의 N6·N5 좁힘
+
+- 사용자 결정(2026-11-18): 평가 정답을 spec F4에 맞춘다.
+  - N6(보상·혜택 약속)은 같은 통화에 송금·납부 요구(R1)가 있을 때만 F4로 센다.
+  - N5는 판매·양도·가해자·개설 같은 혐의 추궁 라벨만 센다. 분실·유출 경위 질문과 입증 절차 안내는 세지 않는다.
+  - [probe_states.py](../../../experiments/jev_states/probe_states.py)의 `gold_of`에 넣었다. KorCCVi 분석의 F 출현율은 바꾸지 않았다.
+- 기존 결과를 재채점했다(API 호출 없음). F4만 바뀌었다.
+  - seed 0 v4: 정답 12→6, 재현 7/12→5/6, 사기 FP 0→2
+  - seed 1 v4: 정답 12→10, 재현 10/12→9/10, 사기 FP 2→3
+  - 새 FP 3건은 대본으로 확인했다. 2건은 위협·미끼가 없는데 Jev가 Yes로 봤고(피해자가 전한 협박, IP 추적 조사), 1건은 계좌 대여 대가로 높은 일당을 준다는 약속이다(경계).
+- 같은 날 "조사를 핑계로 조용한 곳으로 옮기게 하는 행동이 F3로만 잡히는 문제"는 이번 범위에서 빼기로 했다(사용자 결정). 큰 표본 평가에서 빈도를 보고 다시 정한다.
+- 자세한 표와 남은 FN·FP는 [버전별 변경 이력](../../../docs/analysis/jev-state-question-versions.md#정답-수정--f4의-n6n5-2026-11-18)에 있다.
+
 버전별 변경 이유와 결과는 [Jev 상태 질문 버전별 변경 이력](../../../docs/analysis/jev-state-question-versions.md)에 모아 둔다.
 
 ## 다음 행동
 
-1. 조사를 핑계로 조용한 곳으로 옮기게 하는 행동이 F5가 아니라 F3로만 잡히는 문제를 둘지 정한다. 신호는 F3 에이전트로 가지만 F5 대응(고립 경고)은 빠진다. 1건뿐이라 큰 표본에서 빈도를 먼저 본다.
-2. N6을 선입금 조건 혜택과 단순 혜택 제안으로 나눌지 정한다. 나누지 않으면 F4 평가 정답이 spec보다 넓다. N5의 조사 질문도 같은 문제다.
-3. KorCCVi 줄 단위 라벨로 평가 하네스를 만든다. F 재배정은 [regroup_features.py](../../../experiments/korccvi_tactics/regroup_features.py)를 쓴다.
-4. API 없는 테스트를 먼저 쓰고 State·Graph·F1 에이전트·Mock tool을 구현한다.
+1. Jev 작업 커밋을 push하고 PR을 연다(사용자 확인 후). 브랜치를 나눌지도 정한다.
+2. KorCCVi 줄 단위 라벨로 평가 하네스를 만든다. F 재배정은 [regroup_features.py](../../../experiments/korccvi_tactics/regroup_features.py)를, 평가 정답 규칙은 [probe_states.py](../../../experiments/jev_states/probe_states.py)의 `gold_of`를 쓴다.
+3. API 없는 테스트를 먼저 쓰고 State·Graph·F1 에이전트·Mock tool을 구현한다.
+4. (보류) 조사를 핑계로 조용한 곳으로 옮기게 하는 행동이 F3로만 잡히는 문제는 큰 표본 평가에서 빈도를 본 뒤 다시 정한다.

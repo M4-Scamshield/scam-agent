@@ -15,6 +15,7 @@ import argparse
 import collections
 import json
 import random
+import re
 import sys
 from pathlib import Path
 
@@ -71,6 +72,18 @@ STATES = {
 
 # spec 정의에 맞춰 평가 정답에서 빼는 요소. F5의 단순 안심·의심 무마(N7)는 F5가 아니다(2026-11-16 결정).
 GOLD_EXCLUDE = {"F5": {"N7"}}
+# spec F4에 맞춰 F4 정답을 좁힌다(2026-11-18 결정). N6 혜택 약속은 같은 통화에 돈 요구(R1)가 있을 때만 센다.
+# N5는 통장 판매·양도·개설 추궁(혐의 추궁)만 센다. 분실·유출 경위 질문과 입증 절차 안내는 F4가 아니다.
+N5_ACCUSE = re.compile(r"판매|판 |양도|넘겼|가해자|피의자|공모|공조|개설")
+
+
+def gold_of(tactics):
+    elems = {element(t) for t in tactics}
+    if "R1" not in elems:
+        elems.discard("N6")
+    if not any(element(t) == "N5" and N5_ACCUSE.search(t["label"]) for t in tactics):
+        elems.discard("N5")
+    return sorted(code for code, _, members in FEATURES if elems & (members - GOLD_EXCLUDE.get(code, set())))
 
 
 def build_questions():
@@ -109,8 +122,7 @@ def sample(n_scam, n_normal, max_chars, seed, same_as=None):
     for r in rows:
         if r["type"] == "판단불가":
             continue
-        elems = {element(t) for t in r["tactics"]}
-        gold[r["call_id"]] = sorted(code for code, _, members in FEATURES if elems & (members - GOLD_EXCLUDE.get(code, set())))
+        gold[r["call_id"]] = gold_of(r["tactics"])
     scams = [c for c in load_calls() if c["call_id"] in gold and c["chars"] <= max_chars]
     if same_as:  # 이전 실행과 같은 통화로 비교한다
         ids = [c["call_id"] for c in json.loads(Path(same_as).read_text(encoding="utf-8"))["calls"]]
