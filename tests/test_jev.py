@@ -104,3 +104,17 @@ def test_env_configuration_and_missing_key(monkeypatch):
     with pytest.raises(PipelineError) as error:
         JevClient.from_env()
     assert error.value.code == "MISSING_API_KEY"
+
+
+def test_supervisor_questions_receive_only_pending_input(monkeypatch):
+    raw = response()
+    raw["answers"] = {"call": raw["answers"]["F1"], "url": raw["answers"]["F6"]}
+    transport = install_response(monkeypatch, raw)
+    chat = [{"id": "m-1", "seq": 2, "text": "지금 송금하세요."}]
+    result = JevClient("test").route_input(["[p1] 새 STT"], chat, [])
+    assert result["call"]["verdict"] == "Yes" and result["url"]["verdict"] == "No"
+    payload = json.loads(transport.call_args.args[0].data)
+    assert payload["state"] == {"transcript": ["[p1] 새 STT"], "chat": chat, "pending_urls": []}
+    assert set(payload["questions"]) == {"call", "url"}
+    assert "동시에 Yes" in payload["questions"]["call"]["instructions"]
+    transport.assert_called_once()
