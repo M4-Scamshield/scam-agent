@@ -1,6 +1,6 @@
 # 변경 설계
 
-상태: 제안
+상태: 확정(2026-11-22), 구현 중. 구현 기준은 [구현 계약](#구현-계약-2026-11-22)이다.
 
 ## 기존 구조와 바꿀 부분
 
@@ -9,7 +9,7 @@
   - Jev 질문을 상태 6개로 늘린다.
   - `respond_with_llm` 하나를 상태별 판단 Node로 나눈다.
 - 대화 누적, 오류 처리, 키 비노출 원칙은 그대로 둔다. Jev에는 누적 대화 대신 최근 5줄만 보낸다(2026-11-22).
-- [jev.py](../../../scamshield/jev.py)의 요청 `questions`는 이미 질문 이름을 키로 하는 dict다. 그래서 질문 여러 개는 같은 요청 형식으로 보낼 수 있다. 실제 API가 이를 받는지는 아직 확인하지 않았다.
+- [jev.py](../../../scamshield/jev.py)의 요청 `questions`는 질문 이름을 키로 하는 dict다. 질문 6개를 한 요청으로 보내면 Jev가 대화를 한 번 읽고 질문마다 따로 판단한다(2026-11-16 실호출·2026-11-22 문서 확인).
 
 ```mermaid
 flowchart TD
@@ -77,7 +77,9 @@ tool 열은 상태별 후보다. 이번에 만드는 Mock은 F1·F3 tool뿐이�
   - 같은 요청에 넣으므로 호출 수가 늘지 않는다. F1~F6에 걸리지 않는 사기를 잡는 안전망이고, 기존 평가(재현율 77%)와 비교하는 기준이 된다.
   - 이 질문만 Yes이고 F1~F6이 모두 No이면 에이전트를 부르지 않고 기록만 남긴다(임시 기본값).
   - 없애는 시점: 평가에서 "이 질문만 Yes인 사기"가 거의 없다고 확인되면 없앤다. 그래서 평가 하네스는 이 경우를 따로 센다.
+  - 2026-11-22에 바꿨다: 구현에서 뺀다. 창·묶음 방식 측정을 모두 이 질문 없이 했다.
 - **LLM: 상태별 에이전트만 Claude API로 만든다.** 기존 Gemini 대응 경로는 바꾸지 않는다.
+  - 2026-11-22에 바꿨다: Gemini 경로를 뺀다. 새 그래프에서 부르는 곳이 없다.
 
 ## 결정 사항 (2026-11-19 사용자 결정)
 
@@ -129,34 +131,83 @@ tool 열은 상태별 후보다. 이번에 만드는 Mock은 F1·F3 tool뿐이�
   - 대사 수가 아니라 시간으로 재는 이유: BE 발화 한 줄은 리턴제로 STT가 쉬는 지점에서 확정한 구간이라 KorCCVi 한 줄과 길이가 다르고, 한 요청에 합쳐지는 줄 수도 매번 다르다.
   - 대안: `uncertain` 뒤 일정 시간이 지나면 Haiku를 다시 부른다. 결론을 낼 수 있지만 호출이 늘어서 택하지 않았다.
   - 1분과 절반은 처음 값이다. Haiku 실험에서 정상 통화의 주의 상태가 얼마나 남는지 보고 조정한다.
-- **팀원과 협의할 BE 항목**
-  - `ResultApplier.levelOf`가 점수 대신 통화 상태로 단계를 정하게 바꾸기
-  - 주의를 BE에 전하는 방법
-  - `agent-bridge`가 합쳐진 새 줄 전체를 넘기기
-  - 발화 시각을 agent 요청에 넣기
-  - 이미 띄운 알림은 점수가 내려가도 취소하지 않기
-  - `actions`(버튼)를 받을 필드
+- **BE 항목**: 처음엔 팀원과 협의할 항목으로 두었으나, 구현 전 결정으로 Java·DB를 바꾸지 않고 `agent-bridge`만 바꾸기로 했다. 아래 [구현 계약](#구현-계약-2026-11-22)의 BE 절을 따른다.
+
+## 결정 사항 (2026-11-22 구현 전 사용자 결정)
+
+구현 전에 정할 항목을 권장안대로 정했다. BE는 되도록 고치지 않는다. 개인 프로젝트라 데모데이에 잘 동작하는 수준을 목표로 한다.
+
+- **입출력**: agent 입구는 `CallPipeline.analyze` 하나다. 브리지는 그래프 내부를 건드리지 않는다.
+- **통화 상태 저장**: BE `newState`에 상대별 agent 상태를 넣는다. BE가 이미 `agent_state`를 저장하고 다음 요청에 돌려준다.
+- **시간**: 발화 시각이 오면 그 시각을, 없으면 브리지가 요청을 받은 시각을 쓴다.
+- **Gemini 경로와 `voice_phishing` 질문을 뺀다.**
+- **`uncertain` 기준**: Haiku 실험 기준을 채택한다. 돈·정보가 상대 쪽으로 넘어가는 요구가 통화 목적에 비해 과하거나 맞지 않거나 사칭·겁주기·비밀 유지와 함께 나오면 `risky`, 통화 목적이 분명하고 그 행동이 목적에 꼭 필요하면 `within_normal`, 둘 다 판단할 근거가 아직 없을 때만 `uncertain`이다.
+- **절대선**: Haiku의 `absolute_line`과 F3 앱 확인 tool의 원격제어 판정 중 하나라도 걸리면 `risky`다. `absolute_line`은 절대선이 있는 F1·F2·F3·F5에서만 본다. 핵심 표현 키워드 검사는 이번에 넣지 않는다.
+- **tool 결과**: `flagged`면 코드가 `risky`로 고정한다. `error`는 판단에 쓰지 않고 Haiku에 조회 실패로 알리며 기록한다. F1·F3 모두 Haiku가 tool calling으로 부른다.
+- **Haiku 실패·잘못된 출력**: 그 상태만 판단하지 않은 것으로 두고, 다음 Yes에서 다시 부른다. 요청 전체를 오류로 만들지 않는다. Jev 실패는 지금처럼 오류다.
+- **`call_context`**: 모든 Haiku 출력에 목적·신분 갱신값을 넣어 합친다.
+- **BE 필드**: `message`는 `risky` 상태 중 우선순위가 가장 높은 상태의 `response`, `reason`은 켜진 상태의 이유를 우선순위 순서로, `evidenceSeqs`는 `risky` 상태의 근거 대사 번호다.
+- **동시 호출**: 여러 상태가 켜지면 Haiku를 동시에 부르고 결과는 우선순위로 정리한다.
+- **프롬프트**: 실험처럼 공통 프롬프트 하나에 상태별 정의·절대선·초점을 넣는다.
+- **Haiku 검증의 남은 검토**
+  - 짧은 수사기관 사칭: `uncertain`으로 둔다. 요구가 나오면 그때 `risky`가 된다.
+  - 신분 주장 근거 사용: 프롬프트에 "상대가 말한 기관·지점이 공식인지는 대화로 확인할 수 없다"를 넣는다.
+  - 정상 통화 주의 시간(평균 23%): 주의는 알림이 아니므로 그대로 두고, BE 주의 표시를 정한 뒤 조정한다.
+- **범위**: `actions`는 출력 스키마에 넣되 BE에는 보내지 않는다. Mock tool 데이터는 고정 목록이다. F1 송금 직전 준비 행동은 미룬다.
+
+## 구현 계약 (2026-11-22)
+
+### agent (`scamshield`)
+
+- 입구: `CallPipeline.analyze(history, new_lines, state, now) -> AnalysisOutcome`
+  - `history: list[str]`: 이번 요청 전까지의 대화. 한 줄은 `"[화자] 발화"`다.
+  - `new_lines: list[NewLine]`: 이번 요청의 새 줄. `NewLine = {seq: int, text: str}`이고 `text`는 같은 `"[화자] 발화"` 형식이다. 1줄 이상이다.
+  - `state: dict | None`: 이전 출력의 `state`. `None`이면 새 통화다.
+  - `now: float`: 이번 새 줄의 시각(초). 점수 감소를 잰다.
+  - 상태를 입력으로만 받으므로 같은 요청을 재시도해도 판단이 두 번 쌓이지 않는다. checkpointer에 기대지 않는다.
+- 출력 `AnalysisOutcome`
+  - `status`: `"위험" | "주의" | "정상"`, `score`: 0~100 정수([spec](spec.md#충족해야-할-동작)의 점수 규칙)
+  - `message`, `reason`, `evidence_seqs`: 위 BE 필드 결정대로. `message`는 위험이 아니면 `None`이다. `reason`은 `risky`와 점수가 남은 `uncertain` 상태의 이유를 `"F1: …"` 꼴로 이어 붙이고, 없으면 `None`이다.
+  - `states`: 이번 Jev 판단(상태별 `verdict`·`probability`), `state_analyses`: 이번에 부른 Haiku 결과(우선순위 순)
+  - `state`: 다음 요청에 넘길 JSON 직렬화 가능한 dict
+    - `handled`: 상태별 `{judgment, reason, response, actions, evidence_seqs, judged_at}`
+    - `call_context`: `{purpose, claimed_identity}`
+    - `seen`: 이 통화에서 한 번이라도 Yes가 된 상태, `held`: F3·F5 보류 중인 상태와 근거 대사 번호
+- Jev: 요청마다 1번. `history`의 마지막 4줄과 새 줄 전부를 보내고, [묶음 확인](../../../docs/analysis/jev-state-question-versions.md#v5-새-줄-묶음-확인-2026-11-22)에 쓴 질문(`experiments/jev_states/chunk_states.py`)으로 상태 6개를 묻는다. 대기 10초. 실패하면 지금처럼 `PipelineError`다.
+- Haiku: `claude-haiku-5-5`, effort `low`, 키는 `ANTHROPIC_API_KEY`
+  - 프롬프트는 Haiku 실험(`experiments/jev_states/haiku_states.py`)의 공통 프롬프트에 신분 주장 문장을 더한 것이다. 입력은 전체 대화(`history`+새 줄), 상태 이름과 Jev 확률, `call_context`, 다시 부를 때 이전 판단이다.
+  - 출력 JSON: `{judgment, absolute_line, reason, response, actions, call_context}`
+  - tool: F1 `check_account`, F3 `check_url`·`check_app`·`check_phone`. tool 왕복은 2번까지다.
+  - API 호출마다 대기 15초, 자동 재시도 없음. 상태별로 동시에 부른다.
+  - 실패하면 그 상태만 건너뛰고 오류 코드만 기록한다. 대화 내용은 로그에 쓰지 않는다.
+- 뺄 것: `gemini.py`, `langchain-google-genai` 의존성, `voice_phishing` 질문. 더할 것: `anthropic` 의존성(`uv.lock` 갱신)
+- 키 없는 대역: `OfflineDetector`·`OfflineAnalyst`를 새 구조에 맞춘다. 브리지 `--offline`, 그래프 그림 출력, 테스트가 쓴다.
+- 테스트: API를 부르지 않는다. Jev·Haiku 대역으로 라우팅(F3·F5 보류, 재호출), 절대선·tool 보정, 점수 감소, Haiku 실패, BE 필드를 확인한다.
+
+### BE (`agent-bridge`만)
+
+- Java·DB는 바꾸지 않는다.
+  - 위험이 아니면 점수를 39 이하로 보낸다. `ResultApplier`는 점수 40 이상을 SUSPECT로 알리므로, 이렇게 하면 `levelOf`를 고치지 않아도 위험일 때만 알림이 뜬다. 지금 브리지의 오탐 처리와 같은 방식이다.
+  - 발화 시각은 브리지가 요청을 받은 시각으로 대신한다.
+  - 알림은 단계가 오를 때만 뜨고 내려가지 않으므로 "이미 띄운 알림은 취소하지 않기"는 이미 지켜진다.
+- `newState = {transcript, peers}`
+  - `transcript`: 지금처럼 `"[상대:<trackId>]"` 표시를 붙인 전체 대화
+  - `peers`: 상대 `trackId`별 agent `state`. 상대가 아직 없을 때는 키 `""`를 쓴다. `peers`가 없는 예전 상태는 빈 상태로 본다.
+- 판단: 지금처럼 이번에 말한 상대의 쌍만, `[나]`·사용자 입력이 있으면 모든 쌍을 판단한다. 쌍마다 `history`는 이전 `transcript`의 쌍 대화, `new_lines`는 이번 요청에서 그 쌍에 속한 줄과 `seq`다. 판단하지 않은 쌍의 상태는 그대로 둔다.
+- 응답 변환
+  - `action`: 위험이면 `WARN`, 아니면 `OBSERVE`
+  - `score`: 위험이면 그대로, 아니면 `min(score, 39)`
+  - `message`·`reason`·`evidenceSeqs`: agent 출력. 상대가 있으면 `reason` 앞에 `"[<trackId>]"`를 붙인다.
+  - 가장 위험한 쌍(WARN 먼저, 다음 점수)을 따른다.
+- 대기 시간: 쌍 하나에 Jev 10초 + Haiku 최대 2×15초 = 40초로, BE `agent.timeout-ms`(55초) 안이다. 쌍은 차례로 판단하므로 상대가 둘 이상 동시에 말하면 넘을 수 있다. 데모는 상대 1명으로 한다.
+- 설정: 운영 compose의 Gemini 환경 변수를 `ANTHROPIC_API_KEY`로 바꾼다. 배포 전에 서버 `.env`에 키가 있어야 한다.
+- 순서: BE CI와 운영은 scam-agent `main`을 받는다. scam-agent PR을 `main`에 먼저 합치고 BE PR을 `dev`에 합친다. BE `dev`에 합치면 운영에 자동 배포된다.
 
 ## 미정 사항
 
-다음은 2026-11-22 대화에서 나온 제안이고 아직 채택하지 않았다.
-
-- **`uncertain` 판단 기준**(Haiku 프롬프트)
-  - `risky`: 돈이나 정보가 상대 쪽으로 넘어가는 요구가 통화 목적에 비해 과하거나 맞지 않는다. 또는 사칭·겁주기·비밀 유지와 함께 나온다.
-  - `within_normal`: 통화 목적이 분명하고, 그 행동이 목적에 꼭 필요하다.
-  - `uncertain`: 둘 다 판단할 근거가 아직 대화에 없을 때만 쓴다.
-- **절대선 감지 방법**: Haiku 출력에 `absolute_line` 필드를 넣고, 코드도 확인한다(앱 확인 tool의 원격제어 판정, 핵심 표현 키워드). 둘 중 하나라도 걸리면 `risky`다.
-- **tool 결과 처리**
-  - `flagged`면 코드가 `risky`로 고정한다.
-  - `error`는 판단에 쓰지 않고, Haiku에 조회 실패로 알리며 기록한다.
-  - F3 tool도 F1처럼 Haiku가 tool calling으로 부른다.
-- **Haiku 실패·잘못된 출력**: 그 상태는 판단하지 않은 것으로 두고 점수에 넣지 않는다. 다음 Yes에서 다시 시도하고 오류를 기록한다. 절대선이 코드로 감지되면 Haiku가 실패해도 `risky`다.
-- **`call_context` 갱신**: 지금은 F6이 신분을 뽑는다고만 되어 있어, F6이 켜지지 않은 통화는 비어 있다. 모든 Haiku 출력에 목적·신분 갱신값을 넣어 State에 합친다.
-- **BE 필드 구성**
-  - `message`: `risky` 상태 중 우선순위가 가장 높은 상태의 `response`. `risky`가 없으면 `null`이다.
-  - `reason`: 켜진 상태의 이유를 우선순위 순서로 모은다.
-  - `evidenceSeqs`: `risky` 상태의 근거 대사 번호다.
-- **`voice_phishing` 질문을 언제 뺄지**: 창 방식 측정은 이 질문 없이 했다.
+- **주의를 BE에 전하는 방법과 화면 표시**: 지금은 점수로만 보인다.
+- **`actions`를 받을 BE 필드**
+- **F1 송금 직전 준비 행동**(예금 해지·대출 실행·자금 보관): Jev 질문이 바뀌므로 따로 잰다.
 - **상태별 Jev Yes 기준값**: KorCCVi 평가로 정한다.
 - **실제 tool API와 출처**: Mock 다음 단계에서 정한다.
 - **F2 기관 요구 기준표**: 공식 원문을 확인해 출처와 함께 만든다.
