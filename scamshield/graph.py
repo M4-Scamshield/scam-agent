@@ -44,12 +44,21 @@ def state_points(handled: dict, now: float) -> dict[str, float]:
     return points
 
 
-def route(states: dict, memory: dict, seqs: list[int]) -> dict:
-    """이번에 Haiku를 부를 상태 {code: {probability, seqs}}. memory의 seen·held를 고친다."""
+def _merge(old: dict, new: dict) -> dict:
+    return {
+        "probability": new["probability"],
+        "seqs": old.get("seqs", []) + new["seqs"],
+        "lines": old.get("lines", []) + new["lines"],
+    }
+
+
+def route(states: dict, memory: dict, seqs: list[int], lines: list[int]) -> dict:
+    """이번에 Haiku를 부를 상태 {code: {probability, seqs, lines}}. memory의 seen·held를 고친다.
+    seqs는 BE 줄 번호(근거), lines는 대화상 줄 번호(Haiku에게 감지된 대사를 가리킴)다."""
     yes = [code for code in PRIORITY if states[code]["verdict"] == "Yes"]
     handled = memory["handled"]
     candidates = {
-        code: {"probability": states[code]["probability"], "seqs": list(seqs)}
+        code: {"probability": states[code]["probability"], "seqs": list(seqs), "lines": list(lines)}
         for code in yes
         if handled.get(code, {}).get("judgment") != "risky"
     }
@@ -60,11 +69,11 @@ def route(states: dict, memory: dict, seqs: list[int]) -> dict:
     held = memory["held"]
     if not any(code in CORE for code in yes):
         for code, item in candidates.items():
-            held[code] = {"probability": item["probability"], "seqs": held.get(code, {}).get("seqs", []) + item["seqs"]}
+            held[code] = _merge(held.get(code, {}), item)
         return {}
     todo = {code: dict(item) for code, item in held.items()}
     for code, item in candidates.items():
-        todo[code] = {"probability": item["probability"], "seqs": todo.get(code, {}).get("seqs", []) + item["seqs"]}
+        todo[code] = _merge(todo.get(code, {}), item)
     memory["held"] = {}
     return {code: todo[code] for code in PRIORITY if code in todo}
 
@@ -103,7 +112,9 @@ def build_graph(detector: Detector, analyst: Analyst):
         except (KeyError, TypeError, ValidationError) as exc:
             raise PipelineError("jev", "INVALID_OUTPUT", "Jev 상태별 판단 형식이 잘못되었습니다.") from exc
         memory = deepcopy(state["memory"])
-        todo = route(states, memory, [line["seq"] for line in state["new_lines"]])
+        first = len(state["history"]) + 1
+        positions = list(range(first, first + n_new))
+        todo = route(states, memory, [line["seq"] for line in state["new_lines"]], positions)
         return {"states": states, "memory": memory, "todo": todo}
 
     def judge_states(state: AgentState) -> dict:
@@ -114,7 +125,8 @@ def build_graph(detector: Detector, analyst: Analyst):
                 "state": code,
                 "probability": item["probability"],
                 "lines": list(state["lines"]),
-                "n_new": len(state["new_lines"]),
+                # 예전 state의 보류 항목에는 lines가 없을 수 있다. 그때는 이번 새 줄을 가리킨다.
+                "detected_lines": item.get("lines") or list(range(len(state["history"]) + 1, len(state["lines"]) + 1)),
                 "call_context": dict(memory["call_context"]),
                 "previous": deepcopy(handled.get(code)),
             }

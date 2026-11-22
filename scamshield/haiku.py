@@ -15,6 +15,7 @@ MODEL = "claude-haiku-5-5"
 EFFORT = "low"
 MAX_TOKENS = 2000
 TIMEOUT_S = 12.0
+FLAGGED_REASON = "조회 도구가 대화에 나온 값에서 위험 신호를 찾았습니다."
 
 ABSOLUTE = {
     "F1": "받은 돈 재전달·현금 전달, 통장·카드 양도, 수사·금융당국을 주장하며 송금 요구",
@@ -72,15 +73,14 @@ def build_user(request: dict) -> str:
     code = request["state"]
     name, yes, no = STATES[code]
     lines = request["lines"]
-    n_new = request["n_new"]
+    detected = ", ".join(map(str, sorted(set(request["detected_lines"]))))
     ctx = request["call_context"]
     parts = [f"감지된 행동: {code} {name}", f"정의: {yes}", f"해당하지 않는 경우: {no}"]
     if code in ABSOLUTE:
         parts.append(f"절대선: {ABSOLUTE[code]}")
-    first_new = len(lines) - n_new + 1
     parts += [
         f"판단 핵심: {FOCUS[code]}",
-        f"감지기 확률: {request['probability']:.2f}, 감지된 대사: {first_new}~{len(lines)}번",
+        f"감지기 확률: {request['probability']:.2f}, 감지된 대사: {detected}번",
         f"지금까지 파악한 통화 맥락: 목적={ctx.get('purpose') or '모름'}, 상대 신분={ctx.get('claimed_identity') or '모름'}",
     ]
     previous = request.get("previous")
@@ -108,8 +108,11 @@ class HaikuAnalyst:
     def from_env(cls):
         return cls(os.environ.get("ANTHROPIC_API_KEY", "").strip())
 
-    def _create(self, messages: list, tools: list):
+    def _create(self, messages: list, tools: list, *, allow_tools=True):
         kwargs = {"tools": tools} if tools else {}
+        if tools and not allow_tools:
+            # tool 결과를 받은 두 번째 호출은 판단 JSON만 내게 한다(API 호출 2번 제한).
+            kwargs["tool_choice"] = {"type": "none"}
         try:
             return self.client.messages.create(
                 model=MODEL,
@@ -125,6 +128,9 @@ class HaikuAnalyst:
             raise AnalystError("TIMEOUT") from exc
         except anthropic.APIConnectionError as exc:
             raise AnalystError("CONNECTION_FAILED") from exc
+        except (anthropic.BadRequestError, anthropic.NotFoundError) as exc:
+            # 모델 ID·파라미터 오류는 모든 상태를 조용히 건너뛰게 하므로 요청 실패로 올린다.
+            raise PipelineError("llm", "REQUEST_REJECTED", f"Anthropic이 요청을 거부했습니다(HTTP {exc.status_code}). 모델·파라미터를 확인하세요.") from exc
         except anthropic.APIStatusError as exc:
             raise AnalystError(f"HTTP_{exc.status_code}") from exc
 
@@ -142,7 +148,13 @@ class HaikuAnalyst:
                 records.append(ToolRecord(name=use.name, status=result["status"]))
                 results.append({"type": "tool_result", "tool_use_id": use.id, "content": json.dumps(result, ensure_ascii=False)})
             messages += [{"role": "assistant", "content": response.content}, {"role": "user", "content": results}]
-            response = self._create(messages, tools)
+            response = self._create(messages, tools, allow_tools=False)
         text = "".join(block.text for block in response.content if block.type == "text")
-        judgment = parse_judgment(text)
+        try:
+            judgment = parse_judgment(text)
+        except AnalystError:
+            if not any(record.status == "flagged" for record in records):
+                raise
+            # 판단 글을 못 받았어도 tool이 위험을 찾았으면 그 결과는 지킨다(graph가 risky로 고정).
+            judgment = StateJudgment(judgment="risky", reason=FLAGGED_REASON)
         return judgment.model_copy(update={"tools": records}).model_dump()

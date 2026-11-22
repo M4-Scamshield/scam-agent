@@ -173,17 +173,17 @@ tool 열은 상태별 후보다. 이번에 만드는 Mock은 F1·F3 tool뿐이�
     - `handled`: 상태별 `{judgment, reason, response, actions, evidence_seqs, judged_at}`. `judged_at`은 그 판단을 한 요청의 `now`다.
     - `call_context`: `{purpose, claimed_identity}`
     - `seen`: 이 통화에서 한 번이라도 Yes가 된 상태
-    - `held`: 보류 중인 F3·F5. `held[s] = {probability(마지막 값), seqs(누적)}`. `seen`에 F1·F2·F4·F6 중 하나가 처음 들어온 요청에서 `held` 전부를 함께 부르고 비운다. 이때 Haiku가 실패한 상태는 다음 Yes까지 미판단으로 둔다.
+    - `held`: 보류 중인 F3·F5. `held[s] = {probability(마지막 값), seqs(누적), lines(대화상 줄 번호 누적)}`. `seen`에 F1·F2·F4·F6 중 하나가 처음 들어온 요청에서 `held` 전부를 함께 부르고 비운다. 이때 Haiku가 실패한 상태는 다음 Yes까지 미판단으로 둔다.
   - `uncertain` 점수 = 판단 점수 × 0.5^floor((now − judged_at) / 60), 5 미만이면 0이다.
 - 실험 코드는 import하지 않는다. 컨테이너에는 `scamshield/`만 들어간다. Jev 질문·`STATES`·Haiku 공통 프롬프트는 `scamshield/` 안으로 옮겨 쓴다.
 - Jev: 요청마다 1번. `history`의 마지막 4줄과 새 줄 전부를 보내고, [묶음 확인](../../../docs/analysis/jev-state-question-versions.md#v5-새-줄-묶음-확인-2026-11-22)에 쓴 질문(`experiments/jev_states/chunk_states.py`)으로 상태 6개를 묻는다. 새 줄 앞에는 `(새)`를 붙이고 질문도 그 표시로 새 대사를 가리킨다([새 줄 표시](../../../docs/analysis/jev-state-question-versions.md#v5-새-줄-표시-2026-11-22)). 대기 10초. 실패하면 지금처럼 `PipelineError`다.
 - Haiku: `claude-haiku-5-5`, effort `low`, 키는 `ANTHROPIC_API_KEY`
-  - 프롬프트는 Haiku 실험(`experiments/jev_states/haiku_states.py`)의 공통 프롬프트에 신분 주장 문장을 더한 것이다. 운영 대본에 맞게 `[나]`는 앱 사용자, `[상대]`는 통화 상대, `[사용자 입력 …]`은 사용자가 앱에 넣은 내용이라고 쓰고, 실험의 `evidence_lines` 출력은 뺀다. 입력은 전체 대화(`history`+새 줄), 상태 이름과 Jev 확률, `call_context`, 다시 부를 때 이전 판단이다.
-  - 출력 JSON: `{judgment, absolute_line, reason, response, actions, call_context}`
-  - tool: F1 `check_account`, F3 `check_url`·`check_app`·`check_phone`. 상태당 API 호출은 2번까지다(tool 왕복 1번).
+  - 프롬프트는 Haiku 실험(`experiments/jev_states/haiku_states.py`)의 공통 프롬프트에 신분 주장 문장을 더한 것이다. 운영 대본에 맞게 `[나]`는 앱 사용자, `[상대]`는 통화 상대, `[사용자 입력 …]`은 사용자가 앱에 넣은 내용이라고 쓰고, 실험의 `evidence_lines` 출력은 뺀다. 입력은 전체 대화(`history`+새 줄), 상태 이름과 Jev 확률, 그 상태가 감지된 대사 번호(보류였으면 `held`의 `lines`), `call_context`, 다시 부를 때 이전 판단이다.
+  - 출력 JSON: `{judgment, absolute_line, reason, response, actions, call_context}`. `null`인 문자열은 빈 문자열로, 문자열이 아닌 `actions` 항목은 버리고 받는다.
+  - tool: F1 `check_account`, F3 `check_url`·`check_app`·`check_phone`. 상태당 API 호출은 2번까지다(tool 왕복 1번). 두 번째 호출은 `tool_choice: none`으로 판단 JSON만 받는다. 그래도 판단을 못 받았는데 tool 결과에 `flagged`가 있으면 `risky` 판단으로 둔다.
   - API 호출마다 대기 12초, 자동 재시도 없음(`max_retries=0`). 상태별로 동시에 부른다.
   - 실패(시간 초과, 잘못된 출력, 5xx)하면 그 상태만 건너뛰고 오류 코드만 기록한다. 대화 내용은 로그에 쓰지 않는다.
-  - 키 오류(인증 실패 401·403)는 건너뛰지 않고 `PipelineError`로 올린다. 건너뛰면 위험 판단이 조용히 0건이 된다.
+  - 키 오류(인증 실패 401·403)는 건너뛰지 않고 `PipelineError`로 올린다. 건너뛰면 위험 판단이 조용히 0건이 된다. 같은 이유로 요청 거부(400·404, 모델 ID·파라미터 오류)도 `PipelineError(stage="llm", code="REQUEST_REJECTED")`로 올린다(코드 리뷰 반영).
 - 뺄 것: `gemini.py`, `langchain-google-genai` 의존성, `voice_phishing` 질문. 더할 것: `anthropic` 의존성(`uv.lock` 갱신)
 - 키 없는 대역: `OfflineDetector`·`OfflineAnalyst`를 새 구조에 맞춘다. 브리지 `--offline`, 그래프 그림 출력, 테스트가 쓴다.
 - 테스트: API를 부르지 않는다. Jev·Haiku 대역으로 라우팅(F3·F5 보류, 재호출), 절대선·tool 보정, 점수 감소, Haiku 실패, BE 필드를 확인한다.

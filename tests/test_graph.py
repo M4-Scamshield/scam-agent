@@ -97,6 +97,9 @@ def test_f3_f5_are_held_until_a_core_state_turns_on():
     assert call.state["held"]["F5"]["seqs"] == [2]
     third = call.say("[상대] 저는 담당 수사관입니다.", now=10)
     assert analyst.called() == ["F3", "F5", "F6"]
+    # 보류했던 상태는 자기 감지 대사를 가리키고, 이번에 켜진 상태는 이번 새 줄을 가리킨다.
+    detected = {request["state"]: request["detected_lines"] for request in analyst.requests}
+    assert detected == {"F3": [1, 2], "F5": [2], "F6": [3]}
     assert third.state["held"] == {}
     assert [analysis.state for analysis in third.state_analyses] == ["F3", "F5", "F6"]
     assert third.status == "위험"
@@ -157,7 +160,7 @@ def test_haiku_request_carries_full_conversation_probability_and_context():
     assert request["state"] == "F1"
     assert request["probability"] == 0.8
     assert request["lines"] == ["[상대] 검찰 수사관입니다.", "[나] 무슨 일이죠?", "[상대] 돈을 보내셔야 합니다."]
-    assert request["n_new"] == 2
+    assert request["detected_lines"] == [2, 3]
     assert request["call_context"] == {"purpose": "", "claimed_identity": "검찰 수사관"}
 
 
@@ -292,6 +295,7 @@ def test_state_round_trips_through_json_and_analyze_is_stateless():
     ("not a list", [{"seq": 1, "text": "[상대] a"}], None),
     ([], [{"seq": 1, "text": ""}], None),
     ([], [{"seq": 1, "text": "[상대] a"}], {"handled": "broken"}),
+    ([], [{"seq": 1, "text": "[상대] a"}], {"handled": {"F7": {"judgment": "risky", "reason": "x", "response": "", "actions": [], "evidence_seqs": [], "judged_at": 0}}}),
 ])
 def test_invalid_input_is_rejected(history, new_lines, state):
     with pytest.raises(PipelineError) as error:

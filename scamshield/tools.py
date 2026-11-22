@@ -122,5 +122,5 @@ def run_tool(name: str, arguments) -> dict:
         return {"status": "error", "detail": "알 수 없는 조회 요청입니다."}
     try:
         return func(**arguments)
-    except TypeError:
+    except Exception:  # Haiku가 낸 잘못된 입력이 같은 응답의 다른 tool 결과까지 버리게 하지 않는다.
         return {"status": "error", "detail": "조회 입력이 잘못되었습니다."}

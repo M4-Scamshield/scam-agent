@@ -1,6 +1,8 @@
 from typing import Literal, TypedDict
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+StateCode = Literal["F1", "F2", "F3", "F4", "F5", "F6"]
 
 
 class JevDecision(BaseModel):
@@ -22,9 +24,15 @@ class ToolRecord(BaseModel):
     status: Literal["flagged", "not_found", "error"]
 
 
+def _none_to_empty(value):
+    return "" if value is None else value
+
+
 class CallContext(BaseModel):
     purpose: str = ""
     claimed_identity: str = ""
+
+    _empty = field_validator("purpose", "claimed_identity", mode="before")(_none_to_empty)
 
 
 class StateJudgment(BaseModel):
@@ -39,6 +47,19 @@ class StateJudgment(BaseModel):
     actions: list[str] = []
     call_context: CallContext = CallContext()
     tools: list[ToolRecord] = []
+
+    # 저노력 Haiku가 null이나 객체 항목을 내도 그 상태를 버리지 않는다.
+    _empty = field_validator("response", mode="before")(_none_to_empty)
+
+    @field_validator("call_context", mode="before")
+    @classmethod
+    def _context(cls, value):
+        return {} if value is None else value
+
+    @field_validator("actions", mode="before")
+    @classmethod
+    def _actions(cls, value):
+        return [item for item in value if isinstance(item, str)] if isinstance(value, list) else []
 
 
 class StateAnalysis(BaseModel):
@@ -67,15 +88,17 @@ class Handled(BaseModel):
 class Held(BaseModel):
     probability: float
     seqs: list[int]
+    # 대화상 줄 번호(1부터). 보류했다 부를 때 Haiku에게 감지된 대사를 가리킨다.
+    lines: list[int] = []
 
 
 class AgentMemory(BaseModel):
     """요청 사이에 넘기는 agent 상태. AnalysisOutcome.state로 나가고 다음 요청의 state로 돌아온다."""
 
-    handled: dict[str, Handled] = {}
+    handled: dict[StateCode, Handled] = {}
     call_context: CallContext = CallContext()
-    seen: list[str] = []
-    held: dict[str, Held] = {}
+    seen: list[StateCode] = []
+    held: dict[StateCode, Held] = {}
 
 
 class AnalysisOutcome(BaseModel):

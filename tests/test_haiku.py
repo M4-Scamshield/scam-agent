@@ -50,7 +50,7 @@ def request(state="F6", **extra):
         "state": state,
         "probability": 0.73,
         "lines": ["[상대] 안녕하세요, 은행입니다.", "[나] 네.", "[상대] 계좌 하나 확인할게요."],
-        "n_new": 1,
+        "detected_lines": [3],
         "call_context": {"purpose": "", "claimed_identity": "은행 직원"},
         "previous": None,
         **extra,
@@ -90,7 +90,7 @@ def test_prompt_has_speaker_legend_identity_limit_and_no_evidence_lines():
     user = build_user(request("F1", previous={"judgment": "uncertain", "reason": "이전 이유"}))
     assert "감지된 행동: F1 자산 넘기기" in user
     assert "절대선:" in user
-    assert "감지기 확률: 0.73, 감지된 대사: 3~3번" in user
+    assert "감지기 확률: 0.73, 감지된 대사: 3번" in user
     assert "상대 신분=은행 직원" in user and "목적=모름" in user
     assert "이전 판단: uncertain. 이유: 이전 이유" in user
     assert "3. [상대] 계좌 하나 확인할게요." in user
@@ -118,12 +118,34 @@ def test_f3_gets_three_tools_and_at_most_two_api_calls():
         [tool_use("check_app", {"app_name": "팀뷰어 퀵서포트"}, "a"), tool_use("check_url", {"url": "bad"}, "b")],
         [tool_use("check_phone", {"phone_number": "1332"}, "c")],
     )
-    with pytest.raises(AnalystError) as error:
-        haiku.judge(request("F3"))
-    assert error.value.code == "INVALID_OUTPUT"
+    # 두 번째 응답에 판단 글이 없어도 tool이 찾은 위험(flagged)은 버리지 않는다.
+    result = haiku.judge(request("F3"))
+    assert result["judgment"] == "risky"
+    assert {"name": "check_app", "status": "flagged"} in result["tools"]
     assert len(messages.calls) == 2
     assert [tool["name"] for tool in messages.calls[0]["tools"]] == ["check_url", "check_app", "check_phone"]
+    assert "tool_choice" not in messages.calls[0]
+    assert messages.calls[1]["tool_choice"] == {"type": "none"}
     assert len(messages.calls[1]["messages"][-1]["content"]) == 2
+
+
+def test_missing_judgment_after_tools_without_flag_is_invalid_output():
+    haiku, _ = analyst([tool_use("check_account", {"account_number": "999"})], [text("판단을 못 했습니다.")])
+    with pytest.raises(AnalystError) as error:
+        haiku.judge(request("F1"))
+    assert error.value.code == "INVALID_OUTPUT"
+
+
+def test_loose_haiku_output_is_accepted():
+    loose = {**ANSWER, "response": None, "actions": [{"label": "버튼"}, "대표번호로 확인하기"], "call_context": {"purpose": None, "claimed_identity": "은행 직원"}}
+    haiku, _ = analyst([text(json.dumps(loose))])
+    result = haiku.judge(request("F6"))
+    assert result["response"] == "" and result["actions"] == ["대표번호로 확인하기"]
+    assert result["call_context"] == {"purpose": "", "claimed_identity": "은행 직원"}
+
+
+def test_bad_tool_input_is_a_tool_error_not_a_crash():
+    assert run_tool("check_phone", {"phone_number": "1332", "claimed_institution": 7})["status"] == "error"
 
 
 @pytest.mark.parametrize("failure, code", [
@@ -172,3 +194,11 @@ def test_mock_tools_distinguish_flagged_not_found_and_error():
     assert check_phone("")["status"] == "error"
     assert run_tool("unknown", {})["status"] == "error"
     assert run_tool("check_app", {"wrong": "x"})["status"] == "error"
+
+
+@pytest.mark.parametrize("cls, code", [(anthropic.BadRequestError, 400), (anthropic.NotFoundError, 404)])
+def test_rejected_request_raises_instead_of_silently_skipping(cls, code):
+    haiku, _ = analyst(status_error(cls, code))
+    with pytest.raises(PipelineError) as error:
+        haiku.judge(request("F6"))
+    assert error.value.code == "REQUEST_REJECTED"
