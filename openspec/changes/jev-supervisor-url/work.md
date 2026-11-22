@@ -33,6 +33,8 @@ PR 대상 파일만 staging하고 `git checkout-index --all --prefix=<temporary-
 
 ## 남은 사항과 다음 행동
 
+게시: `feat/jev-supervisor-url-routing`을 origin에 push하고 `main` 대상 [PR #16](https://github.com/M4-Scamshield/scam-agent/pull/16)을 만들었다. 역할 분리·상태 계약·URL·Supervisor·CLI·문서를 6개 커밋으로 나누었고, 이 PR 인계 기록은 별도 커밋으로 남긴다. 다음 검토자는 README의 두 그래프 → Supervisor 계약 → tests 순으로 확인한 뒤 PR을 검토한다. merge는 실행하지 않았다.
+
 1. BE가 새 Supervisor API를 호출하도록 연결하고 방 단위 메시지 ID/seq·history·state를 원자적으로 저장한다. 동시 요청은 직렬화 또는 버전 검사한다.
 2. 실제 Jev Supervisor와 Haiku URL Tool Calling을 별도 검증한다. URL 검색은 사용자 지시대로 Mock을 유지한다.
 3. URL 위험 결과의 BE/UI 표시 정책은 별도 합의한다. 현재는 통화 점수와 합산하지 않는다.
