@@ -5,7 +5,7 @@ import anthropic
 import httpx
 import pytest
 
-from scamshield.haiku import SYSTEM, AnalystError, HaikuAnalyst, build_user
+from scamshield.agents.analysis_agent import SYSTEM, AnalystError, HaikuAnalyst, build_user
 from scamshield.state import PipelineError
 from scamshield.tools import check_account, check_app, check_phone, check_url, run_tool
 

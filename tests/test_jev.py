@@ -5,7 +5,7 @@ from urllib.error import HTTPError, URLError
 
 import pytest
 
-from scamshield.jev import JevClient
+from scamshield.agents.jev_agent import JevClient
 from scamshield.state import PipelineError
 from scamshield.tactics import STATES
 
@@ -24,7 +24,7 @@ def response(choice="Yes", probabilities=None):
 
 def install_response(monkeypatch, raw):
     transport = Mock(return_value=io.BytesIO(json.dumps(raw).encode("utf-8")))
-    monkeypatch.setattr("scamshield.jev.urlopen", transport)
+    monkeypatch.setattr("scamshield.agents.jev_agent.urlopen", transport)
     return transport
 
 
@@ -78,7 +78,7 @@ def test_invalid_distribution_is_error(monkeypatch, raw):
 ])
 def test_transport_errors_are_safe_and_not_retried(monkeypatch, failure):
     transport = Mock(side_effect=failure)
-    monkeypatch.setattr("scamshield.jev.urlopen", transport)
+    monkeypatch.setattr("scamshield.agents.jev_agent.urlopen", transport)
     with pytest.raises(PipelineError) as error:
         JevClient("private-key").detect_states(["[상대] 입력"], 1)
     assert error.value.code == "CALL_FAILED"
@@ -87,7 +87,7 @@ def test_transport_errors_are_safe_and_not_retried(monkeypatch, failure):
 
 
 def test_non_json_response_is_invalid_output(monkeypatch):
-    monkeypatch.setattr("scamshield.jev.urlopen", Mock(return_value=io.BytesIO(b"not JSON")))
+    monkeypatch.setattr("scamshield.agents.jev_agent.urlopen", Mock(return_value=io.BytesIO(b"not JSON")))
     with pytest.raises(PipelineError) as error:
         JevClient("test").detect_states(["[상대] 입력"], 1)
     assert error.value.code == "INVALID_OUTPUT"

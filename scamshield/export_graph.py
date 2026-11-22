@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 
 from scamshield.graph import build_graph
-from scamshield.interfaces import OfflineAnalyst, OfflineDetector
+from scamshield.agents.interfaces import OfflineAnalyst, OfflineDetector
 
 
 def main() -> None:
