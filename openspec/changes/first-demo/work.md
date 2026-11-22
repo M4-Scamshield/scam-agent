@@ -32,7 +32,7 @@ API 없는 테스트·CLI·설치 SDK 전송 대역 검사와 실제 Gemini 세 
 
 사용자 요청에 따라 현재 브랜치 `junyheon/1/cli-call-demo`에서 구현을 시작했다. 이슈 #1 본문을 GitHub REST API로 읽고 현재 로컬 스펙·tasks/work와 비교했다. 기존 미커밋 문서 10개를 유지하며 기존 change를 이어간다. 키 존재 여부만 확인했으며 GEMINI_API_KEY/GOOGLE_API_KEY는 현재 실행 환경에 없다.
 
-[State](../../../scamshield/state.py)·[Graph](../../../scamshield/graph.py)·[Fake Jev](../../../scamshield/jev.py)·[당시 Mock 조회](https://github.com/M4-Scamshield/scam-agent/blob/9ae72bb/scamshield/tools.py)·[당시 Agent 대역](https://github.com/M4-Scamshield/scam-agent/blob/9ae72bb/scamshield/roles.py)을 작성했다. 동일 InMemorySaver/thread_id와 sync checkpoint, utterance 소비·전체 목록 교체·turn 실행 값 초기화, 선택/실행 분리·결과 후 재판단·VERIFY 종료를 구현했다. 모델/Tool 자동 실행 loop·운영 복구는 추가하지 않았다.
+[State](../../../scamshield/state.py)·[Graph](../../../scamshield/graph.py)·[당시 Fake Jev](https://github.com/M4-Scamshield/scam-agent/blob/9ae72bb/scamshield/jev.py)·[당시 Mock 조회](https://github.com/M4-Scamshield/scam-agent/blob/9ae72bb/scamshield/tools.py)·[당시 Agent 대역](https://github.com/M4-Scamshield/scam-agent/blob/9ae72bb/scamshield/roles.py)을 작성했다. 동일 InMemorySaver/thread_id와 sync checkpoint, utterance 소비·전체 목록 교체·turn 실행 값 초기화, 선택/실행 분리·결과 후 재판단·VERIFY 종료를 구현했다. 모델/Tool 자동 실행 loop·운영 복구는 추가하지 않았다.
 
 1단계 실행: `.venv/bin/python -m pytest -q` → **10 passed**. [Graph 검사](../../../tests/test_graph.py)로 세 발화의 Node 순서·risk/phase·실제 Mock 실행 1회·Jev 총 4회, 선택 요청의 실행 전 checkpoint, 대화/결과 중복 없는 누적·통화 분리, 최신 해당 Mock 결과/FOUND/실패 반영·재판단 VERIFY 종료·다음 turn 한도 초기화를 확인했다. 이 결과는 Agent 대역 검사이며 Gemini 호출 검증이 아니다. 다음은 Gemini 연결·CLI와 API 없는 연결 검증이다.
 

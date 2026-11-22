@@ -1,0 +1,25 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	update_context(update_context)
+	supervisor(supervisor)
+	call_agent(call_agent)
+	url_agent(url_agent)
+	finalize(finalize)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> update_context;
+	call_agent -. &nbsp;done&nbsp; .-> finalize;
+	call_agent -. &nbsp;url&nbsp; .-> url_agent;
+	supervisor -. &nbsp;call&nbsp; .-> call_agent;
+	supervisor -. &nbsp;done&nbsp; .-> finalize;
+	supervisor -. &nbsp;url&nbsp; .-> url_agent;
+	update_context --> supervisor;
+	url_agent --> finalize;
+	finalize --> __end__;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc
