@@ -167,19 +167,23 @@ tool 열은 상태별 후보다. 이번에 만드는 Mock은 F1·F3 tool뿐이�
   - 상태를 입력으로만 받으므로 같은 요청을 재시도해도 판단이 두 번 쌓이지 않는다. checkpointer에 기대지 않는다.
 - 출력 `AnalysisOutcome`
   - `status`: `"위험" | "주의" | "정상"`, `score`: 0~100 정수([spec](spec.md#충족해야-할-동작)의 점수 규칙)
-  - `message`, `reason`, `evidence_seqs`: 위 BE 필드 결정대로. `message`는 위험이 아니면 `None`이다. `reason`은 `risky`와 점수가 남은 `uncertain` 상태의 이유를 `"F1: …"` 꼴로 이어 붙이고, 없으면 `None`이다.
+  - `message`, `reason`, `evidence_seqs`: 위 BE 필드 결정대로. `message`는 위험이 아니면 `None`이고, 위험인데 Haiku `response`가 비면 고정 문구를 쓴다. `evidence_seqs`는 `risky` 상태들이 Yes가 된 요청의 새 줄 `seq` 전부다(보류였으면 `held`에 쌓인 `seq`). `reason`은 `risky`와 점수가 남은 `uncertain` 상태의 이유를 `"F1: …"` 꼴로 이어 붙이고, 없으면 `None`이다.
   - `states`: 이번 Jev 판단(상태별 `verdict`·`probability`), `state_analyses`: 이번에 부른 Haiku 결과(우선순위 순)
   - `state`: 다음 요청에 넘길 JSON 직렬화 가능한 dict
-    - `handled`: 상태별 `{judgment, reason, response, actions, evidence_seqs, judged_at}`
+    - `handled`: 상태별 `{judgment, reason, response, actions, evidence_seqs, judged_at}`. `judged_at`은 그 판단을 한 요청의 `now`다.
     - `call_context`: `{purpose, claimed_identity}`
-    - `seen`: 이 통화에서 한 번이라도 Yes가 된 상태, `held`: F3·F5 보류 중인 상태와 근거 대사 번호
+    - `seen`: 이 통화에서 한 번이라도 Yes가 된 상태
+    - `held`: 보류 중인 F3·F5. `held[s] = {probability(마지막 값), seqs(누적)}`. `seen`에 F1·F2·F4·F6 중 하나가 처음 들어온 요청에서 `held` 전부를 함께 부르고 비운다. 이때 Haiku가 실패한 상태는 다음 Yes까지 미판단으로 둔다.
+  - `uncertain` 점수 = 판단 점수 × 0.5^floor((now − judged_at) / 60), 5 미만이면 0이다.
+- 실험 코드는 import하지 않는다. 컨테이너에는 `scamshield/`만 들어간다. Jev 질문·`STATES`·Haiku 공통 프롬프트는 `scamshield/` 안으로 옮겨 쓴다.
 - Jev: 요청마다 1번. `history`의 마지막 4줄과 새 줄 전부를 보내고, [묶음 확인](../../../docs/analysis/jev-state-question-versions.md#v5-새-줄-묶음-확인-2026-11-22)에 쓴 질문(`experiments/jev_states/chunk_states.py`)으로 상태 6개를 묻는다. 대기 10초. 실패하면 지금처럼 `PipelineError`다.
 - Haiku: `claude-haiku-5-5`, effort `low`, 키는 `ANTHROPIC_API_KEY`
-  - 프롬프트는 Haiku 실험(`experiments/jev_states/haiku_states.py`)의 공통 프롬프트에 신분 주장 문장을 더한 것이다. 입력은 전체 대화(`history`+새 줄), 상태 이름과 Jev 확률, `call_context`, 다시 부를 때 이전 판단이다.
+  - 프롬프트는 Haiku 실험(`experiments/jev_states/haiku_states.py`)의 공통 프롬프트에 신분 주장 문장을 더한 것이다. 운영 대본에 맞게 `[나]`는 앱 사용자, `[상대]`는 통화 상대, `[사용자 입력 …]`은 사용자가 앱에 넣은 내용이라고 쓰고, 실험의 `evidence_lines` 출력은 뺀다. 입력은 전체 대화(`history`+새 줄), 상태 이름과 Jev 확률, `call_context`, 다시 부를 때 이전 판단이다.
   - 출력 JSON: `{judgment, absolute_line, reason, response, actions, call_context}`
-  - tool: F1 `check_account`, F3 `check_url`·`check_app`·`check_phone`. tool 왕복은 2번까지다.
-  - API 호출마다 대기 15초, 자동 재시도 없음. 상태별로 동시에 부른다.
-  - 실패하면 그 상태만 건너뛰고 오류 코드만 기록한다. 대화 내용은 로그에 쓰지 않는다.
+  - tool: F1 `check_account`, F3 `check_url`·`check_app`·`check_phone`. 상태당 API 호출은 2번까지다(tool 왕복 1번).
+  - API 호출마다 대기 12초, 자동 재시도 없음(`max_retries=0`). 상태별로 동시에 부른다.
+  - 실패(시간 초과, 잘못된 출력, 5xx)하면 그 상태만 건너뛰고 오류 코드만 기록한다. 대화 내용은 로그에 쓰지 않는다.
+  - 키 오류(인증 실패 401·403)는 건너뛰지 않고 `PipelineError`로 올린다. 건너뛰면 위험 판단이 조용히 0건이 된다.
 - 뺄 것: `gemini.py`, `langchain-google-genai` 의존성, `voice_phishing` 질문. 더할 것: `anthropic` 의존성(`uv.lock` 갱신)
 - 키 없는 대역: `OfflineDetector`·`OfflineAnalyst`를 새 구조에 맞춘다. 브리지 `--offline`, 그래프 그림 출력, 테스트가 쓴다.
 - 테스트: API를 부르지 않는다. Jev·Haiku 대역으로 라우팅(F3·F5 보류, 재호출), 절대선·tool 보정, 점수 감소, Haiku 실패, BE 필드를 확인한다.
@@ -198,10 +202,14 @@ tool 열은 상태별 후보다. 이번에 만드는 Mock은 F1·F3 tool뿐이�
   - `action`: 위험이면 `WARN`, 아니면 `OBSERVE`
   - `score`: 위험이면 그대로, 아니면 `min(score, 39)`
   - `message`·`reason`·`evidenceSeqs`: agent 출력. 상대가 있으면 `reason` 앞에 `"[<trackId>]"`를 붙인다.
-  - 가장 위험한 쌍(WARN 먼저, 다음 점수)을 따른다.
-- 대기 시간: 쌍 하나에 Jev 10초 + Haiku 최대 2×15초 = 40초로, BE `agent.timeout-ms`(55초) 안이다. 쌍은 차례로 판단하므로 상대가 둘 이상 동시에 말하면 넘을 수 있다. 데모는 상대 1명으로 한다.
-- 설정: 운영 compose의 Gemini 환경 변수를 `ANTHROPIC_API_KEY`로 바꾼다. 배포 전에 서버 `.env`에 키가 있어야 한다.
-- 순서: BE CI와 운영은 scam-agent `main`을 받는다. scam-agent PR을 `main`에 먼저 합치고 BE PR을 `dev`에 합친다. BE `dev`에 합치면 운영에 자동 배포된다.
+  - 이번에 판단한 쌍 중 가장 위험한 쌍(WARN 먼저, 다음 점수)을 따른다. 데모는 상대 1명이라 다른 쌍과 비교할 일이 없다.
+- 첫 상대가 나중에 나타나면 `peers[""]`를 그 상대의 상태로 옮긴다.
+- 계약 예시 JSON(`contract/*.json`)은 Java `AgentContractTest`가 값을 확인하므로 값은 두고 `newState`에 `peers`만 더한다. 브리지 테스트는 고정된 `analyze` 결과 대역을 쓴다.
+- 한계: BE는 통화당 알림 단계가 오를 때만 알린다. SUSPECT를 쓰지 않으므로 알림은 첫 위험 때 1번이고, 그 뒤 더 중요한 상태의 안내는 분석 결과에만 남는다. 데모에서는 받아들인다.
+- 시작: `ANTHROPIC_API_KEY`가 비어 있으면 Jev 키처럼 시작할 때 멈춘다.
+- 대기 시간: 쌍 하나에 Jev 10초 + Haiku 최대 2×12초 = 34초로, BE `agent.timeout-ms`(55초) 안이다. 쌍은 차례로 판단하므로 상대가 둘 이상 동시에 말하면 넘을 수 있다. 데모는 상대 1명으로 한다.
+- 설정: 저장소의 운영 compose(`pipeline/infra/deploy/compose.yml`)와 `.env.example`에서 `GEMINI_*`를 지우고 `ANTHROPIC_API_KEY`를 필수로 넣는다. 운영 브리지는 서버의 `~/bridge` compose로 뜨므로, 배포 전에 사용자가 서버 compose와 `.env`도 같이 바꾼다.
+- 순서: BE CI와 운영은 scam-agent `main`을 받는다. scam-agent PR을 `main`에 먼저 합치고, 바로 BE PR CI를 다시 돌려 `dev`에 합친다. 그 사이 BE CI는 예전 브리지 테스트가 깨져 실패하므로 팀원에게 `dev` 머지를 잠시 멈춰 달라고 알린다. BE `dev`에 합치면 운영에 자동 배포된다.
 
 ## 미정 사항
 
