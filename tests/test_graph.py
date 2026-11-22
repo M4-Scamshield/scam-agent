@@ -231,7 +231,7 @@ def test_be_fields_message_reason_and_evidence():
     outcome = call.say("[상대] 이 계좌로 옮기세요.")
     assert outcome.status == "위험"
     assert outcome.message == "송금을 멈추세요."
-    assert outcome.reason == "F1: risky 판단 이유 / F2: risky 판단 이유 / F4: uncertain 판단 이유"
+    assert outcome.reason == "risky 판단 이유"  # 가장 중요한 risky 상태(F1) 하나만
     assert outcome.evidence_seqs == [2, 3, 4]
     assert outcome.score == 40 + 40 + 5
 
@@ -245,6 +245,17 @@ def test_haiku_failure_skips_only_that_state_and_retries_on_next_yes():
     analyst.results["F1"] = judged("risky")
     second = call.say("[상대] 지금 송금하세요.")
     assert second.state["handled"]["F1"]["judgment"] == "risky"
+
+
+def test_reason_is_top_state_only_and_uncertain_is_hidden_when_risky():
+    analyst = FakeAnalyst(F3=judged("uncertain", reason="주소가 아직 안 나옴"), F4=judged("risky", reason="선입금 요구"))
+    call = Call(FakeDetector({"F1"}, {"F3", "F4"}), analyst)
+    call.say("[상대] 안녕하세요.")
+    caution = Call(FakeDetector({"F1", "F3"}), FakeAnalyst(F1=judged("uncertain", reason="송금 목적 불명"),
+                                                           F3=judged("uncertain", reason="주소 불명"))).say("[상대] a")
+    assert (caution.status, caution.reason) == ("주의", "송금 목적 불명")
+    outcome = call.say("[상대] 먼저 입금하셔야 돌려드립니다.")
+    assert (outcome.status, outcome.reason) == ("위험", "선입금 요구")  # F3 uncertain 이 우선순위가 높아도 빼고
 
 
 @pytest.mark.parametrize("bad", [{"judgment": "maybe", "reason": "x"}, {"judgment": "risky"}, RuntimeError("boom")])

@@ -190,12 +190,13 @@ def build_graph(detector: Detector, analyst: Analyst):
         watch = [code for code in PRIORITY if handled.get(code, {}).get("judgment") == "uncertain" and points[code] > 0]
         status = "위험" if risky else "주의" if watch else "정상"
         message = (handled[risky[0]]["response"] or FALLBACK_MESSAGE) if risky else None
-        reasons = [f"{code}: {handled[code]['reason']}" for code in PRIORITY if code in risky or code in watch]
+        # 사용자 화면의 근거는 가장 중요한 상태 하나의 이유만 쓴다(여럿을 이으면 길고, uncertain의 "근거 부족"이 섞인다).
+        top = (risky or watch or [None])[0]
         outcome = {
             "status": status,
             "score": min(100, round(sum(points.values()))),
             "message": message,
-            "reason": " / ".join(reasons) or None,
+            "reason": (handled[top]["reason"] or None) if top else None,
             "evidence_seqs": sorted({seq for code in risky for seq in handled[code]["evidence_seqs"]}),
             "states": state["states"],
             "state_analyses": state["state_analyses"],
