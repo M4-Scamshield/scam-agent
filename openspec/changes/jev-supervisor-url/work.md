@@ -33,6 +33,12 @@ PR 대상 파일만 staging하고 `git checkout-index --all --prefix=<temporary-
 
 ## 남은 사항과 다음 행동
 
+### 후속: call_agent 내부 시각화 (2026-11-23)
+
+사용자가 통합 PNG에서 분석 에이전트가 보이지 않는다고 질문하고 내부 보기까지 요청했다. exporter의 `--supervisor` 기본 출력을 상·하위 컴파일 그래프를 연결한 확장 보기로 바꾸었다. `call_agent` 안에 update_context → detect_states(Jev) → judge_states(analysis_agent·Haiku) → finalize와 skip 분기가 보인다. `--compact`는 접은 이미지를 별도 이름으로 저장한다. 런타임 그래프는 변경하지 않았다.
+
+`python -m pytest -q tests/test_export_graph.py`로 신규 2개 검사를 통과했다. call 진입·skip·judge·done/url 복귀 간선 보존과 모델 호출 없는 확장/접은/통화 단독 보기를 확인했다. PNG 렌더러가 괄호를 포함한 라벨을 거부해 구분점을 쓰도록 조정한 뒤 `python -X utf8 -m scamshield.export_graph --supervisor`로 PNG·Mermaid를 재생성하고 육안 확인했다. README·아키텍처·계약·spec/design/tasks를 맞췄다. 기존 전체 테스트 124개 결과와 이번 시각화 검사 2개를 구분한다.
+
 게시: `feat/jev-supervisor-url-routing`을 origin에 push하고 `main` 대상 [PR #16](https://github.com/M4-Scamshield/scam-agent/pull/16)을 만들었다. 역할 분리·상태 계약·URL·Supervisor·CLI·문서를 6개 커밋으로 나누었고, 이 PR 인계 기록은 별도 커밋으로 남긴다. 다음 검토자는 README의 두 그래프 → Supervisor 계약 → tests 순으로 확인한 뒤 PR을 검토한다. merge는 실행하지 않았다.
 
 1. BE가 새 Supervisor API를 호출하도록 연결하고 방 단위 메시지 ID/seq·history·state를 원자적으로 저장한다. 동시 요청은 직렬화 또는 버전 검사한다.

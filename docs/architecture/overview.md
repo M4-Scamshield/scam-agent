@@ -6,7 +6,7 @@
 
 ![컴파일된 Supervisor LangGraph](supervisor-langgraph.png)
 
-상위 [Mermaid 원본](supervisor-langgraph.mmd)은 `build_supervisor_pipeline(offline=True).graph`에서 추출한다. `call_agent`는 아래 기존 통화 그래프를 실행하며, URL 경로는 Mock 조회 결과를 별도로 돌려준다. 모델을 호출하지 않고 그래프만 내보낸다.
+통합 [Mermaid 원본](supervisor-langgraph.mmd)은 같은 offline 통화 파이프라인을 사용해 상위 Supervisor와 하위 통화 그래프를 각각 컴파일한 뒤 시각화용으로 연결한다. `call_agent` 박스 내부의 `detect_states · Jev`, `judge_states · analysis_agent · Haiku`, 통화 `finalize`가 보인다. 하위 START/END를 제외하고 상위 call 진입·url/done 복귀 간선을 연결하며 내부 skip 분기도 유지한다. 실행 그래프는 변경하지 않는다. `--supervisor --compact`는 접은 보기를 별도 파일로 출력한다. 모델 호출은 없다. URL 경로는 Mock 조회 결과를 별도로 돌려준다.
 
 ![컴파일된 ScamShield LangGraph](scamshield-langgraph.png)
 

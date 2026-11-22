@@ -6,9 +6,7 @@
 
 ![컴파일된 Supervisor LangGraph](docs/architecture/supervisor-langgraph.png)
 
-위 이미지는 실제 컴파일한 상위 그래프다([Mermaid 원본](docs/architecture/supervisor-langgraph.mmd)). `call_agent` 내부는 다음의 기존 통화 그래프다.
-
-![컴파일된 ScamShield LangGraph](docs/architecture/scamshield-langgraph.png)
+위 이미지는 실제 컴파일한 상위 그래프와 `call_agent` 내부를 함께 펼친 것이다([Mermaid 원본](docs/architecture/supervisor-langgraph.mmd)). `call_agent` 박스 안의 **`detect_states · Jev` → `judge_states · analysis_agent · Haiku` → `finalize`**가 기존 감지·분석·대응 경로다. 분석이 필요 없는 상태는 `skip`으로 건너뛴다. [통화 그래프만 따로 보기](docs/architecture/scamshield-langgraph.png)도 가능하다.
 
 ```mermaid
 flowchart TD
@@ -150,11 +148,14 @@ Supervisor와 채팅 ID 중복 제외, URL 전용 Mock Tool Calling을 추가했
 uv run --locked pytest -q
 uv run --locked python -m scamshield.export_graph
 uv run --locked python -m scamshield.export_graph --supervisor
+uv run --locked python -m scamshield.export_graph --supervisor --compact
 ```
 
 테스트는 API 없이 라우팅·보류·재호출, 절대선·tool 보정, 점수 감소, Haiku 실패 처리, BE 필드, `state` JSON 왕복, Jev·Haiku 요청 변환, CLI를 확인한다. 실제 연결과 테스트 결과는 [work](openspec/changes/jev-state-agents/work.md)에 구분한다. 탐지 성능이나 확률 보정을 검증한 것은 아니다.
 
 그래프 출력은 실제 컴파일된 LangGraph에서 [Mermaid 원본](docs/architecture/scamshield-langgraph.mmd)과 PNG를 생성한다. PNG 렌더링에는 Mermaid.ink 네트워크 접근이 필요하며 그래프 구조만 전송하고 모델은 호출하지 않는다.
+
+`--supervisor`는 기본으로 `call_agent` 내부까지 펼쳐 `supervisor-langgraph.mmd/png`에 저장한다. 상·하위 그래프에서 실제 노드와 조건부 간선을 가져와 시각화만 연결하며 실행 구조는 그대로다. `--compact`를 추가하면 내부를 접은 `supervisor-compact-langgraph.mmd/png`를 별도로 만든다.
 
 ## 문서 검사
 

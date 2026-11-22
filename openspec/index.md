@@ -24,6 +24,8 @@
 
 검토·인계: [PR #16](https://github.com/M4-Scamshield/scam-agent/pull/16), head `feat/jev-supervisor-url-routing`, base `main`.
 
+후속으로 Supervisor PNG에 call_agent 내부 Jev·Haiku 분석과 skip 분기까지 펼쳐 보이게 했다. 접은 보기는 `--compact`로 유지하며 간선 보존·모델 미호출 검사 2개를 추가 통과했다.
+
 2026-11-23 사용자 요청으로 기존 통화 분석 위의 Jev 라우팅, 채팅 ID별 처리 기록, 별도 URL 에이전트의 Mock Tool Calling을 구현했다. 에이전트는 `scamshield/agents/`에 역할별 `*_agent.py`와 `supervisor.py`로 정리했다. PR 스냅샷 전체 테스트 124개와 문서 검사(54개·692링크)를 통과했고 README·컴파일된 그래프를 갱신했다. 기존 통화 API를 유지하며 새 Supervisor 입구의 서버 연결·동시 요청 제어·실제 모델 검증은 후속이다.
 
 - [proposal](changes/jev-supervisor-url/proposal.md): 목적과 사용자 확정 범위.

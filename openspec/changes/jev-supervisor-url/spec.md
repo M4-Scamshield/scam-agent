@@ -6,5 +6,6 @@
 4. Mock `flagged`는 `risky`, `not_found`는 `unknown`, 실패는 `error`다. 도구를 호출하지 않거나 다른 URL을 호출한 모델은 조회 성공으로 취급하지 않는다. 실제 사이트 안전을 보장하지 않는다.
 5. 상태는 호출자가 보관한다. 새 인스턴스도 이전 `state`를 받으면 중복 처리를 건너뛴다. 입력 state를 직접 변경하지 않는다.
 6. 기존 `scamshield.graph.build_pipeline`과 `CallPipeline.analyze`는 유지한다. 에이전트 이동 후 기존 테스트·CLI와 새 Supervisor 회귀 검사를 실행한다.
+7. Supervisor 그래프 출력은 기본으로 `call_agent` 내부의 실제 컴파일 노드·조건부 간선을 펼친다. `judge_states`가 Haiku `analysis_agent`임을 표시한다. 접은 보기와 통화 전용 보기도 유지한다.
 
 [공통 계약](../../../docs/design/supervisor-and-chat.md), [통화 계약](../../../docs/design/state-and-graph.md), [proposal](proposal.md), [design](design.md)

@@ -32,6 +32,8 @@ Supervisor는 처리하지 않은 STT·채팅과 `pending_urls`만 보고 call/u
 
 ## 응답과 상태
 
+구조를 내보낼 때 `python -m scamshield.export_graph --supervisor`는 실제 컴파일된 상위·하위 그래프를 시각화용으로 연결해 `call_agent` 내부의 Jev 감지·`analysis_agent` 호출·조건부 skip까지 보여준다. 하위 START/END만 제외하고 상위 call 진입과 url/done 복귀 간선은 보존한다. 실행 방식은 바꾸지 않는다. `--compact`를 추가하면 내부를 접은 보기를 별도 파일로 출력한다.
+
 `SupervisorOutcome`은 `call`(이번 통화 분석 또는 `None`), `url_analyses`, 실제 실행한 `routes`, 서버가 history에 추가할 `appended_lines`, 다음 요청의 `state`다. 일반 채팅은 `[사용자 입력] …` 줄로 통화 분석에 전달하며 STT와 seq 순서로 정렬한다. 원래 채팅은 서버가 별도로 보관한다. URL 결과는 기존 통화 점수·상태에 임의 합산하지 않는다.
 
 `SupervisorMemory`는 다음 세 가지를 가진다.

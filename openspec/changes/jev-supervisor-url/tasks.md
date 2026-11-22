@@ -6,5 +6,6 @@
 - [x] Supervisor·채팅 영수증·URL agent와 역할별 파일 이동을 구현한다.
 - [x] 기존 API와 새 라우팅·재전송·실패·Tool Calling을 검증한다(전체 124개 통과).
 - [x] 기준 문서·그래프·인덱스를 동기화하고 문서 검사 결과를 기록한다.
+- [x] 후속 요청: call_agent 내부까지 펼친 그래프와 접은 보기를 제공하고 PNG·간선 검증 결과를 work에 남긴다.
 
 [spec](spec.md), [design](design.md)
