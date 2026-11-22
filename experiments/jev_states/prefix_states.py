@@ -11,6 +11,7 @@
 """
 import argparse
 import json
+import random
 import sys
 from pathlib import Path
 
@@ -20,32 +21,38 @@ from probe_states import STATES, build_questions, common, load_normals  # noqa: 
 from prepare import load_calls  # noqa: E402
 
 
-def main():
-    p = argparse.ArgumentParser()
+def add_args(p):
     p.add_argument("--from", dest="src", required=True, help="probe_states.py 결과 파일")
-    p.add_argument("--select", choices=["normal-fp"], default="normal-fp",
-                   help="normal-fp: 통화 전체 판단에서 상태가 하나라도 켜진 정상 통화")
+    p.add_argument("--select", choices=["normal-fp", "scam"], default="normal-fp",
+                   help="normal-fp: 통화 전체 판단에서 상태가 하나라도 켜진 정상 통화, scam: 사기 통화")
+    p.add_argument("--n", type=int, help="이 수만큼 무작위로 뽑는다(--select scam은 필수)")
+    p.add_argument("--seed", type=int, default=0)
     p.add_argument("--timeout", type=int, default=60)
     p.add_argument("--dry-run", action="store_true")
-    p.add_argument("--out-name", default="prefix.json")
-    args = p.parse_args()
 
-    src = json.loads(Path(args.src).read_text(encoding="utf-8"))["calls"]
-    picked = [c for c in src if not c["scam"] and any(c["answers"][s]["verdict"] == "Yes" for s in STATES)]
+
+def pick(args):
+    """대상 통화와 call_id별 대사를 돌려준다."""
+    src = [c for c in json.loads(Path(args.src).read_text(encoding="utf-8"))["calls"] if "answers" in c]
+    if args.select == "scam":
+        picked = [c for c in src if c["scam"]]
+    else:
+        picked = [c for c in src if not c["scam"] and any(c["answers"][s]["verdict"] == "Yes" for s in STATES)]
+    if args.n is not None:
+        picked = random.Random(args.seed).sample(picked, args.n)
     lines = {c["call_id"]: c["lines"] for c in load_normals() + load_calls()}
-    print(f"calls={len(picked)} requests={sum(len(lines[c['call_id']]) for c in picked)}")
-    if args.dry_run:
-        return
+    return picked, lines
 
-    common.inject_truststore()
-    questions = build_questions()
+
+def run(args, questions, picked, lines, make_input, out_name, **meta):
+    """대사 k(1부터)마다 make_input(대사 목록, k)을 보내 상태 판단을 모은다."""
     results = []
     for i, c in enumerate(picked, 1):
         ls = lines[c["call_id"]]
         steps = []
         for k in range(1, len(ls) + 1):
             try:
-                res = common.ask(questions, ls[:k], timeout=args.timeout)
+                res = common.ask(questions, make_input(ls, k), timeout=args.timeout)
                 steps.append({"k": k, "answers": res["answers"], "input_tokens": res["input_tokens"]})
             except common.JevError as e:
                 steps.append({"k": k, "error": e.code})
@@ -53,9 +60,23 @@ def main():
                         "full": c["answers"], "steps": steps})
         print(f"  {i}/{len(picked)} {c['call_id']} lines={len(ls)} errors={sum('error' in s for s in steps)}", flush=True)
 
-    out = {"source": Path(args.src).name, "select": args.select,
+    out = {"source": Path(args.src).name, "select": args.select, **meta,
            "questions": {k: v["instructions"] for k, v in questions.items()}, "calls": results}
-    (HERE / "results" / args.out_name).write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
+    (HERE / "results" / out_name).write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+def main():
+    p = argparse.ArgumentParser()
+    add_args(p)
+    p.add_argument("--out-name", default="prefix.json")
+    args = p.parse_args()
+
+    picked, lines = pick(args)
+    print(f"calls={len(picked)} requests={sum(len(lines[c['call_id']]) for c in picked)}")
+    if args.dry_run:
+        return
+    common.inject_truststore()
+    run(args, build_questions(), picked, lines, lambda ls, k: ls[:k], args.out_name)
 
 
 if __name__ == "__main__":
