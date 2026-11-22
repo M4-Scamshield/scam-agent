@@ -2,6 +2,8 @@
 
 현재 기준은 [State·Graph 계약](state-and-graph.md)이다. 2AS와 기존 Fake Jev·Mock 조회 데모의 기록은 [2AS work](../../openspec/changes/jev-gemini-two-agent/work.md)와 [과거 실행 기록](../../openspec/changes/first-demo/work.md)으로 보존한다.
 
+2026-11-23 상위 [Supervisor·채팅 흐름](supervisor-and-chat.md)을 추가했다. 새 API는 Jev가 call/url 경로를 정하고, call일 때 아래의 기존 흐름을 실행한다. URL 경로는 별도 Haiku의 Mock Tool Calling이다. 두 경로를 함께 실행할 수 있고, 완료한 채팅 ID는 제외한다. 기존 통화 전용 API와 CLI 기본 경로도 유지한다.
+
 ## 요청 하나의 흐름
 
 1. BE `agent-bridge`(또는 CLI)가 이전 대화 `history`, 이번 새 줄 `new_lines`, 이전 출력 `state`, 시각 `now`로 `CallPipeline.analyze`를 부른다.

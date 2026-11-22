@@ -2,9 +2,38 @@
 
 한국어 통화의 보이스피싱 여부를 판단하고 탐지 시 분석과 대응 안내를 제공하는 졸업프로젝트다. 목적과 합의된 MVP 범위는 [프로젝트 컨텍스트](docs/project-context.md)에 있다.
 
-현재 구조는 **Jev 상태 감지 + 상태별 Claude Haiku 판단**이다. 새 줄이 들어오면 Jev가 사기 수법 행동 F1~F6이 새 줄에 나타났는지 감지하고, 켜진 상태마다 Haiku가 전체 대화로 그 행동이 수상한지 판단한다. 판단으로 통화 상태(위험·주의·정상)와 점수를 만든다. [State·Graph 계약](docs/design/state-and-graph.md)과 [실행 근거](openspec/changes/jev-state-agents/work.md)를 따른다.
+현재 구조는 **Jev Supervisor → 통화 분석 / URL 분석**이다. Supervisor의 Jev는 새 입력을 라우팅한다. 통화 경로에서는 기존 Jev가 F1~F6을 감지하고 Claude Haiku가 맥락을 분석해 통화 상태(위험·주의·정상)와 점수를 만든다. URL 경로에서는 별도 Haiku 에이전트가 Mock URL 도구를 호출한다. 두 경로를 함께 실행할 수 있다. [Supervisor·채팅 계약](docs/design/supervisor-and-chat.md), [통화 계약](docs/design/state-and-graph.md), [작업·검증 기록](openspec/changes/jev-supervisor-url/work.md)을 따른다.
 
-![컴파일된 ScamShield LangGraph](docs/architecture/scamshield-langgraph.png)
+![컴파일된 Supervisor LangGraph](docs/architecture/supervisor-langgraph.png)
+
+위 이미지는 실제 컴파일한 상위 그래프와 `call_agent` 내부를 함께 펼친 것이다([Mermaid 원본](docs/architecture/supervisor-langgraph.mmd)). `call_agent` 박스 안의 **`detect_states · Jev` → `judge_states · analysis_agent · Haiku` → `finalize`**가 기존 감지·분석·대응 경로다. 분석이 필요 없는 상태는 `skip`으로 건너뛴다. [통화 그래프만 따로 보기](docs/architecture/scamshield-langgraph.png)도 가능하다.
+
+```mermaid
+flowchart TD
+    INPUT[새 STT / 새 채팅] --> SUP[Supervisor: Jev 라우팅]
+    SUP -->|STT·일반 채팅| CALL[call_agent: 통화 분석]
+    SUP -->|새 URL| URL[url_agent: URL 분석]
+    CALL --> DETECT[Jev: F1~F6 감지]
+    DETECT --> ANALYSIS[analysis_agent: Haiku 맥락 분석]
+    ANALYSIS --> SCORE[통화 상태·점수]
+    URL --> TOOL[check_url: Mock 함수]
+    TOOL --> RESULT[위험 / 확인 불가 / 조회 오류]
+```
+
+이 Mermaid는 역할을 풀어 쓴 설명이다. STT와 URL이 함께 오면 실제 상위 그래프는 통화 분석 후 URL 분석을 실행한다. 통화 경로는 상태가 없거나 F3·F5만 보류되면 Haiku를 건너뛴다. Mock에서 조회되지 않은 URL은 안전이 아니라 `unknown`이다.
+
+## 에이전트 파일 안내
+
+| 파일 | 역할 |
+|---|---|
+| [supervisor.py](scamshield/agents/supervisor.py) | Jev의 call/url 판단을 받아 라우팅하고 채팅 ID별 처리 상태 관리 |
+| [call_agent.py](scamshield/agents/call_agent.py) | 기존 통화 그래프·상태 라우팅·점수 계산 |
+| [jev_agent.py](scamshield/agents/jev_agent.py) | Supervisor 질문 2개와 기존 F1~F6 감지용 Jev 호출 |
+| [analysis_agent.py](scamshield/agents/analysis_agent.py) | Haiku의 상태별 맥락 분석·대응·기존 F1/F3 Mock 도구 호출 |
+| [url_agent.py](scamshield/agents/url_agent.py) | 채팅 URL 추출·정규화·Haiku URL Tool Calling |
+| [interfaces.py](scamshield/agents/interfaces.py) | 에이전트 Protocol·통화 offline 대역 |
+
+공통 데이터 구조는 [state.py](scamshield/state.py), Mock 도구는 [tools.py](scamshield/tools.py), Claude 전송은 [llm.py](scamshield/llm.py)에 둔다. 기존 BE의 `scamshield.graph.build_pipeline` import도 유지한다.
 
 ## 작업 시작
 
@@ -40,6 +69,14 @@ API 없이 연결 흐름을 확인한다. Jev·Haiku 모두 명시적인 대역�
 uv run --locked python -m scamshield --offline --auto
 ```
 
+Supervisor를 포함한 STT 실행, URL 전용 채팅, 혼합 입력은 다음과 같다. `--chat`은 Supervisor를 자동으로 사용하며 여러 번 지정할 수 있다.
+
+```sh
+uv run --locked python -m scamshield --offline --supervisor --auto
+uv run --locked python -m scamshield --offline --chat "https://safe-account-check.example/"
+uv run --locked python -m scamshield --offline --text "지금 송금하세요." --chat "https://example.com/"
+```
+
 실제 모델을 사용하려면 [.env.example](.env.example)의 이름에 맞춰 로컬 `.env`에 키를 등록한다. Anthropic 키를 `ANTHROPIC_API_KEY=` 뒤에, [TypeSafe 콘솔](https://console.typesafe.ai/keys)에서 발급한 키를 `TYPESAFE_API_KEY=` 뒤에 입력한다. 키 자체만 넣으며 `Bearer `는 붙이지 않는다. `.env`는 Git에서 제외되고 자동으로 읽지 않는다.
 
 ```dotenv
@@ -71,6 +108,30 @@ next_state = outcome.state  # 다음 요청의 state로 넘긴다
 
 결과 `AnalysisOutcome`은 `status`(위험·주의·정상), `score`(0~100), `message`, `reason`, `evidence_seqs`, 이번 Jev 결과 `states`, 이번 Haiku 판단 `state_analyses`, 다음 요청에 넘길 `state`다. `analyze`는 상태를 저장하지 않으므로 호출하는 쪽이 `history`와 `state`를 들고 있어야 한다. 실제 모델의 출력은 고정 시나리오가 아니다.
 
+새 Supervisor API는 다음처럼 사용한다. `history`는 대화 원문, `state`는 이전 판단과 처리 기록이며 서버가 각각 보관한다. agent는 요청 사이에 둘을 자체 저장하지 않는다.
+
+```python
+import time
+
+from scamshield.graph import build_supervisor_pipeline
+from scamshield.state import ChatMessage, NewLine
+
+pipeline = build_supervisor_pipeline(offline=True)
+history, state = [], None
+chat = [ChatMessage(id="msg-1", seq=1, text="https://example.com/")]
+first = pipeline.analyze(history, [], state, time.time(), chat=chat)
+state = first.state
+history.extend(line.text for line in first.appended_lines)
+
+# 원래 채팅을 다시 보내도 완료한 ID는 재조회하지 않는다. 새 STT는 계속 분석한다.
+second = pipeline.analyze(
+    history, [NewLine(seq=2, text="[p1] 지금 송금하세요.")], state, time.time(), chat=chat,
+)
+assert second.routes == ["call"]
+```
+
+채팅 원문을 삭제할 필요는 없다. 서버가 안정적인 `id`, STT·채팅 공통 `seq`, 최신 응답 state를 보관한다. state의 `chat_receipts`가 경로별 완료 여부를, `url_cache`가 통화 내 조회 결과를 가진다. 실패 URL은 다음 전달 때 재시도하고 성공한 URL은 재사용한다. 응답은 통화 결과 `call`과 `url_analyses`를 별도로 제공한다. 서버는 `appended_lines`의 history 추가와 state 갱신을 함께 저장하고 같은 방의 동시 요청을 직렬화해야 한다. 자세한 책임·재시도 한계는 [계약](docs/design/supervisor-and-chat.md)에 있다.
+
 캐시 권한 문제가 있으면 `uv --cache-dir .venv/uv-cache run ...`으로 실행한다. Windows에서 uv가 PATH에 없고 로컬 가상환경에 설치되어 있다면 `.venv\Scripts\python.exe -m uv`를 사용할 수 있다. 한글 출력은 `python -X utf8 -m scamshield ...`로 실행할 수 있다.
 
 ## 현재 범위
@@ -79,16 +140,22 @@ next_state = outcome.state  # 다음 요청의 state로 넘긴다
 
 통화 상태 저장과 화자·상대 구분은 BE `agent-bridge`가 맡는다. CLI의 세 입력 제한은 데모 설정이다. 실제 tool API와 KorCCVi 평가는 후속 범위다.
 
+Supervisor와 채팅 ID 중복 제외, URL 전용 Mock Tool Calling을 추가했다. 기존 통화 API와 CLI 기본 동작은 유지하며 Supervisor는 별도 builder 또는 CLI 옵션으로 선택한다. BE의 새 API 연결·채팅 저장·요청 직렬화와 실제 Jev Supervisor·Haiku URL 연결 검증은 남아 있다. Mock URL 결과로 실제 사이트 안전성을 보장하지 않는다.
+
 ## 코드 검증과 그래프 출력
 
 ```sh
 uv run --locked pytest -q
 uv run --locked python -m scamshield.export_graph
+uv run --locked python -m scamshield.export_graph --supervisor
+uv run --locked python -m scamshield.export_graph --supervisor --compact
 ```
 
 테스트는 API 없이 라우팅·보류·재호출, 절대선·tool 보정, 점수 감소, Haiku 실패 처리, BE 필드, `state` JSON 왕복, Jev·Haiku 요청 변환, CLI를 확인한다. 실제 연결과 테스트 결과는 [work](openspec/changes/jev-state-agents/work.md)에 구분한다. 탐지 성능이나 확률 보정을 검증한 것은 아니다.
 
 그래프 출력은 실제 컴파일된 LangGraph에서 [Mermaid 원본](docs/architecture/scamshield-langgraph.mmd)과 PNG를 생성한다. PNG 렌더링에는 Mermaid.ink 네트워크 접근이 필요하며 그래프 구조만 전송하고 모델은 호출하지 않는다.
+
+`--supervisor`는 기본으로 `call_agent` 내부까지 펼쳐 `supervisor-langgraph.mmd/png`에 저장한다. 상·하위 그래프에서 실제 노드와 조건부 간선을 가져와 시각화만 연결하며 실행 구조는 그대로다. `--compact`를 추가하면 내부를 접은 `supervisor-compact-langgraph.mmd/png`를 별도로 만든다.
 
 ## 문서 검사
 

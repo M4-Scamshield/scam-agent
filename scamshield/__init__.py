@@ -1,1 +1,1 @@
-"""ScamShield: Jev state detection followed by per-state Claude Haiku judgment."""
+"""ScamShield: Jev Supervisor with call analysis and Mock URL Tool Calling."""

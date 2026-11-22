@@ -112,6 +112,75 @@ class AnalysisOutcome(BaseModel):
     state: dict
 
 
+class ChatMessage(BaseModel):
+    """서버가 발급한 불변 ID와 통화 내 공통 seq를 가진 채팅 이벤트."""
+
+    model_config = ConfigDict(extra="forbid", strict=True, str_strip_whitespace=True)
+
+    id: str = Field(min_length=1)
+    seq: int = Field(ge=1)
+    text: str = Field(min_length=1)
+
+
+class URLToolResult(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    status: Literal["flagged", "not_found", "error"]
+    detail: str = Field(min_length=1)
+    is_mock: bool
+
+
+class URLAnalysis(BaseModel):
+    url: str
+    judgment: Literal["risky", "unknown", "error"]
+    reason: str
+    tool: URLToolResult
+
+
+class ChatReceipt(BaseModel):
+    fingerprint: str
+    call_done: bool = False
+    urls_done: bool = False
+
+
+class SupervisorMemory(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    call_state: AgentMemory = Field(default_factory=AgentMemory)
+    chat_receipts: dict[str, ChatReceipt] = Field(default_factory=dict)
+    url_cache: dict[str, URLAnalysis] = Field(default_factory=dict)
+
+
+class SupervisorOutcome(BaseModel):
+    # 기존 통화 점수와 URL 조회 판정은 별도로 반환한다.
+    call: AnalysisOutcome | None
+    url_analyses: list[URLAnalysis]
+    routes: list[Literal["call", "url"]]
+    # 서버가 history에 추가할, 실제 통화 분석에 전달된 새 줄(STT와 일반 채팅).
+    appended_lines: list[NewLine]
+    state: dict
+
+
+class SupervisorInput(TypedDict):
+    history: list[str]
+    new_lines: list[dict]
+    chat: list[dict]
+    memory: dict | None
+    now: float
+
+
+class SupervisorState(SupervisorInput, total=False):
+    call_chat: list[dict]
+    pending_urls: list[str]
+    chat_urls: dict[str, list[str]]
+    decisions: dict
+    routes: list[str]
+    call: dict | None
+    url_analyses: list[dict]
+    appended_lines: list[dict]
+    outcome: dict
+
+
 class AnalyzeInput(TypedDict):
     history: list[str]
     new_lines: list[dict]

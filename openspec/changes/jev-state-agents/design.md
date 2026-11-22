@@ -9,7 +9,7 @@
   - Jev 질문을 상태 6개로 늘린다.
   - `respond_with_llm` 하나를 상태별 판단 Node로 나눈다.
 - 대화 누적, 오류 처리, 키 비노출 원칙은 그대로 둔다. Jev에는 누적 대화 대신 최근 5줄만 보낸다(2026-11-22).
-- [jev.py](../../../scamshield/jev.py)의 요청 `questions`는 질문 이름을 키로 하는 dict다. 질문 6개를 한 요청으로 보내면 Jev가 대화를 한 번 읽고 질문마다 따로 판단한다(2026-11-16 실호출·2026-11-22 문서 확인).
+- [jev_agent.py](../../../scamshield/agents/jev_agent.py)의 요청 `questions`는 질문 이름을 키로 하는 dict다. 질문 6개를 한 요청으로 보내면 Jev가 대화를 한 번 읽고 질문마다 따로 판단한다(2026-11-16 실호출·2026-11-22 문서 확인). 파일은 2026-11-23 [역할별 정리](../jev-supervisor-url/design.md)로 이동했다.
 
 ```mermaid
 flowchart TD

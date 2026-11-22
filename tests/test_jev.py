@@ -5,7 +5,7 @@ from urllib.error import HTTPError, URLError
 
 import pytest
 
-from scamshield.jev import JevClient
+from scamshield.agents.jev_agent import JevClient
 from scamshield.state import PipelineError
 from scamshield.tactics import STATES
 
@@ -24,7 +24,7 @@ def response(choice="Yes", probabilities=None):
 
 def install_response(monkeypatch, raw):
     transport = Mock(return_value=io.BytesIO(json.dumps(raw).encode("utf-8")))
-    monkeypatch.setattr("scamshield.jev.urlopen", transport)
+    monkeypatch.setattr("scamshield.agents.jev_agent.urlopen", transport)
     return transport
 
 
@@ -78,7 +78,7 @@ def test_invalid_distribution_is_error(monkeypatch, raw):
 ])
 def test_transport_errors_are_safe_and_not_retried(monkeypatch, failure):
     transport = Mock(side_effect=failure)
-    monkeypatch.setattr("scamshield.jev.urlopen", transport)
+    monkeypatch.setattr("scamshield.agents.jev_agent.urlopen", transport)
     with pytest.raises(PipelineError) as error:
         JevClient("private-key").detect_states(["[상대] 입력"], 1)
     assert error.value.code == "CALL_FAILED"
@@ -87,7 +87,7 @@ def test_transport_errors_are_safe_and_not_retried(monkeypatch, failure):
 
 
 def test_non_json_response_is_invalid_output(monkeypatch):
-    monkeypatch.setattr("scamshield.jev.urlopen", Mock(return_value=io.BytesIO(b"not JSON")))
+    monkeypatch.setattr("scamshield.agents.jev_agent.urlopen", Mock(return_value=io.BytesIO(b"not JSON")))
     with pytest.raises(PipelineError) as error:
         JevClient("test").detect_states(["[상대] 입력"], 1)
     assert error.value.code == "INVALID_OUTPUT"
@@ -104,3 +104,17 @@ def test_env_configuration_and_missing_key(monkeypatch):
     with pytest.raises(PipelineError) as error:
         JevClient.from_env()
     assert error.value.code == "MISSING_API_KEY"
+
+
+def test_supervisor_questions_receive_only_pending_input(monkeypatch):
+    raw = response()
+    raw["answers"] = {"call": raw["answers"]["F1"], "url": raw["answers"]["F6"]}
+    transport = install_response(monkeypatch, raw)
+    chat = [{"id": "m-1", "seq": 2, "text": "지금 송금하세요."}]
+    result = JevClient("test").route_input(["[p1] 새 STT"], chat, [])
+    assert result["call"]["verdict"] == "Yes" and result["url"]["verdict"] == "No"
+    payload = json.loads(transport.call_args.args[0].data)
+    assert payload["state"] == {"transcript": ["[p1] 새 STT"], "chat": chat, "pending_urls": []}
+    assert set(payload["questions"]) == {"call", "url"}
+    assert "동시에 Yes" in payload["questions"]["call"]["instructions"]
+    transport.assert_called_once()

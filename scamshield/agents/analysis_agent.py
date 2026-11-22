@@ -1,20 +1,15 @@
-"""상태별 판단 에이전트(Claude Haiku). 상태 하나를 판단하고 F1·F3은 Mock tool을 한 번 왕복한다."""
+"""상태별 맥락 분석 에이전트(Claude Haiku). F1·F3은 Mock tool을 한 번 왕복한다."""
 
 import json
-import os
 import re
 
-import anthropic
 from pydantic import ValidationError
 
-from scamshield.state import PipelineError, StateJudgment, ToolRecord
+from scamshield.llm import AnalystError, HaikuClient
+from scamshield.state import StateJudgment, ToolRecord
 from scamshield.tactics import STATES
 from scamshield.tools import STATE_TOOLS, TOOL_SCHEMAS, run_tool
 
-MODEL = "claude-haiku-5-5"
-EFFORT = "low"
-MAX_TOKENS = 2000
-TIMEOUT_S = 12.0
 FLAGGED_REASON = "조회 도구가 대화에 나온 값에서 위험 신호를 찾았습니다."
 
 ABSOLUTE = {
@@ -61,14 +56,6 @@ JSON 객체 하나만 답하세요. 다른 글은 쓰지 마세요.
  "call_context": {"purpose": "상대가 주장하는 통화 목적", "claimed_identity": "상대가 내세운 신분"}}"""
 
 
-class AnalystError(Exception):
-    """이 상태만 건너뛰는 실패. code만 기록한다."""
-
-    def __init__(self, code: str):
-        super().__init__(code)
-        self.code = code
-
-
 def build_user(request: dict) -> str:
     code = request["state"]
     name, yes, no = STATES[code]
@@ -100,39 +87,8 @@ def parse_judgment(text: str) -> StateJudgment:
         raise AnalystError("INVALID_OUTPUT") from exc
 
 
-class HaikuAnalyst:
-    def __init__(self, api_key: str, *, client=None):
-        self.client = client or anthropic.Anthropic(api_key=api_key, timeout=TIMEOUT_S, max_retries=0)
-
-    @classmethod
-    def from_env(cls):
-        return cls(os.environ.get("ANTHROPIC_API_KEY", "").strip())
-
-    def _create(self, messages: list, tools: list, *, allow_tools=True):
-        kwargs = {"tools": tools} if tools else {}
-        if tools and not allow_tools:
-            # tool 결과를 받은 두 번째 호출은 판단 JSON만 내게 한다(API 호출 2번 제한).
-            kwargs["tool_choice"] = {"type": "none"}
-        try:
-            return self.client.messages.create(
-                model=MODEL,
-                max_tokens=MAX_TOKENS,
-                system=SYSTEM,
-                messages=messages,
-                output_config={"effort": EFFORT},
-                **kwargs,
-            )
-        except (anthropic.AuthenticationError, anthropic.PermissionDeniedError) as exc:
-            raise PipelineError("llm", "AUTH_FAILED", "Anthropic 키 인증에 실패했습니다. ANTHROPIC_API_KEY를 확인하세요.") from exc
-        except anthropic.APITimeoutError as exc:
-            raise AnalystError("TIMEOUT") from exc
-        except anthropic.APIConnectionError as exc:
-            raise AnalystError("CONNECTION_FAILED") from exc
-        except (anthropic.BadRequestError, anthropic.NotFoundError) as exc:
-            # 모델 ID·파라미터 오류는 모든 상태를 조용히 건너뛰게 하므로 요청 실패로 올린다.
-            raise PipelineError("llm", "REQUEST_REJECTED", f"Anthropic이 요청을 거부했습니다(HTTP {exc.status_code}). 모델·파라미터를 확인하세요.") from exc
-        except anthropic.APIStatusError as exc:
-            raise AnalystError(f"HTTP_{exc.status_code}") from exc
+class HaikuAnalyst(HaikuClient):
+    system_prompt = SYSTEM
 
     def judge(self, request: dict) -> dict:
         """상태 하나를 판단한다. API 호출은 tool 왕복을 포함해 2번까지다."""

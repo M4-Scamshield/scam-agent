@@ -18,7 +18,7 @@ flowchart TD
     F --> E([AnalysisOutcome])
 ```
 
-입구는 [graph.py](../../scamshield/graph.py)의 `CallPipeline.analyze(history, new_lines, state, now)` 하나다. 통화 상태는 입력 `state`로만 받고 출력 `state`로 돌려주므로 checkpointer가 없다. 같은 요청을 같은 `state`로 다시 보내도 판단이 두 번 쌓이지 않는다. `build_pipeline(offline=False)`는 `TYPESAFE_API_KEY`·`ANTHROPIC_API_KEY`가 비어 있으면 `PipelineError(code="config")`를 낸다. `offline=True`는 키 없는 고정 대역이다.
+통화 전용 입구는 [graph.py](../../scamshield/graph.py)의 `CallPipeline.analyze(history, new_lines, state, now)`이며 구현은 [call_agent.py](../../scamshield/agents/call_agent.py)에 있다. 2026-11-23 별도 상위 [Supervisor·채팅 입구](supervisor-and-chat.md)를 추가했으며 이 통화 API도 유지한다. 통화 상태는 입력 `state`로만 받고 출력 `state`로 돌려주므로 checkpointer가 없다. 같은 요청을 같은 `state`로 다시 보내면 점수가 중복 누적되지는 않지만 모델 호출 자체가 중복될 수 있다. 서버가 history와 state를 저장하고 다음 요청에 다시 보내야 한다. `build_pipeline(offline=False)`는 `TYPESAFE_API_KEY`·`ANTHROPIC_API_KEY`가 비어 있으면 `PipelineError(code="config")`를 낸다. `offline=True`는 키 없는 고정 대역이다.
 
 ## 입력과 출력
 
@@ -42,7 +42,7 @@ flowchart TD
 
 ## Jev 상태 감지
 
-[jev.py](../../scamshield/jev.py)는 요청마다 `POST /v1/systemone`을 1번 부른다. `history` 마지막 4줄과 새 줄 전부를 보내고, 상태 6개를 choice 질문으로 묻는다. 질문은 "마지막 n줄이 판단할 새 대사"라고 알리고 새 대사에 행동이 있는지만 묻는다. 대기 10초, 자동 재시도는 없다. 호출 실패·잘못된 출력은 `PipelineError(stage="jev")`이며 모든 상태를 No로 바꾸지 않는다. 키·주소·모델 환경변수는 `TYPESAFE_API_KEY`·`TYPESAFE_BASE_URL`·`TYPESAFE_DEFAULT_MODEL`이다.
+[jev_agent.py](../../scamshield/agents/jev_agent.py)는 통화 분석 요청마다 `POST /v1/systemone`을 1번 부른다. `history` 마지막 4줄과 새 줄 전부를 보내고, 상태 6개를 choice 질문으로 묻는다. 새 줄에 `(새)` 표시를 붙여 새 대사에 행동이 있는지만 묻는다. 대기 10초, 자동 재시도는 없다. 호출 실패·잘못된 출력은 `PipelineError(stage="jev")`이며 모든 상태를 No로 바꾸지 않는다. 키·주소·모델 환경변수는 `TYPESAFE_API_KEY`·`TYPESAFE_BASE_URL`·`TYPESAFE_DEFAULT_MODEL`이다. 상위 Supervisor를 사용하면 라우팅 질문 2개를 위한 Jev 호출이 별도로 1회 추가된다.
 
 ## 라우팅
 
@@ -52,7 +52,7 @@ flowchart TD
 
 ## 상태별 Haiku 판단
 
-[haiku.py](../../scamshield/haiku.py)는 `claude-haiku-5-5`, effort `low`, 호출마다 대기 12초, `max_retries=0`이다. 입력은 전체 대화(번호 붙임), 상태 정의·절대선·판단 핵심, Jev 확률과 새 대사 번호, `call_context`, 다시 부를 때 이전 판단과 이유다. 출력은 JSON `{judgment, absolute_line, reason, response, actions, call_context}`다. 프롬프트는 상대가 주장한 신분·절차를 정상 근거로 쓰지 말고, 상대가 말한 기관·지점이 공식인지는 대화로 확인할 수 없다고 적는다.
+[analysis_agent.py](../../scamshield/agents/analysis_agent.py)는 [공통 Claude 전송](../../scamshield/llm.py)을 통해 `claude-haiku-5-5`, effort `low`, 호출마다 대기 12초, `max_retries=0`으로 실행한다. 입력은 전체 대화(번호 붙임), 상태 정의·절대선·판단 핵심, Jev 확률과 새 대사 번호, `call_context`, 다시 부를 때 이전 판단과 이유다. 출력은 JSON `{judgment, absolute_line, reason, response, actions, call_context}`다. 프롬프트는 상대가 주장한 신분·절차를 정상 근거로 쓰지 말고, 상대가 말한 기관·지점이 공식인지는 대화로 확인할 수 없다고 적는다.
 
 - 보정: `absolute_line`은 F1·F2·F3·F5에서만 받아 `risky`로 고친다. tool 결과가 `flagged`면 `risky`로 고친다. 보정은 `corrections`에 남긴다.
 - tool([tools.py](../../scamshield/tools.py), 고정 목록 Mock): F1 `check_account`, F3 `check_url`·`check_app`(원격제어 앱)·`check_phone`(기관 대표번호). 결과는 `flagged`/`not_found`/`error`이고 `not_found`는 안전 근거가 아니다. 대화 원문이 아니라 계좌번호·주소·앱 이름·전화번호만 넣는다. 상태당 API 호출은 tool 왕복 포함 2번까지다. 두 번째 호출은 `tool_choice: none`이고, 판단 글을 못 받아도 `flagged`가 있으면 `risky`로 둔다.
@@ -82,3 +82,4 @@ flowchart TD
 - [현재 아키텍처](../architecture/overview.md) · [입력과 실행 흐름](mvp-flow.md) · [컨텍스트](../project-context.md)
 - [jev-state-agents proposal](../../openspec/changes/jev-state-agents/proposal.md) · [spec](../../openspec/changes/jev-state-agents/spec.md) · [design](../../openspec/changes/jev-state-agents/design.md) · [tasks](../../openspec/changes/jev-state-agents/tasks.md) · [work](../../openspec/changes/jev-state-agents/work.md)
 - 이전 계약: [2AS change](../../openspec/changes/jev-gemini-two-agent/design.md)
+- 상위 라우팅: [Supervisor 계약](supervisor-and-chat.md) · [새 change](../../openspec/changes/jev-supervisor-url/design.md)

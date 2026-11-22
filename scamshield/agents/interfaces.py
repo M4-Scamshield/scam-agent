@@ -1,3 +1,5 @@
+"""에이전트 사이의 Protocol과 기존 통화 경로의 offline 대역."""
+
 from typing import Protocol
 
 from scamshield.tactics import STATES
@@ -12,6 +14,18 @@ class Detector(Protocol):
 class Analyst(Protocol):
     def judge(self, request: dict) -> dict:
         """Judge one state; return StateJudgment fields. Raise PipelineError only for auth failure."""
+        ...
+
+
+class Supervisor(Protocol):
+    def route_input(self, transcript: list[str], chat: list[dict], pending_urls: list[str]) -> dict:
+        """Return call/url Yes/No decisions for unprocessed input only."""
+        ...
+
+
+class URLAnalyst(Protocol):
+    def analyze_url(self, url: str) -> dict:
+        """Return URLAnalysis; errors must remain retryable."""
         ...
 
 

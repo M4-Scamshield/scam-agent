@@ -4,7 +4,7 @@ import threading
 import pytest
 
 from scamshield.graph import CallPipeline, FALLBACK_MESSAGE, build_pipeline
-from scamshield.haiku import AnalystError
+from scamshield.agents.analysis_agent import AnalystError
 from scamshield.state import NewLine, PipelineError
 from scamshield.tactics import STATES
 
