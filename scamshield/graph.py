@@ -1,89 +1,234 @@
-from collections.abc import Callable
+import logging
+import os
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
+from math import floor
 
-from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 
-from scamshield.interfaces import Analyst, Detector
-from scamshield.state import JevDecision, LLMAnalysis, PipelineError, ScamState, TurnInput
+from scamshield.interfaces import Analyst, Detector, OfflineAnalyst, OfflineDetector
+from scamshield.jev import CONTEXT_LINES
+from scamshield.state import (
+    AgentMemory,
+    AgentState,
+    AnalysisOutcome,
+    AnalyzeInput,
+    JevDecision,
+    NewLine,
+    PipelineError,
+    StateJudgment,
+)
+from scamshield.tactics import ABSOLUTE_STATES, CORE, HALF_LIFE_S, POINTS, PRIORITY, STATES
+
+logger = logging.getLogger("scamshield")
+
+FALLBACK_MESSAGE = "사기 수법과 맞는 요구가 있습니다. 송금·정보 제공·앱 설치를 멈추고, 통화를 끊은 뒤 기관 대표번호로 직접 확인하세요."
+
+_NEW_LINES = TypeAdapter(list[NewLine])
+_HISTORY = TypeAdapter(list[str])
 
 
-def build_graph(detector: Detector, analyst: Analyst, *, checkpointer=None):
-    def update_context(state: ScamState) -> dict:
-        utterance = state.get("utterance")
-        if not isinstance(utterance, str) or not utterance.strip():
-            raise PipelineError("input", "INVALID_INPUT", "발화는 비어 있지 않은 문자열이어야 합니다.")
+def state_points(handled: dict, now: float) -> dict[str, float]:
+    """상태별 점수 칸. risky는 고정, uncertain은 1분마다 절반(5 미만은 0), within_normal은 0."""
+    points = {}
+    for code, item in handled.items():
+        risky, uncertain = POINTS[code]
+        if item["judgment"] == "risky":
+            points[code] = risky
+        elif item["judgment"] == "uncertain":
+            value = uncertain * 0.5 ** floor(max(0.0, now - item["judged_at"]) / HALF_LIFE_S)
+            points[code] = value if value >= 5 else 0
+        else:
+            points[code] = 0
+    return points
+
+
+def route(states: dict, memory: dict, seqs: list[int]) -> dict:
+    """이번에 Haiku를 부를 상태 {code: {probability, seqs}}. memory의 seen·held를 고친다."""
+    yes = [code for code in PRIORITY if states[code]["verdict"] == "Yes"]
+    handled = memory["handled"]
+    candidates = {
+        code: {"probability": states[code]["probability"], "seqs": list(seqs)}
+        for code in yes
+        if handled.get(code, {}).get("judgment") != "risky"
+    }
+    core_seen = any(code in CORE for code in memory["seen"])
+    memory["seen"] = [code for code in PRIORITY if code in memory["seen"] or code in yes]
+    if core_seen:
+        return candidates
+    held = memory["held"]
+    if not any(code in CORE for code in yes):
+        for code, item in candidates.items():
+            held[code] = {"probability": item["probability"], "seqs": held.get(code, {}).get("seqs", []) + item["seqs"]}
+        return {}
+    todo = {code: dict(item) for code, item in held.items()}
+    for code, item in candidates.items():
+        todo[code] = {"probability": item["probability"], "seqs": todo.get(code, {}).get("seqs", []) + item["seqs"]}
+    memory["held"] = {}
+    return {code: todo[code] for code in PRIORITY if code in todo}
+
+
+def build_graph(detector: Detector, analyst: Analyst):
+    def update_context(state: AgentState) -> dict:
+        try:
+            history = _HISTORY.validate_python(state["history"])
+            new_lines = [line.model_dump() for line in _NEW_LINES.validate_python(state["new_lines"])]
+            memory = AgentMemory.model_validate(state["memory"] or {}).model_dump(mode="json")
+            now = float(state["now"])
+        except (KeyError, TypeError, ValueError, ValidationError) as exc:
+            raise PipelineError("input", "INVALID_INPUT", "history·new_lines·state·now 형식이 잘못되었습니다.") from exc
+        if not new_lines:
+            raise PipelineError("input", "INVALID_INPUT", "new_lines는 1줄 이상이어야 합니다.")
         return {
-            "utterance": None,
-            "transcript": state.get("transcript", []) + [utterance],
-            "jev_decision": None,
-            "analysis": None,
+            "history": history,
+            "new_lines": new_lines,
+            "memory": memory,
+            "now": now,
+            "lines": history + [line["text"] for line in new_lines],
+            "state_analyses": [],
         }
 
-    def detect_with_jev(state: ScamState) -> dict:
+    def detect_states(state: AgentState) -> dict:
+        n_new = len(state["new_lines"])
+        window = state["lines"][-(CONTEXT_LINES + n_new):]
         try:
-            raw = detector.detect(deepcopy(state["transcript"]))
+            raw = detector.detect_states(list(window), n_new)
         except PipelineError:
             raise
         except Exception as exc:
             raise PipelineError("jev", "CALL_FAILED", "Jev 판단 호출에 실패했습니다.") from exc
         try:
-            return {"jev_decision": JevDecision.model_validate(raw).model_dump()}
-        except ValidationError as exc:
-            raise PipelineError("jev", "INVALID_OUTPUT", "Jev 판단 형식이 잘못되었습니다.") from exc
+            states = {code: JevDecision.model_validate(raw[code]).model_dump() for code in STATES}
+        except (KeyError, TypeError, ValidationError) as exc:
+            raise PipelineError("jev", "INVALID_OUTPUT", "Jev 상태별 판단 형식이 잘못되었습니다.") from exc
+        memory = deepcopy(state["memory"])
+        todo = route(states, memory, [line["seq"] for line in state["new_lines"]])
+        return {"states": states, "memory": memory, "todo": todo}
 
-    def respond_with_llm(state: ScamState) -> dict:
-        try:
-            raw = analyst.analyze(deepcopy(state))
-        except PipelineError:
-            raise
-        except Exception as exc:
-            raise PipelineError("llm", "CALL_FAILED", "Gemini 분석·대응 생성에 실패했습니다.") from exc
-        try:
-            return {"analysis": LLMAnalysis.model_validate(raw).model_dump()}
-        except ValidationError as exc:
-            raise PipelineError("llm", "INVALID_OUTPUT", "Gemini 분석·대응 형식이 잘못되었습니다.") from exc
+    def judge_states(state: AgentState) -> dict:
+        memory = deepcopy(state["memory"])
+        handled = memory["handled"]
+        requests = {
+            code: {
+                "state": code,
+                "probability": item["probability"],
+                "lines": list(state["lines"]),
+                "n_new": len(state["new_lines"]),
+                "call_context": dict(memory["call_context"]),
+                "previous": deepcopy(handled.get(code)),
+            }
+            for code, item in state["todo"].items()
+        }
+        with ThreadPoolExecutor(max_workers=len(requests)) as pool:
+            futures = {code: pool.submit(analyst.judge, request) for code, request in requests.items()}
+            results = {}
+            for code in PRIORITY:
+                if code not in futures:
+                    continue
+                try:
+                    results[code] = StateJudgment.model_validate(futures[code].result())
+                except PipelineError:
+                    raise
+                except ValidationError:
+                    logger.warning("state %s skipped: INVALID_OUTPUT", code)
+                except Exception as exc:
+                    logger.warning("state %s skipped: %s", code, getattr(exc, "code", type(exc).__name__))
 
-    builder = StateGraph(ScamState, input_schema=TurnInput)
+        analyses = []
+        for code, result in results.items():
+            judgment, corrections = result.judgment, []
+            if code in ABSOLUTE_STATES and result.absolute_line and judgment != "risky":
+                judgment = "risky"
+                corrections.append("absolute_line")
+            if any(tool.status == "flagged" for tool in result.tools) and judgment != "risky":
+                judgment = "risky"
+                corrections.append("tool_flagged")
+            for tool in result.tools:
+                if tool.status == "error":
+                    logger.warning("state %s tool %s: error", code, tool.name)
+            analyses.append({
+                "state": code,
+                "judgment": judgment,
+                "model_judgment": result.judgment,
+                "corrections": corrections,
+                "reason": result.reason,
+                "response": result.response,
+                "actions": result.actions,
+                "tools": [tool.model_dump() for tool in result.tools],
+            })
+            handled[code] = {
+                "judgment": judgment,
+                "reason": result.reason,
+                "response": result.response,
+                "actions": result.actions,
+                "evidence_seqs": state["todo"][code]["seqs"],
+                "judged_at": state["now"],
+            }
+            for key, value in result.call_context.model_dump().items():
+                if value:
+                    memory["call_context"][key] = value
+        return {"memory": memory, "state_analyses": analyses}
+
+    def finalize(state: AgentState) -> dict:
+        memory = state["memory"]
+        handled = memory["handled"]
+        points = state_points(handled, state["now"])
+        risky = [code for code in PRIORITY if handled.get(code, {}).get("judgment") == "risky"]
+        watch = [code for code in PRIORITY if handled.get(code, {}).get("judgment") == "uncertain" and points[code] > 0]
+        status = "위험" if risky else "주의" if watch else "정상"
+        message = (handled[risky[0]]["response"] or FALLBACK_MESSAGE) if risky else None
+        reasons = [f"{code}: {handled[code]['reason']}" for code in PRIORITY if code in risky or code in watch]
+        outcome = {
+            "status": status,
+            "score": min(100, round(sum(points.values()))),
+            "message": message,
+            "reason": " / ".join(reasons) or None,
+            "evidence_seqs": sorted({seq for code in risky for seq in handled[code]["evidence_seqs"]}),
+            "states": state["states"],
+            "state_analyses": state["state_analyses"],
+            "state": memory,
+        }
+        return {"outcome": outcome}
+
+    builder = StateGraph(AgentState, input_schema=AnalyzeInput)
     builder.add_node("update_context", update_context)
-    builder.add_node("detect_with_jev", detect_with_jev)
-    builder.add_node("respond_with_llm", respond_with_llm)
+    builder.add_node("detect_states", detect_states)
+    builder.add_node("judge_states", judge_states)
+    builder.add_node("finalize", finalize)
     builder.add_edge(START, "update_context")
-    builder.add_edge("update_context", "detect_with_jev")
+    builder.add_edge("update_context", "detect_states")
     builder.add_conditional_edges(
-        "detect_with_jev",
-        lambda state: state["jev_decision"]["verdict"],
-        {"Yes": "respond_with_llm", "No": END},
+        "detect_states",
+        lambda state: "judge" if state["todo"] else "skip",
+        {"judge": "judge_states", "skip": "finalize"},
     )
-    builder.add_edge("respond_with_llm", END)
-    return builder.compile(checkpointer=checkpointer if checkpointer is not None else InMemorySaver())
+    builder.add_edge("judge_states", "finalize")
+    builder.add_edge("finalize", END)
+    return builder.compile()
 
 
 class CallPipeline:
-    def __init__(self, detector: Detector, analyst: Analyst, *, checkpointer=None):
-        self.graph = build_graph(detector, analyst, checkpointer=checkpointer)
+    """Stateless: 통화 상태는 analyze 입력의 state로만 받고 출력의 state로 돌려준다."""
 
-    def state(self, call_id: str) -> ScamState:
-        return deepcopy(self.graph.get_state({"configurable": {"thread_id": call_id}}).values)
+    def __init__(self, detector: Detector, analyst: Analyst):
+        self.graph = build_graph(detector, analyst)
 
-    def run_turn(self, call_id: str, utterance: str, *, on_node: Callable | None = None) -> dict:
-        result_id = call_id if isinstance(call_id, str) and call_id.strip() else None
-        if result_id is None or not isinstance(utterance, str) or not utterance.strip():
-            return {"callId": result_id, "error": PipelineError("input", "INVALID_INPUT", "callId와 발화는 비어 있지 않은 문자열이어야 합니다.").as_dict()}
-        config = {"configurable": {"thread_id": call_id}}
-        try:
-            if self.graph.get_state(config).next:
-                raise PipelineError("runtime", "EXECUTION_CONTRACT_VIOLATION", "중단된 통화입니다. 새 callId로 시작하세요.")
-            for event in self.graph.stream(
-                {"utterance": utterance}, config, stream_mode="updates", durability="sync"
-            ):
-                if on_node:
-                    for name, update in event.items():
-                        on_node(name, deepcopy(update))
-            state = self.state(call_id)
-        except PipelineError as exc:
-            return {"callId": call_id, "error": exc.as_dict()}
-        except Exception:
-            return {"callId": call_id, "error": PipelineError("runtime", "CALL_FAILED", "Graph 실행 또는 checkpoint 처리에 실패했습니다.").as_dict()}
-        return {"callId": call_id, "jev_decision": state["jev_decision"], "analysis": state["analysis"]}
+    def analyze(self, history: list[str], new_lines: list[NewLine], state: dict | None, now: float) -> AnalysisOutcome:
+        result = self.graph.invoke({"history": history, "new_lines": new_lines, "memory": state, "now": now})
+        return AnalysisOutcome.model_validate(result["outcome"])
+
+
+def build_pipeline(offline: bool = False) -> CallPipeline:
+    if offline:
+        return CallPipeline(OfflineDetector(), OfflineAnalyst())
+    from scamshield.haiku import HaikuAnalyst
+    from scamshield.jev import JevClient
+
+    for name in ("TYPESAFE_API_KEY", "ANTHROPIC_API_KEY"):
+        if not os.environ.get(name, "").strip():
+            raise PipelineError("config", "config", f"{name} 환경변수가 필요합니다.")
+    try:
+        return CallPipeline(JevClient.from_env(), HaikuAnalyst.from_env())
+    except PipelineError as exc:
+        raise PipelineError("config", "config", exc.message) from exc
