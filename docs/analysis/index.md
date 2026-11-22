@@ -4,6 +4,10 @@
 
 ## 문서 목록
 
+- [KorCCVi 사기 통화의 유형별 수법](korccvi-scam-tactics.md): 실제 사기 706통화를 유형별로 라벨링한 결과다. 사칭 대상, 요구 사항, 압박 방식, R1~R9 출현율, 목록에 없는 수법 후보(N1~N10), 유형과 관계없는 행동 특징 F1~F6을 정리했다.
+
+- [Jev 상태 질문 버전별 변경 이력](jev-state-question-versions.md): F1~F6 상태 질문을 v1부터 버전마다 어떤 미탐·오탐 때문에 바꿨는지, 같은 정답으로 다시 채점한 상태별 결과와 커밋을 정리했다.
+
 - [새 면접 대본으로 Jev 재평가](interview-holdout-eval.md): 기존 100% 감사·문답 공유 확인, 새 대본 각 50건 동결 후 실제 Jev 평가(정확도 98%·정상 오탐 2건), 오류와 해석 한계.
 
 - [면접 사기·정상 합성 통화와 Plan1 평가](interview-phishing-dataset.md): 사기·정상 각 100건의 JSON 형식·분포·검증 및 실제 Jev confusion matrix와 해석 한계.

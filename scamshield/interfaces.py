@@ -1,37 +1,53 @@
 from typing import Protocol
 
-from scamshield.state import ScamState
+from scamshield.tactics import STATES
 
 
 class Detector(Protocol):
-    def detect(self, transcript: list[str]) -> dict:
-        """Return {verdict: Yes | No, probability: P(Yes)}."""
+    def detect_states(self, lines: list[str], n_new: int) -> dict:
+        """Return {F1..F6: {verdict: Yes | No, probability: P(Yes)}} for the last n_new lines."""
         ...
 
 
 class Analyst(Protocol):
-    def analyze(self, state: ScamState) -> dict:
-        """Read transcript and Jev decision; return {reason, response}."""
+    def judge(self, request: dict) -> dict:
+        """Judge one state; return StateJudgment fields. Raise PipelineError only for auth failure."""
         ...
 
 
-class OfflineDetector:
-    """Demo-only rule; never a fallback for a failed real Jev call."""
+OFFLINE_KEYWORDS = {
+    "F1": ("송금", "이체", "보내"),
+    "F2": ("인증번호", "비밀번호", "OTP"),
+    "F3": ("설치", "링크", "접속"),
+    "F4": ("연루", "동결", "처벌"),
+    "F5": ("알리지", "비밀"),
+    "F6": ("지검", "검찰", "경찰", "금융감독원"),
+}
 
-    def detect(self, transcript: list[str]) -> dict:
-        suspicious = any(
-            any(word in utterance for word in ("범죄에 연루", "안전계좌", "송금"))
-            for utterance in transcript
-        )
-        return {"verdict": "Yes" if suspicious else "No", "probability": 0.9 if suspicious else 0.1}
+
+class OfflineDetector:
+    """Demo-only keyword rule; never a fallback for a failed real Jev call."""
+
+    def detect_states(self, lines: list[str], n_new: int) -> dict:
+        new = lines[-n_new:]
+        result = {}
+        for code in STATES:
+            hit = any(word in line for line in new for word in OFFLINE_KEYWORDS[code])
+            result[code] = {"verdict": "Yes" if hit else "No", "probability": 0.9 if hit else 0.1}
+        return result
 
 
 class OfflineAnalyst:
-    """Fixed output for offline wiring checks, not model analysis."""
+    """Fixed output for offline wiring checks, not model analysis: F1·F2 risky, others uncertain."""
 
-    def analyze(self, state: ScamState) -> dict:
+    def judge(self, request: dict) -> dict:
+        risky = request["state"] in ("F1", "F2")
         return {
-            "is_phishing": True,
-            "reason": "[OFFLINE 대역] 준비된 의심 문구 규칙으로 Yes 경로를 확인했습니다.",
-            "response": "[OFFLINE 대역] 송금과 개인정보 제공을 보류하고 기관의 공식 연락처로 확인하세요.",
+            "judgment": "risky" if risky else "uncertain",
+            "absolute_line": False,
+            "reason": f"[OFFLINE 대역] {request['state']} 고정 판단으로 경로를 확인했습니다.",
+            "response": "[OFFLINE 대역] 송금과 개인정보 제공을 멈추고 기관의 공식 대표번호로 확인하세요." if risky else "",
+            "actions": [],
+            "call_context": {"purpose": "", "claimed_identity": ""},
+            "tools": [],
         }

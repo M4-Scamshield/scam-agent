@@ -1,70 +1,84 @@
-# ScamShield 2AS State·Graph 계약
+# ScamShield 상태별 판단 State·Graph 계약
 
-상태: **2026-10-23 사용자 요청으로 구조 변경 확정, 2026-10-27 인터페이스·Graph 구현과 API 없는 검증 완료**. 실제 Jev Yes/No 연결은 확인했고 Gemini 생성 성공은 HTTP 504/503으로 미확인이다. 기존 phase·Suspect/Verify·Mock 조회 설계를 대체한다. 현재 작업과 검증 근거는 [2AS change](../../openspec/changes/jev-gemini-two-agent/work.md)에 있다. 과거 데모의 요구와 실행 이력은 [first-demo](../../openspec/changes/first-demo/work.md)에 보존한다.
+상태: **2026-11-22 [jev-state-agents](../../openspec/changes/jev-state-agents/design.md#구현-계약-2026-11-22) 구현 계약대로 구현, API 없는 테스트 통과**. 실제 Jev 6질문·Haiku 연결은 아직 확인하지 않았다. 이전 Jev Yes/No + Gemini 2AS 계약을 대체한다. 2AS의 요구와 검증 기록은 [2AS change](../../openspec/changes/jev-gemini-two-agent/work.md)에 보존한다.
 
 ## 목적과 범위
 
-완성된 STT 텍스트를 Jev에 보내 보이스피싱 여부를 판단하고 Yes일 때만 Gemini로 분석·대응한다. 이번 범위는 두 모델의 인터페이스·실제 API 연결과 LangGraph다. 실제 STT 서비스·Kafka·화자/partial 계약·조회 도구·HTTP 서버·UI는 후속 범위다.
+통화의 새 줄이 들어오면 Jev가 사기 수법 행동 F1~F6이 새 줄에 나타났는지 감지하고, 켜진 상태마다 Claude Haiku가 대화 맥락으로 그 행동이 수상한지 판단한다. 상태 판단으로 통화 상태(위험·주의·정상)와 점수를 정한다. 상태 정의는 [spec](../../openspec/changes/jev-state-agents/spec.md#상태-정의)에 있다. STT·화자 구분·BE 저장은 BE `agent-bridge`가 맡는다.
 
 ## 실행 구조
 
 ```mermaid
 flowchart TD
-    S([STT 텍스트 입력]) --> U[update_context: 대화 누적·이번 결과 초기화]
-    U --> J[detect_with_jev: Jev Yes/No와 확률 저장]
-    J -->|Yes| G[respond_with_llm: Gemini 재판단·대응 저장]
-    J -->|No| E([종료])
-    G --> E
+    S([history·new_lines·state·now]) --> U[update_context: 입력 검증·전체 대화 구성]
+    U --> D[detect_states: Jev 1회, 라우팅]
+    D -->|부를 상태 있음| J[judge_states: 상태별 Haiku 동시 호출, 보정]
+    D -->|없음| F[finalize: 점수·통화 상태·BE 필드]
+    J --> F
+    F --> E([AnalysisOutcome])
 ```
 
-두 판단 역할은 Jev 탐지와 Gemini 재판단·대응이다. update_context는 입력 처리 Node다. 이전 verify_agent·tool_execution·warn Node와 조회 후 Jev 재판단은 없다. 한 turn에 Jev는 1회, Gemini는 Yes이면 1회·No이면 0회다. Gemini가 오탐(is_phishing=False)으로 판단하면 대응 없이 turn을 끝내고, 그래프 안에서 되돌아가는 대신 다음 STT 발화가 새 turn으로 들어와 누적된 transcript로 다시 판단한다. 자동 재시도와 모델 실패 시 offline 전환은 없다.
+입구는 [graph.py](../../scamshield/graph.py)의 `CallPipeline.analyze(history, new_lines, state, now)` 하나다. 통화 상태는 입력 `state`로만 받고 출력 `state`로 돌려주므로 checkpointer가 없다. 같은 요청을 같은 `state`로 다시 보내도 판단이 두 번 쌓이지 않는다. `build_pipeline(offline=False)`는 `TYPESAFE_API_KEY`·`ANTHROPIC_API_KEY`가 비어 있으면 `PipelineError(code="config")`를 낸다. `offline=True`는 키 없는 고정 대역이다.
 
-## 인터페이스와 State
+## 입력과 출력
 
-[interfaces.py](../../scamshield/interfaces.py)의 `Detector.detect(transcript)`는 판정 dict, `Analyst.analyze(state)`는 분석 dict를 반환한다. [graph.py](../../scamshield/graph.py)의 `CallPipeline(detector, analyst).run_turn(call_id, utterance)`가 입력/오류 경계다. `utterance`는 비어 있지 않은 문자열 하나이며 원문을 보존한다. callId는 thread_id로 사용하고 State에 중복 저장하지 않는다.
+- `history: list[str]`: 이번 요청 전 대화. 한 줄은 `"[화자] 발화"`다. `[ ]` 안은 화자로, BE 통화방에서는 참가자 id(`[p1]` 등)다. 누가 앱 사용자인지는 표시하지 않는다. `[사용자 입력 …]`은 참가자가 앱에 넣은 내용이다. 로컬 CLI·테스트는 `[나]`·`[상대]`도 쓴다.
+- `new_lines: list[NewLine]`: 이번 새 줄 `{seq, text}`. 1줄 이상이다.
+- `state: dict | None`: 이전 출력의 `state`. `None`이면 새 통화다.
+- `now: float`: 새 줄의 시각(초). `uncertain` 점수 감소를 잰다.
 
-| State 필드 | 의미·초기화 | 작성 책임 |
-|---|---|---|
-| utterance | 이번 발화. 대화에 추가한 뒤 None | 입력 경계·update_context |
-| transcript: list[str] | 통화 전체 텍스트. 기존 목록 + 새 발화로 전체 교체 | update_context |
-| jev_decision: dict 또는 None | 이번 판정. 새 turn에는 None | 초기화·detect_with_jev |
-| analysis: dict 또는 None | 이번 재판단(is_phishing)·근거·대응. 새 turn에는 None | 초기화·respond_with_llm |
+`AnalysisOutcome`([state.py](../../scamshield/state.py))
 
-`jev_decision = {verdict: "Yes" 또는 "No", probability: 숫자}`다. probability는 항상 **P(보이스피싱/Yes)**이며 0~1의 유한 숫자다. No의 확률이나 confidence와 혼용하지 않는다. `analysis = {is_phishing: 불리언, reason: 문자열, response: 문자열 또는 None}`이다. is_phishing은 Gemini가 Jev의 Yes를 전체 대화로 재판단한 결론이다. reason은 대화에서 확인되는 근거와 한계의 요약이며 공백만 있는 값을 거부한다. response는 is_phishing이 True일 때만 사용자 대응 안내를 담고, False(오탐)이면 None이다. True인데 response가 비었거나 False인데 response가 있으면 오류다. Gemini가 Jev 내부 추론을 직접 알거나 기관 조회를 한 것처럼 설명하지 않는다.
+| 필드 | 의미 |
+|---|---|
+| `status` | `risky` 상태가 있으면 위험, 없고 점수가 남은 `uncertain`이 있으면 주의, 그 밖은 정상 |
+| `score` | 상태별 점수 칸의 합(최대 100) |
+| `message` | 위험일 때 우선순위가 가장 높은 `risky` 상태의 `response`. 비었으면 고정 문구. 위험이 아니면 `None` |
+| `reason` | `risky`와 점수가 남은 `uncertain` 상태의 이유를 우선순위대로 `"F1: … / F4: …"`로 이은 값. 없으면 `None` |
+| `evidence_seqs` | `risky` 상태를 판단한 요청의 새 줄 `seq`(보류였으면 보류 동안 쌓인 `seq`) |
+| `states` | 이번 Jev 결과. 상태별 `{verdict, probability(P(Yes))}` |
+| `state_analyses` | 이번에 부른 Haiku의 보정 후 판단(우선순위 순). 보정 전 판단·보정 이유·tool 결과 상태를 함께 남긴다 |
+| `state` | 다음 요청에 넘길 JSON dict: `handled`(상태별 `{judgment, reason, response, actions, evidence_seqs, judged_at}`), `call_context`(`{purpose, claimed_identity}`), `seen`, `held`(F3·F5 `{probability, seqs, lines}`, `lines`는 대화상 줄 번호) |
 
-기존 `phase`, `risk`, `verification_results`, `tool_request`, `verification_attempted`는 제거한다. 새 State는 기존 checkpoint와 호환되지 않는다. InMemorySaver를 새 프로세스에서 시작하고 같은 인스턴스·callId로 순차 호출할 때만 누적한다. 새 callId는 상태가 분리된다. 상태/의존성 입력/관찰 callback에는 복사본을 사용해 외부 변경을 차단한다. 영구 저장·프로세스 공유·동시 입력·cleanup은 구현하지 않는다.
+## Jev 상태 감지
 
-## 실제 Jev 연결
+[jev.py](../../scamshield/jev.py)는 요청마다 `POST /v1/systemone`을 1번 부른다. `history` 마지막 4줄과 새 줄 전부를 보내고, 상태 6개를 choice 질문으로 묻는다. 질문은 "마지막 n줄이 판단할 새 대사"라고 알리고 새 대사에 행동이 있는지만 묻는다. 대기 10초, 자동 재시도는 없다. 호출 실패·잘못된 출력은 `PipelineError(stage="jev")`이며 모든 상태를 No로 바꾸지 않는다. 키·주소·모델 환경변수는 `TYPESAFE_API_KEY`·`TYPESAFE_BASE_URL`·`TYPESAFE_DEFAULT_MODEL`이다.
 
-2026-10-23 [TypeSafe API](https://docs.typesafe.ai/api/system-one), [Choice](https://docs.typesafe.ai/primitives/choice), [환경변수 기준](https://docs.typesafe.ai/sdk/python/api/constants)을 확인했다. [JevClient](../../scamshield/jev.py)는 표준 라이브러리 HTTP로 `POST https://api.typesafe.ai/v1/systemone`을 호출한다.
+## 라우팅
 
-- 인증: `TYPESAFE_API_KEY`를 `Authorization: Bearer`에 전달한다.
-- 기본 주소: `TYPESAFE_BASE_URL=https://api.typesafe.ai`, 기본 모델: `TYPESAFE_DEFAULT_MODEL=jev-latest`.
-- 요청 state: `{transcript: 전체 텍스트 목록}`. question 이름은 `voice_phishing`, type은 `choice`, criteria는 Yes/No다.
-- 응답 `answers.voice_phishing.choice`를 verdict로, `probabilities.Yes`를 probability로 변환한다. 별도 threshold로 Yes/No를 재계산하지 않는다.
-- Yes/No 확률의 존재·범위·유한성·합계(오차 0.001 허용)와 최다 확률 선택을 확인한다. confidence도 API 출력 형식으로 검사하지만 보이스피싱 확률로 저장하지 않는다.
-- HTTP 요청 timeout은 30초다. 호출 실패·잘못된 출력은 오류이며 No가 아니다.
+- Yes인 상태 중 이전 판단이 `risky`가 아닌 상태를 부른다. 이미 `risky`인 상태는 다시 부르지 않고, `uncertain`·`within_normal`은 다시 Yes가 되면 다시 부른다.
+- 이 통화에서 F1·F2·F4·F6이 아직 켜지지 않았으면 F3·F5는 `held`에 쌓고 부르지 않는다. 그중 하나가 처음 켜진 요청에서 `held`를 모두 함께 부르고 비운다. 이때 Haiku에게는 그 상태가 감지됐던 대사 번호를 알려 준다.
+- 상태들은 `ThreadPoolExecutor`로 동시에 부르고 결과는 F1 → F3 → F2 → F5 → F4 → F6 순서로 정리한다.
 
-## Gemini 분석·대응
+## 상태별 Haiku 판단
 
-[GeminiAnalyst](../../scamshield/gemini.py)는 전체 transcript와 저장된 jev_decision을 함께 전달한다. 프롬프트는 Jev의 Yes가 오탐일 수 있다고 보고 전체 통화를 다시 읽어 재판단하게 한다. 결론은 `is_phishing`(True/False)에 담고 근거는 `reason`에 남긴다. 여전히 피싱(True)이면 `response`에 대응 안내를 적고, 오탐(False)이면 `response`를 비운다(None). [LangChain 공식 structured output](https://docs.langchain.com/oss/python/integrations/chat/google_generative_ai#structured-output)의 `method="json_schema"`로 `is_phishing/reason/response`를 받는다. Tool을 bind하거나 실행하지 않는다.
+[haiku.py](../../scamshield/haiku.py)는 `claude-haiku-5-5`, effort `low`, 호출마다 대기 12초, `max_retries=0`이다. 입력은 전체 대화(번호 붙임), 상태 정의·절대선·판단 핵심, Jev 확률과 새 대사 번호, `call_context`, 다시 부를 때 이전 판단과 이유다. 출력은 JSON `{judgment, absolute_line, reason, response, actions, call_context}`다. 프롬프트는 상대가 주장한 신분·절차를 정상 근거로 쓰지 말고, 상대가 말한 기관·지점이 공식인지는 대화로 확인할 수 없다고 적는다.
 
-`GEMINI_API_KEY`와 선택적인 `GEMINI_MODEL`을 사용한다. 기존 기본값 gemini-3.8-flash·Developer API·max_retries=0·timeout=120초·thinking_level=low를 유지한다. 모델 설정과 키 확인은 첫 Yes 때만 하므로 No 경로는 Gemini 키가 없어도 동작한다. Gemini는 통화를 재판단해 `reason/response`에 반영하지만, State의 jev_decision(Yes/No·확률)은 덮어쓰지 않고 Jev를 다시 호출하지도 않는다.
+- 보정: `absolute_line`은 F1·F2·F3·F5에서만 받아 `risky`로 고친다. tool 결과가 `flagged`면 `risky`로 고친다. 보정은 `corrections`에 남긴다.
+- tool([tools.py](../../scamshield/tools.py), 고정 목록 Mock): F1 `check_account`, F3 `check_url`·`check_app`(원격제어 앱)·`check_phone`(기관 대표번호). 결과는 `flagged`/`not_found`/`error`이고 `not_found`는 안전 근거가 아니다. 대화 원문이 아니라 계좌번호·주소·앱 이름·전화번호만 넣는다. 상태당 API 호출은 tool 왕복 포함 2번까지다. 두 번째 호출은 `tool_choice: none`이고, 판단 글을 못 받아도 `flagged`가 있으면 `risky`로 둔다.
+- 실패: 시간 초과·연결 실패·5xx 등 상태 코드 오류·잘못된 출력은 그 상태만 건너뛰고 오류 코드만 로그에 남긴다. 그 상태는 판단하지 않은 것으로 두고 다음 Yes에서 다시 부른다. 인증 실패(401·403)는 `PipelineError(stage="llm", code="AUTH_FAILED")`, 요청 거부(400·404)는 `llm/REQUEST_REJECTED`로 올린다.
+- `call_context`는 결과의 비어 있지 않은 값으로 갱신한다.
 
-## 종료와 오류
+## 점수
 
-정상 결과는 `{callId, jev_decision, analysis}`다. No는 analysis=None으로 즉시 종료하며 이전 Yes의 안내를 재사용하지 않는다. Yes는 검증된 분석을 State에 저장한 뒤 종료한다. 매번 누적 transcript로 새 판단을 받으므로 이전 Yes 뒤 No도 허용한다.
+| 판단 | F1·F2·F3 | F5 | F4·F6 |
+|---|---:|---:|---:|
+| `risky` | 40 | 25 | 10 |
+| `uncertain` | 20 | 10 | 5 |
+| `within_normal` | 0 | 0 | 0 |
 
-오류 결과는 `{callId, error: {stage, code, message}}`다. stage는 input/jev/llm/runtime이며 잘못된 입력은 State 변경 전에 거부한다. MISSING_API_KEY·INVALID_CONFIG·INVALID_OUTPUT·CALL_FAILED·EXECUTION_CONTRACT_VIOLATION을 구분한다. HTTP 코드·상태 같은 진단은 표시하되 키·응답 본문·인증 header·원시 예외 메시지는 출력하지 않는다.
+상태마다 칸이 하나다. `risky`는 고정이고, `uncertain`은 `점수 × 0.5^floor((now − judged_at) / 60)`이며 5 미만이면 0이다. 다시 판단하면 칸을 바꾸고 감소를 다시 잰다.
 
-실패한 Graph에는 성공 결과가 없다. 같은 callId의 pending Node를 재개하지 않고 새 callId로 다시 시작한다. 마지막 성공의 판정/안내가 이번 실패의 결과로 반환되지 않는다.
+## 오류
+
+`PipelineError(stage, code, message)`: `input/INVALID_INPUT`(입력·state 형식), `jev/CALL_FAILED`·`jev/INVALID_OUTPUT`, `llm/AUTH_FAILED`·`llm/REQUEST_REJECTED`, `config/config`. 키·응답 본문·대화 내용은 메시지와 로그에 넣지 않는다.
 
 ## 검증과 후속 범위
 
-Yes/No 분기·이전 안내 초기화·대화 누적/통화 분리·입출력 검증·실제 Jev payload·Gemini SDK 요청/응답 변환은 API 없는 테스트로 검사한다. 실제 연결은 예제 통화로 별도 확인한다. 이 검증은 보이스피싱 탐지 성능·확률 보정·안내 품질의 평가가 아니다. 한국어 STT 제품·화자·partial/재전송 계약, 서버 전송, 도구 조회, 영구 기록·운영 복구는 후속 작업이다.
+라우팅·보류·재호출, 절대선·tool 보정, 점수 감소, Haiku 실패와 인증 오류, BE 필드, `state` JSON 왕복, Jev 요청 형식, Haiku 요청·tool 왕복은 API 없는 테스트로 확인한다. 실제 Jev·Haiku 연결은 지어낸 예제 통화로 확인했고, KorCCVi 큰 표본 평가는 아직 하지 않았다. 검증 기록과 남은 일은 [work](../../openspec/changes/jev-state-agents/work.md)에 있다.
 
 ## 관련 문서
 
-- [현재 아키텍처](../architecture/overview.md) · [입력 예제 흐름](mvp-flow.md) · [컨텍스트](../project-context.md)
-- [2AS proposal](../../openspec/changes/jev-gemini-two-agent/proposal.md) · [spec](../../openspec/changes/jev-gemini-two-agent/spec.md) · [design](../../openspec/changes/jev-gemini-two-agent/design.md)
-- [tasks](../../openspec/changes/jev-gemini-two-agent/tasks.md) · [검증 근거](../../openspec/changes/jev-gemini-two-agent/work.md)
+- [현재 아키텍처](../architecture/overview.md) · [입력과 실행 흐름](mvp-flow.md) · [컨텍스트](../project-context.md)
+- [jev-state-agents proposal](../../openspec/changes/jev-state-agents/proposal.md) · [spec](../../openspec/changes/jev-state-agents/spec.md) · [design](../../openspec/changes/jev-state-agents/design.md) · [tasks](../../openspec/changes/jev-state-agents/tasks.md) · [work](../../openspec/changes/jev-state-agents/work.md)
+- 이전 계약: [2AS change](../../openspec/changes/jev-gemini-two-agent/design.md)

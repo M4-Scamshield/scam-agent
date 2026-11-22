@@ -1,10 +1,14 @@
 # 사용자 제공 프로젝트 컨텍스트
 
-## 현재 확정 방향 — 2AS
+## 현재 확정 방향 — 상태별 판단
+
+2026-11-15 사용자 요청, 2026-11-22 구현: Jev가 KorCCVi에서 나온 사기 수법 행동 F1~F6을 상태로 감지하고, 켜진 상태마다 Claude Haiku가 대화 맥락으로 판단한다. Gemini 경로는 뺐다. 현재 계약은 [State·Graph](design/state-and-graph.md), 구현 상태는 [아키텍처](architecture/overview.md), 진행과 다음 행동은 [jev-state-agents work](../openspec/changes/jev-state-agents/work.md)를 따른다.
+
+## 이전 확정 방향 — 2AS
 
 2026-10-23 사용자가 기존 아키텍처를 변경했다. Jev에 STT 결과를 보내 보이스피싱 Yes/No와 확률을 받아 State에 저장한다. Yes이면 전체 대화와 그 결과를 Gemini에 전달해 근거 요약과 대응 안내를 남기고, No이면 아무 대응 없이 종료한다. 기존 Suspect/Verify·phase·Mock 조회 구조를 이번 구현에서 대체한다. 실제 STT 제품을 연결하기 전 텍스트 입력 인터페이스부터 만든다. 불필요한 코드 제거와 최종 그래프 출력도 요청했다.
 
-현재 계약은 [2AS State·Graph](design/state-and-graph.md), 구현 상태는 [아키텍처](architecture/overview.md), 검증과 다음 행동은 [2AS work](../openspec/changes/jev-gemini-two-agent/work.md)를 따른다.
+2AS의 검증 기록은 [2AS work](../openspec/changes/jev-gemini-two-agent/work.md)에 있다.
 
 ## 이전 구조의 사용자 맥락
 

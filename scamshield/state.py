@@ -1,47 +1,130 @@
 from typing import Literal, TypedDict
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+StateCode = Literal["F1", "F2", "F3", "F4", "F5", "F6"]
 
 
 class JevDecision(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
     verdict: Literal["Yes", "No"]
-    # Always P(voice phishing / Yes), including when verdict is No.
+    # Always P(Yes), including when verdict is No.
     probability: float = Field(ge=0, le=1, allow_inf_nan=False)
 
 
-class LLMAnalysis(BaseModel):
-    model_config = ConfigDict(extra="forbid", strict=True, str_strip_whitespace=True)
-
-    # Gemini의 재판단. Jev의 Yes가 실제 대화 근거로도 피싱이면 True다.
-    # 저장된 jev_decision(Yes/No·확률)은 덮어쓰지 않고 이 필드로 나란히 보존한다.
-    is_phishing: bool = Field(description="Jev의 Yes를 재판단한 결과(실제 피싱이면 True)")
-    reason: str = Field(min_length=1, description="대화에 근거한 재판단 이유와 불확실성의 요약")
-    # 피싱(True)일 때만 사용자 대응 안내를 담고, 오탐(False)이면 None이다.
-    response: str | None = Field(default=None, description="피싱일 때 사용자에게 전달할 한국어 대응 안내")
-
-    @model_validator(mode="after")
-    def _response_matches_verdict(self):
-        if self.is_phishing:
-            if not (self.response and self.response.strip()):
-                raise ValueError("is_phishing=True이면 response가 필요합니다.")
-        else:
-            if self.response and self.response.strip():
-                raise ValueError("is_phishing=False이면 response를 비워야 합니다.")
-            # 빈 문자열도 None으로 정규화해 오탐 턴의 응답을 일관되게 비운다.
-            self.response = None
-        return self
+class NewLine(BaseModel):
+    seq: int
+    # "[화자] 발화"
+    text: str = Field(min_length=1)
 
 
-class TurnInput(TypedDict):
-    utterance: str | None
+class ToolRecord(BaseModel):
+    name: str
+    status: Literal["flagged", "not_found", "error"]
 
 
-class ScamState(TurnInput, total=False):
-    transcript: list[str]
-    jev_decision: dict | None
-    analysis: dict | None
+def _none_to_empty(value):
+    return "" if value is None else value
+
+
+class CallContext(BaseModel):
+    purpose: str = ""
+    claimed_identity: str = ""
+
+    _empty = field_validator("purpose", "claimed_identity", mode="before")(_none_to_empty)
+
+
+class StateJudgment(BaseModel):
+    """상태별 Haiku 출력. tools는 Haiku가 부른 tool의 결과 상태다(입력값은 남기지 않는다)."""
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    judgment: Literal["risky", "within_normal", "uncertain"]
+    absolute_line: bool = False
+    reason: str = Field(min_length=1)
+    response: str = ""
+    actions: list[str] = []
+    call_context: CallContext = CallContext()
+    tools: list[ToolRecord] = []
+
+    # 저노력 Haiku가 null이나 객체 항목을 내도 그 상태를 버리지 않는다.
+    _empty = field_validator("response", mode="before")(_none_to_empty)
+
+    @field_validator("call_context", mode="before")
+    @classmethod
+    def _context(cls, value):
+        return {} if value is None else value
+
+    @field_validator("actions", mode="before")
+    @classmethod
+    def _actions(cls, value):
+        return [item for item in value if isinstance(item, str)] if isinstance(value, list) else []
+
+
+class StateAnalysis(BaseModel):
+    """이번 요청에서 부른 상태의 보정 후 판단."""
+
+    state: str
+    judgment: Literal["risky", "within_normal", "uncertain"]
+    # 보정 전 Haiku 판단과 보정 이유("absolute_line", "tool_flagged")
+    model_judgment: Literal["risky", "within_normal", "uncertain"]
+    corrections: list[str]
+    reason: str
+    response: str
+    actions: list[str]
+    tools: list[ToolRecord]
+
+
+class Handled(BaseModel):
+    judgment: Literal["risky", "within_normal", "uncertain"]
+    reason: str
+    response: str
+    actions: list[str]
+    evidence_seqs: list[int]
+    judged_at: float
+
+
+class Held(BaseModel):
+    probability: float
+    seqs: list[int]
+    # 대화상 줄 번호(1부터). 보류했다 부를 때 Haiku에게 감지된 대사를 가리킨다.
+    lines: list[int] = []
+
+
+class AgentMemory(BaseModel):
+    """요청 사이에 넘기는 agent 상태. AnalysisOutcome.state로 나가고 다음 요청의 state로 돌아온다."""
+
+    handled: dict[StateCode, Handled] = {}
+    call_context: CallContext = CallContext()
+    seen: list[StateCode] = []
+    held: dict[StateCode, Held] = {}
+
+
+class AnalysisOutcome(BaseModel):
+    status: Literal["위험", "주의", "정상"]
+    score: int = Field(ge=0, le=100)
+    message: str | None
+    reason: str | None
+    evidence_seqs: list[int]
+    states: dict[str, JevDecision]
+    state_analyses: list[StateAnalysis]
+    state: dict
+
+
+class AnalyzeInput(TypedDict):
+    history: list[str]
+    new_lines: list[dict]
+    memory: dict
+    now: float
+
+
+class AgentState(AnalyzeInput, total=False):
+    lines: list[str]
+    states: dict
+    todo: dict
+    state_analyses: list[dict]
+    outcome: dict
 
 
 class PipelineError(Exception):
@@ -56,7 +139,7 @@ class PipelineError(Exception):
 
 
 DEMO_UTTERANCES = (
-    "오늘 저녁에 같이 밥 먹을까요?",
-    "서울중앙지검입니다. 고객님 계좌가 범죄에 연루되었습니다.",
-    "수사를 위해 지금 안전계좌로 전액 송금하세요. 다른 사람에게는 알리지 마세요.",
+    "[상대] 오늘 저녁에 같이 밥 먹을까요?",
+    "[상대] 서울중앙지검입니다. 고객님 계좌가 범죄에 연루되었습니다.",
+    "[상대] 수사를 위해 지금 안전계좌로 전액 송금하세요. 다른 사람에게는 알리지 마세요.",
 )

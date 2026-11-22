@@ -4,6 +4,6 @@
 
 | 문서 | 포함한 내용 |
 |---|---|
-| [현재 2AS 구성](overview.md) | Jev 탐지·Yes일 때 Gemini 분석, 코드별 책임·State 수명·컴파일된 그래프 |
+| [현재 상태별 판단 구성](overview.md) | Jev 상태 감지·상태별 Haiku 판단·점수, 코드별 책임·State 수명·컴파일된 그래프 |
 
-계약은 [State·Graph](../design/state-and-graph.md), 사용자 방향은 [컨텍스트](../project-context.md), 현재 진행·검증은 [2AS work](../../openspec/changes/jev-gemini-two-agent/work.md)에 있다. 이전 데모의 실제 실행 기록은 [first-demo](../../openspec/changes/first-demo/work.md)에 보존한다.
+계약은 [State·Graph](../design/state-and-graph.md), 사용자 방향은 [컨텍스트](../project-context.md), 현재 진행·검증은 [jev-state-agents work](../../openspec/changes/jev-state-agents/work.md)에 있다. 이전 2AS 기록은 [2AS work](../../openspec/changes/jev-gemini-two-agent/work.md)에 있다. 이전 데모의 실제 실행 기록은 [first-demo](../../openspec/changes/first-demo/work.md)에 보존한다.

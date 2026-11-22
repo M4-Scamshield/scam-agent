@@ -1,1 +1,1 @@
-"""ScamShield: Jev detection followed by Gemini analysis on Yes."""
+"""ScamShield: Jev state detection followed by per-state Claude Haiku judgment."""

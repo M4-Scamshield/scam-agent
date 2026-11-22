@@ -43,7 +43,7 @@
 python3 .agents/skills/scamshield-docs-sync/scripts/check_docs.py
 ```
 
-데모 실행과 API 없는 테스트는 다음 명령을 사용한다. Gemini 실행 환경변수·입력 방법과 검증 한계는 [README](../../README.md)에 있다.
+데모 실행과 API 없는 테스트는 다음 명령을 사용한다. 실행 환경변수·입력 방법과 검증 한계는 [README](../../README.md)에 있다.
 
 ```sh
 uv sync --locked
@@ -51,4 +51,4 @@ uv run --locked pytest -q
 uv run --locked python -m scamshield --offline --auto
 ```
 
-실제 2AS는 TYPESAFE_API_KEY를 실행 환경에 설정하고 Yes 경로용 GEMINI_API_KEY를 준비한 뒤 `uv run --locked python -m scamshield --auto`로 별도 검증한다. Jev는 Yes/No·P(Yes)를 반환하고 Yes일 때만 Gemini가 분석·대응한다. 로컬 `.env`를 사용하면 uv에 `--env-file .env`를 명시한다. 캐시 권한 오류의 대체 경로와 직접 입력 명령은 [README](../../README.md)를 따른다. API 없는 테스트 통과를 실제 모델 호출 성공으로 표시하지 않는다.
+실제 모델 연결은 `TYPESAFE_API_KEY`와 `ANTHROPIC_API_KEY`를 실행 환경에 설정한 뒤 `uv run --locked python -m scamshield --auto`로 별도 검증한다. Jev는 상태 F1~F6의 Yes/No·P(Yes)를 반환하고 부를 상태만 Haiku가 판단한다. 로컬 `.env`를 사용하면 uv에 `--env-file .env`를 명시한다. 캐시 권한 오류의 대체 경로와 직접 입력 명령은 [README](../../README.md)를 따른다. API 없는 테스트 통과를 실제 모델 호출 성공으로 표시하지 않는다.

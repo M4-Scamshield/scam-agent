@@ -2,9 +2,9 @@
 
 한국어 통화의 보이스피싱 여부를 판단하고 탐지 시 분석과 대응 안내를 제공하는 졸업프로젝트다. 목적과 합의된 MVP 범위는 [프로젝트 컨텍스트](docs/project-context.md)에 있다.
 
-현재 구조는 **Jev 탐지 + Gemini 분석·대응의 2AS**다. 완성된 STT 텍스트를 Jev에 보내 Yes/No와 P(Yes)를 State에 저장한다. Yes이면 Gemini가 대화와 Jev 결과를 받아 탐지 근거 요약과 대응 안내를 저장하고, No이면 LLM 호출 없이 종료한다. [State·Graph 계약](docs/design/state-and-graph.md)과 [실행 근거](openspec/changes/jev-gemini-two-agent/work.md)를 따른다.
+현재 구조는 **Jev 상태 감지 + 상태별 Claude Haiku 판단**이다. 새 줄이 들어오면 Jev가 사기 수법 행동 F1~F6이 새 줄에 나타났는지 감지하고, 켜진 상태마다 Haiku가 전체 대화로 그 행동이 수상한지 판단한다. 판단으로 통화 상태(위험·주의·정상)와 점수를 만든다. [State·Graph 계약](docs/design/state-and-graph.md)과 [실행 근거](openspec/changes/jev-state-agents/work.md)를 따른다.
 
-![컴파일된 2AS LangGraph](docs/architecture/scamshield-langgraph.png)
+![컴파일된 ScamShield LangGraph](docs/architecture/scamshield-langgraph.png)
 
 ## 작업 시작
 
@@ -34,49 +34,50 @@ uv lock --check --offline
 
 ## CLI 실행
 
-API 없이 연결 흐름을 확인한다. 두 역할 모두 명시적인 대역이며 실제 모델 검증이 아니다.
+API 없이 연결 흐름을 확인한다. Jev·Haiku 모두 명시적인 대역이며 실제 모델 검증이 아니다.
 
 ```sh
 uv run --locked python -m scamshield --offline --auto
 ```
 
-실제 모델을 사용하려면 [.env.example](.env.example)의 이름에 맞춰 로컬 `.env`에 키를 등록한다. 기존 Gemini 설정은 유지하고 [TypeSafe 콘솔](https://console.typesafe.ai/keys)에서 발급한 키를 `TYPESAFE_API_KEY=` 뒤에 입력한다. 키 자체만 넣으며 `Bearer `는 붙이지 않는다. `.env`는 Git에서 제외되고 자동으로 읽지 않는다.
+실제 모델을 사용하려면 [.env.example](.env.example)의 이름에 맞춰 로컬 `.env`에 키를 등록한다. Anthropic 키를 `ANTHROPIC_API_KEY=` 뒤에, [TypeSafe 콘솔](https://console.typesafe.ai/keys)에서 발급한 키를 `TYPESAFE_API_KEY=` 뒤에 입력한다. 키 자체만 넣으며 `Bearer `는 붙이지 않는다. `.env`는 Git에서 제외되고 자동으로 읽지 않는다.
 
 ```dotenv
-GEMINI_API_KEY=
-GEMINI_MODEL=gemini-3.8-flash
+ANTHROPIC_API_KEY=
 TYPESAFE_API_KEY=
 TYPESAFE_BASE_URL=https://api.typesafe.ai
 TYPESAFE_DEFAULT_MODEL=jev-latest
 ```
 
-Jev 설정 이름과 기본값은 [TypeSafe 공식 기준](https://docs.typesafe.ai/sdk/python/api/constants)에 맞췄다. 실제 연결은 표준 HTTP를 사용한다. Gemini는 Yes일 때만 설정·호출되므로 No 경로에는 Gemini 키가 필요하지 않다. 키·인증 헤더·API 오류 본문을 출력하거나 커밋하지 않는다.
+Jev 설정 이름과 기본값은 [TypeSafe 공식 기준](https://docs.typesafe.ai/sdk/python/api/constants)에 맞췄다. 실제 연결은 표준 HTTP를 사용한다. Haiku는 `anthropic` SDK로 `claude-haiku-5-5`를 부른다. 두 키는 시작할 때 모두 확인하며 하나라도 비면 `config` 오류로 멈춘다. 키·인증 헤더·API 오류 본문을 출력하거나 커밋하지 않는다.
 
 ```sh
 uv run --locked --env-file .env python -m scamshield --auto
 uv run --locked --env-file .env python -m scamshield --text "안전계좌로 지금 송금하세요."
 ```
 
-`--auto` 없이 실행하면 세 번 입력받으며 Enter는 준비된 문장을 사용한다. `--text`는 STT 결과에 해당하는 텍스트 한 건을 입력한다. 실제 STT 수신은 아직 없다. Graph 입력 인터페이스는 다음과 같다.
+`--auto` 없이 실행하면 세 번 입력받으며 Enter는 준비된 문장을 사용한다. 화자 표시가 없는 입력은 `[상대]` 말로 본다. `--text`는 STT 결과에 해당하는 텍스트 한 건을 입력한다. CLI는 대화와 agent 상태를 직접 들고 요청을 이어 보낸다. Graph 입력 인터페이스는 다음과 같다.
 
 ```python
-from scamshield.gemini import GeminiAnalyst
-from scamshield.graph import CallPipeline
-from scamshield.jev import JevClient
+import time
 
-pipeline = CallPipeline(JevClient.from_env(), GeminiAnalyst())
-result = pipeline.run_turn("call-1", "완성된 STT 텍스트")
+from scamshield.graph import build_pipeline
+from scamshield.state import NewLine
+
+pipeline = build_pipeline()  # offline=True면 키 없는 대역
+outcome = pipeline.analyze([], [NewLine(seq=1, text="[상대] 완성된 STT 텍스트")], None, time.time())
+next_state = outcome.state  # 다음 요청의 state로 넘긴다
 ```
 
-정상 결과는 `{callId, jev_decision: {verdict, probability}, analysis}`다. probability는 항상 P(Yes)이며 analysis는 Yes일 때 `{is_phishing, reason, response}`, No일 때 None이다. is_phishing은 Gemini가 Jev의 Yes를 재판단한 결과이고, response는 피싱(True)일 때만 대응 안내를 담고 오탐(False)이면 None이다. 같은 인스턴스·callId를 재사용하면 전체 대화가 누적된다. 실제 모델의 출력은 고정 시나리오가 아니다.
+결과 `AnalysisOutcome`은 `status`(위험·주의·정상), `score`(0~100), `message`, `reason`, `evidence_seqs`, 이번 Jev 결과 `states`, 이번 Haiku 판단 `state_analyses`, 다음 요청에 넘길 `state`다. `analyze`는 상태를 저장하지 않으므로 호출하는 쪽이 `history`와 `state`를 들고 있어야 한다. 실제 모델의 출력은 고정 시나리오가 아니다.
 
 캐시 권한 문제가 있으면 `uv --cache-dir .venv/uv-cache run ...`으로 실행한다. Windows에서 uv가 PATH에 없고 로컬 가상환경에 설치되어 있다면 `.venv\Scripts\python.exe -m uv`를 사용할 수 있다. 한글 출력은 `python -X utf8 -m scamshield ...`로 실행할 수 있다.
 
 ## 현재 범위
 
-phase·Suspect/Verify·Mock case_lookup·조회 후 재판단을 제거했다. 두 역할의 Protocol, 실제 Jev HTTP·Gemini JSON schema 연결, Yes/No 조건 분기와 통화별 InMemorySaver를 구현했다. State는 최신 판단/분석만 저장하며 이전 분석이 다음 No에 남지 않는다. 실패는 오류로 반환하고 자동 재시도·offline 대체를 하지 않는다.
+2AS의 Gemini 경로와 `voice_phishing` 질문을 뺐다. Jev 상태 6개 감지, F3·F5 보류와 재호출 규칙, 상태별 Haiku 동시 호출, 절대선·tool 보정, 점수 감소를 구현했다. tool은 고정 목록 Mock이다. Jev 실패와 Haiku 인증 실패는 오류이고, 그 밖의 Haiku 실패는 그 상태만 건너뛴다. 자동 재시도·offline 대체는 없다.
 
-전체 대화는 프로세스 내에서만 유지된다. CLI의 세 입력 제한은 데모 설정이며 Graph의 turn 한도가 아니다. 실제 STT·화자 정보·partial 처리·Kafka·조회 도구·웹 서버·UI·영구 저장·동시 입력/복구는 후속 범위다.
+통화 상태 저장과 화자·상대 구분은 BE `agent-bridge`가 맡는다. CLI의 세 입력 제한은 데모 설정이다. 실제 tool API와 KorCCVi 평가는 후속 범위다.
 
 ## 코드 검증과 그래프 출력
 
@@ -85,7 +86,7 @@ uv run --locked pytest -q
 uv run --locked python -m scamshield.export_graph
 ```
 
-테스트는 API 없이 Yes/No 경로·이전 안내 초기화·통화 분리·HTTP/SDK 요청 변환·입출력 오류·CLI를 확인한다. 실제 연결과 테스트 결과는 [work](openspec/changes/jev-gemini-two-agent/work.md)에 구분한다. 탐지 성능이나 확률 보정을 검증한 것은 아니다.
+테스트는 API 없이 라우팅·보류·재호출, 절대선·tool 보정, 점수 감소, Haiku 실패 처리, BE 필드, `state` JSON 왕복, Jev·Haiku 요청 변환, CLI를 확인한다. 실제 연결과 테스트 결과는 [work](openspec/changes/jev-state-agents/work.md)에 구분한다. 탐지 성능이나 확률 보정을 검증한 것은 아니다.
 
 그래프 출력은 실제 컴파일된 LangGraph에서 [Mermaid 원본](docs/architecture/scamshield-langgraph.mmd)과 PNG를 생성한다. PNG 렌더링에는 Mermaid.ink 네트워크 접근이 필요하며 그래프 구조만 전송하고 모델은 호출하지 않는다.
 

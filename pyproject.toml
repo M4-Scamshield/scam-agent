@@ -4,8 +4,8 @@ version = "0.1.0"
 description = "Stateful voice phishing response demo"
 requires-python = ">=3.12"
 dependencies = [
+    "anthropic>=2.12,<3",
     "langchain>=1,<2",
-    "langchain-google-genai>=4,<5",
     "langgraph>=1,<2",
     "pydantic>=2,<3",
 ]

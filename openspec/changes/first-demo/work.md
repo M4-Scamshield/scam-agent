@@ -252,7 +252,7 @@ Tool별 인자·조회 내용·실패 상세 형식, 최종 타입 선언·결�
 
 ## 2026-10-12 — 이슈 #1 데모 구현·Gemini 연결·CLI 검증
 
-1단계의 Agent 대역 Graph 검사에 이어 [Gemini 역할 연결](../../../scamshield/gemini.py)·[CLI](../../../scamshield/cli.py)와 `python -m scamshield` 진입점을 구현했다. 두 역할은 같은 ChatGoogleGenerativeAI 모델을 사용하며 Suspect는 Tool 없는 생성 1회, Verify는 case_lookup 선언을 bind한 호출 1회로 요청만 선택한다. 자동 Tool 실행·결과 후 모델 재호출·Agent 런타임은 추가하지 않았다. `GEMINI_API_KEY`와 선택적인 `GEMINI_MODEL`을 환경변수로 받고 Developer API·자동 재시도 비활성화를 명시했다. 키가 없으면 정상 Gemini 실행을 거부하고 `--offline`으로 명시적인 대역 실행을 제공한다. `.env` 자동 로딩은 없다.
+1단계의 Agent 대역 Graph 검사에 이어 Gemini 역할 연결(`scamshield/gemini.py`, 2026-11-22 삭제)·[CLI](../../../scamshield/cli.py)와 `python -m scamshield` 진입점을 구현했다. 두 역할은 같은 ChatGoogleGenerativeAI 모델을 사용하며 Suspect는 Tool 없는 생성 1회, Verify는 case_lookup 선언을 bind한 호출 1회로 요청만 선택한다. 자동 Tool 실행·결과 후 모델 재호출·Agent 런타임은 추가하지 않았다. `GEMINI_API_KEY`와 선택적인 `GEMINI_MODEL`을 환경변수로 받고 Developer API·자동 재시도 비활성화를 명시했다. 키가 없으면 정상 Gemini 실행을 거부하고 `--offline`으로 명시적인 대역 실행을 제공한다. `.env` 자동 로딩은 없다.
 
 CLI는 고유 callId로 세 발화를 순차 실행하고 Node·risk/phase·선택 인자·Mock 결과·안내와 누적 개수를 출력한다. 기본은 직접 입력/Enter로 준비된 발화 선택, `--auto`는 자동 실행이다. Graph 오류가 나면 시나리오를 중단한다. 이미 pending Node가 남은 실패 callId의 후속 입력도 거부하며 rollback·중간 재개·운영 복구는 구현하지 않는다. 정상 종료 통화의 State/checkpoint는 같은 CallDemo/InMemorySaver에서 유지한다.
 
@@ -260,7 +260,7 @@ CLI는 고유 callId로 세 발화를 순차 실행하고 Node·risk/phase·선�
 
 실제로 실행한 검증:
 
-- `.venv/bin/python -m pytest -q`: **26 passed**. [Graph](../../../tests/test_graph.py)·[모델 연결](../../../tests/test_gemini.py)·[CLI](../../../tests/test_cli.py) 검사. 세 발화 Node 순서·0.1/0.5/0.7/0.9 판단, 한 통화 transcript 3개/조회 1개와 다른 통화 분리, 선택 단계 checkpoint와 실행 분리, 해당 번호 최신 Mock 결과/FOUND/실패 해석, Tool 최대 1회·결과 후 재판단 1회, 요청 없음/잘못된/여러 요청의 미실행과 기본 오류 반환을 확인했다.
+- `.venv/bin/python -m pytest -q`: **26 passed**. [Graph](../../../tests/test_graph.py)·모델 연결(`tests/test_gemini.py`, 2026-11-22 삭제)·[CLI](../../../tests/test_cli.py) 검사. 세 발화 Node 순서·0.1/0.5/0.7/0.9 판단, 한 통화 transcript 3개/조회 1개와 다른 통화 분리, 선택 단계 checkpoint와 실행 분리, 해당 번호 최신 Mock 결과/FOUND/실패 해석, Tool 최대 1회·결과 후 재판단 1회, 요청 없음/잘못된/여러 요청의 미실행과 기본 오류 반환을 확인했다.
 - Gemini 연결 검사는 LangChain AIMessage 응답 대역과 설치된 Google SDK의 generate_content 전송 대역을 사용했다. 실제 ChatGoogleGenerativeAI의 두 역할 요청 생성·Tool 선언/인자 schema·텍스트/FunctionCall 응답 변환과 모델 호출 횟수를 확인했다. 전송 전에 대역으로 교체했으므로 실제 외부 API는 호출하지 않았다.
 - `uv --cache-dir /private/tmp/scamshield-uv-cache sync --locked --offline`: **PASS**, 기존 Python 3.12 환경의 의존성 동기화.
 - `uv --cache-dir /private/tmp/scamshield-uv-cache lock --check --offline`: **PASS**, 55 packages.
@@ -276,7 +276,7 @@ CLI는 고유 callId로 세 발화를 순차 실행하고 Node·risk/phase·선�
 
 사용자가 직접 실행한 Gemini CLI 출력에서 첫 발화 OBSERVE는 성공하고 두 번째 발화 suspect_agent/CALL_FAILED에서 중단된 것을 확인했다. 이는 사용자 제공 실행 근거이며 실제 모델 응답 성공·키 유효성 확인이 아니다. 사용자가 에이전트의 직접 호출을 요청했지만 현재 도구 실행 환경에 GEMINI_API_KEY와 저장소 `.env`가 없어 같은 키로 호출할 수 없었다. 사용자 터미널의 export는 별도 도구 프로세스에 공유되지 않는다. 키를 채팅으로 요구하지 않고 Git에서 제외된 로컬 `.env`에 저장하도록 안내했다.
 
-[Gemini 연결](../../../scamshield/gemini.py)에서 감춰졌던 호출 원인을 보완했다. SDK가 감싼 APIError의 HTTP 코드/status/메시지 요약을 기존 error.message로 전달한다. 알려진 환경변수 키와 Google 키 패턴을 마스킹하고 요청/headers/details는 출력하지 않는다. 알 수 없는 로컬 예외는 타입명만 표시한다. 자동 재시도와 역할별 호출 횟수는 변경하지 않았다. [.env.example](../../../.env.example)과 [README](../../../README.md)에 uv의 명시적 `--env-file .env` 사용과 쓰기 가능한 캐시 경로를 추가했다. 코드의 `.env` 자동 로딩은 추가하지 않았다.
+Gemini 연결(`scamshield/gemini.py`, 2026-11-22 삭제)에서 감춰졌던 호출 원인을 보완했다. SDK가 감싼 APIError의 HTTP 코드/status/메시지 요약을 기존 error.message로 전달한다. 알려진 환경변수 키와 Google 키 패턴을 마스킹하고 요청/headers/details는 출력하지 않는다. 알 수 없는 로컬 예외는 타입명만 표시한다. 자동 재시도와 역할별 호출 횟수는 변경하지 않았다. [.env.example](../../../.env.example)과 [README](../../../README.md)에 uv의 명시적 `--env-file .env` 사용과 쓰기 가능한 캐시 경로를 추가했다. 코드의 `.env` 자동 로딩은 추가하지 않았다.
 
 검증: `.venv/bin/python -m pytest -q` → **29 passed**. 실제 설치 SDK의 ClientError 전송 대역으로 두 역할의 HTTP 404/NOT_FOUND 원인 표시·키 마스킹·details 미출력과 호출 1회를 확인했다. 알 수 없는 예외의 원문 비밀 값도 출력하지 않는 것을 검증했다. 실제 Gemini API는 아직 호출하지 않았고 현재 실패 원인은 미확인이다. 키가 로컬 파일에 준비되면 `uv --cache-dir /private/tmp/scamshield-uv-cache run --locked --env-file .env python -m scamshield --auto`를 실행해 확인한다. 기존 문서 변경은 유지했고 커밋·push·PR은 수행하지 않았다.
 
@@ -297,7 +297,7 @@ CLI는 고유 callId로 세 발화를 순차 실행하고 Node·risk/phase·선�
 
 ## 2026-10-12 — 리뷰 P2: 사건번호 부분 문자열 통과 수정
 
-사용자가 전달한 리뷰의 P2 한 건을 기존 first-demo에서 수정했다. 기존 validate_request는 인자가 대화의 부분 문자열이면 허용해 `2026-12345`에서 `2026` 또는 `12345`만 선택해도 Mock 실행으로 넘어갔다. [모델 응답 대역 검사](../../../tests/test_gemini.py)에 두 요청을 추가하고 `.venv/bin/python -m pytest -q tests/test_gemini.py -k bad_model_selection`을 실행해 두 사례 모두 오류 없이 통과하는 기존 결함을 재현했다(회귀 검사 2 failed).
+사용자가 전달한 리뷰의 P2 한 건을 기존 first-demo에서 수정했다. 기존 validate_request는 인자가 대화의 부분 문자열이면 허용해 `2026-12345`에서 `2026` 또는 `12345`만 선택해도 Mock 실행으로 넘어갔다. 모델 응답 대역 검사(`tests/test_gemini.py`, 2026-11-22 삭제)에 두 요청을 추가하고 `.venv/bin/python -m pytest -q tests/test_gemini.py -k bad_model_selection`을 실행해 두 사례 모두 오류 없이 통과하는 기존 결함을 재현했다(회귀 검사 2 failed).
 
 [graph.py](../../../scamshield/graph.py)의 검증을 대화에서 찾은 하이픈 연결 숫자열 전체와 인자의 정확한 일치 검사로 바꿨다. 잘린 번호는 verify_agent/INVALID_OUTPUT으로 거부하며 Tool 함수 실행·verification_results 저장 없이 종료한다. 이는 이번 데모 숫자 형식에 대한 잘림 방지이며 실제 기관의 사건번호 형식·실재성 파서로 확장하지 않았다. 정상 `2026-12345` 선택과 기존 호출/실행 한도는 유지한다.
 

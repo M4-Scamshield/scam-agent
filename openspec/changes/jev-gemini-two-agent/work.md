@@ -6,7 +6,7 @@
 
 ## 구현
 
-[State](../../../scamshield/state.py)·[Graph](../../../scamshield/graph.py)·[인터페이스](../../../scamshield/interfaces.py)를 2AS로 전환하고 [Jev HTTP](../../../scamshield/jev.py)·[Gemini 구조화 분석](../../../scamshield/gemini.py)·[CLI](../../../scamshield/cli.py)를 연결했다. 옛 `roles.py`, `tools.py`는 삭제했다. 현재 계약은 [설계](../../../docs/design/state-and-graph.md)를 따른다.
+[State](../../../scamshield/state.py)·[Graph](../../../scamshield/graph.py)·[인터페이스](../../../scamshield/interfaces.py)를 2AS로 전환하고 [Jev HTTP](../../../scamshield/jev.py)·Gemini 구조화 분석(`scamshield/gemini.py`, 2026-11-22 삭제)·[CLI](../../../scamshield/cli.py)를 연결했다. 옛 `roles.py`, `tools.py`는 삭제했다. 현재 계약은 [설계](../../../docs/design/state-and-graph.md)를 따른다.
 
 ## 확인한 근거
 

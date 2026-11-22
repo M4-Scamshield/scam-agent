@@ -8,7 +8,7 @@ from scamshield.interfaces import OfflineAnalyst, OfflineDetector
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="컴파일된 2AS LangGraph를 Mermaid와 PNG로 출력")
+    parser = argparse.ArgumentParser(description="컴파일된 상태별 판단 LangGraph를 Mermaid와 PNG로 출력")
     parser.add_argument("--output", type=Path, default=Path("docs/architecture/scamshield-langgraph.png"))
     args = parser.parse_args()
     diagram = build_graph(OfflineDetector(), OfflineAnalyst()).get_graph()
