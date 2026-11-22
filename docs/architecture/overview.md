@@ -22,7 +22,7 @@
 
 ## 수명과 범위
 
-`analyze`는 상태를 저장하지 않는다. 통화 상태는 BE가 `state`로 저장해 다음 요청에 돌려준다. 대화 원문·화자 구분·상대별 쌍 판단·응답 변환은 BE `agent-bridge`가 맡는다. tool은 Mock이고 실제 조회 API는 없다. 실행 방법은 [README](../../README.md)에 있다.
+`analyze`는 상태를 저장하지 않는다. 통화 상태는 BE가 `state`로 저장해 다음 요청에 돌려준다. 대화 원문·화자 표기(통화방 참가자 id)·응답 변환은 BE `agent-bridge`가 맡는다. tool은 Mock이고 실제 조회 API는 없다. 실행 방법은 [README](../../README.md)에 있다.
 
 ## 검증
 

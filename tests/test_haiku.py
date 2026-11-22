@@ -83,7 +83,7 @@ def test_request_shape_without_tools():
 
 
 def test_prompt_has_speaker_legend_identity_limit_and_no_evidence_lines():
-    assert "[나]는 앱 사용자" in SYSTEM and "[상대]는 통화 상대" in SYSTEM and "[사용자 입력 …]" in SYSTEM
+    assert "참가자 id" in SYSTEM and "요구하는 쪽을 상대로" in SYSTEM and "[사용자 입력 …]" in SYSTEM
     assert "상대가 말한 기관·지점이 공식인지는 대화로 확인할 수 없습니다." in SYSTEM
     assert "evidence_lines" not in SYSTEM
     assert '"actions"' in SYSTEM

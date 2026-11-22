@@ -178,7 +178,7 @@ tool 열은 상태별 후보다. 이번에 만드는 Mock은 F1·F3 tool뿐이�
 - 실험 코드는 import하지 않는다. 컨테이너에는 `scamshield/`만 들어간다. Jev 질문·`STATES`·Haiku 공통 프롬프트는 `scamshield/` 안으로 옮겨 쓴다.
 - Jev: 요청마다 1번. `history`의 마지막 4줄과 새 줄 전부를 보내고, [묶음 확인](../../../docs/analysis/jev-state-question-versions.md#v5-새-줄-묶음-확인-2026-11-22)에 쓴 질문(`experiments/jev_states/chunk_states.py`)으로 상태 6개를 묻는다. 새 줄 앞에는 `(새)`를 붙이고 질문도 그 표시로 새 대사를 가리킨다([새 줄 표시](../../../docs/analysis/jev-state-question-versions.md#v5-새-줄-표시-2026-11-22)). 대기 10초. 실패하면 지금처럼 `PipelineError`다.
 - Haiku: `claude-haiku-5-5`, effort `low`, 키는 `ANTHROPIC_API_KEY`
-  - 프롬프트는 Haiku 실험(`experiments/jev_states/haiku_states.py`)의 공통 프롬프트에 신분 주장 문장을 더한 것이다. 운영 대본에 맞게 `[나]`는 앱 사용자, `[상대]`는 통화 상대, `[사용자 입력 …]`은 사용자가 앱에 넣은 내용이라고 쓰고, 실험의 `evidence_lines` 출력은 뺀다. 입력은 전체 대화(`history`+새 줄), 상태 이름과 Jev 확률, 그 상태가 감지된 대사 번호(보류였으면 `held`의 `lines`), `call_context`, 다시 부를 때 이전 판단이다.
+  - 프롬프트는 Haiku 실험(`experiments/jev_states/haiku_states.py`)의 공통 프롬프트에 신분 주장 문장을 더한 것이다. 운영 대본에 맞게 `[ ]` 안은 화자(통화방에서는 참가자 id)이고 요구하는 쪽을 상대로 보며, `[사용자 입력 …]`은 참가자가 앱에 넣은 내용이라고 쓰고, 실험의 `evidence_lines` 출력은 뺀다. 입력은 전체 대화(`history`+새 줄), 상태 이름과 Jev 확률, 그 상태가 감지된 대사 번호(보류였으면 `held`의 `lines`), `call_context`, 다시 부를 때 이전 판단이다.
   - 출력 JSON: `{judgment, absolute_line, reason, response, actions, call_context}`. `null`인 문자열은 빈 문자열로, 문자열이 아닌 `actions` 항목은 버리고 받는다.
   - tool: F1 `check_account`, F3 `check_url`·`check_app`·`check_phone`. 상태당 API 호출은 2번까지다(tool 왕복 1번). 두 번째 호출은 `tool_choice: none`으로 판단 JSON만 받는다. 그래도 판단을 못 받았는데 tool 결과에 `flagged`가 있으면 `risky` 판단으로 둔다.
   - API 호출마다 대기 12초, 자동 재시도 없음(`max_retries=0`). 상태별로 동시에 부른다.
@@ -194,20 +194,21 @@ tool 열은 상태별 후보다. 이번에 만드는 Mock은 F1·F3 tool뿐이�
   - 위험이 아니면 점수를 39 이하로 보낸다. `ResultApplier`는 점수 40 이상을 SUSPECT로 알리므로, 이렇게 하면 `levelOf`를 고치지 않아도 위험일 때만 알림이 뜬다. 지금 브리지의 오탐 처리와 같은 방식이다.
   - 발화 시각은 브리지가 요청을 받은 시각으로 대신한다.
   - 알림은 단계가 오를 때만 뜨고 내려가지 않으므로 "이미 띄운 알림은 취소하지 않기"는 이미 지켜진다.
-- `newState = {transcript, peers}`
-  - `transcript`: 지금처럼 `"[상대:<trackId>]"` 표시를 붙인 전체 대화
-  - `peers`: 상대 `trackId`별 agent `state`. 상대가 아직 없을 때는 키 `""`를 쓴다. `peers`가 없는 예전 상태는 빈 상태로 본다.
-- 판단: 지금처럼 이번에 말한 상대의 쌍만, `[나]`·사용자 입력이 있으면 모든 쌍을 판단한다. 쌍마다 `history`는 이전 `transcript`의 쌍 대화, `new_lines`는 이번 요청에서 그 쌍에 속한 줄과 `seq`다. 판단하지 않은 쌍의 상태는 그대로 둔다.
+- 통화방 모델(팀원 BE PR #10, 2026-11-22 `dev` 머지)을 따른다. 통화방 하나가 분석 하나이고, 참가자마다 자기 마이크만 올린다(`trackId` = 참가자 id). 누가 보호 대상인지 정하지 않는다. 처음 설계한 상대별 쌍 판단(`peers`)은 이 모델과 맞지 않아 뺐다.
+- 줄 표기: 발화는 `"[<trackId>] 말"`, 사용자 입력은 `"[사용자 입력 <inputType>] 말"`(팀원 브리지 그대로). Haiku 프롬프트는 `[ ]` 안을 참가자 id로 읽고, 요구하는 쪽을 상대로 보게 한다.
+- `newState = {transcript, agent}`
+  - `transcript`: 방 전체 대화
+  - `agent`: agent `state` 하나. `agent`가 없는 예전 상태는 빈 상태로 본다.
+- 판단: 요청 하나에 `analyze` 한 번. `history`는 이전 `transcript`, `new_lines`는 이번 구간의 줄과 `seq`다.
 - 응답 변환
   - `action`: 위험이면 `WARN`, 아니면 `OBSERVE`
   - `score`: 위험이면 그대로, 아니면 `min(score, 39)`
-  - `message`·`reason`·`evidenceSeqs`: agent 출력. 상대가 있으면 `reason` 앞에 `"[<trackId>]"`를 붙인다.
-  - 이번에 판단한 쌍 중 가장 위험한 쌍(WARN 먼저, 다음 점수)을 따른다. 데모는 상대 1명이라 다른 쌍과 비교할 일이 없다.
-- 첫 상대가 나중에 나타나면 `peers[""]`를 그 상대의 상태로 옮긴다.
-- 계약 예시 JSON(`contract/*.json`)은 Java `AgentContractTest`가 값을 확인하므로 값은 두고 `newState`에 `peers`만 더한다. 브리지 테스트는 고정된 `analyze` 결과 대역을 쓴다.
+  - `message`·`reason`·`evidenceSeqs`: agent 출력 그대로
+  - agent 오류는 502 `{"error": {"stage", "code"}}`(팀원 브리지 형식)
+- 계약 예시 JSON(`contract/*.json`)은 Java `AgentContractTest`가 값을 확인하므로 팀원 값은 두고 `newState`에 `agent`만 더한다. 브리지 테스트는 고정된 `analyze` 결과 대역을 쓴다.
 - 한계: BE는 통화당 알림 단계가 오를 때만 알린다. SUSPECT를 쓰지 않으므로 알림은 첫 위험 때 1번이고, 그 뒤 더 중요한 상태의 안내는 분석 결과에만 남는다. 데모에서는 받아들인다.
 - 시작: `ANTHROPIC_API_KEY`가 비어 있으면 Jev 키처럼 시작할 때 멈춘다.
-- 대기 시간: 쌍 하나에 Jev 10초 + Haiku 최대 2×12초 = 34초로, BE `agent.timeout-ms`(55초) 안이다. 쌍은 차례로 판단하므로 상대가 둘 이상 동시에 말하면 넘을 수 있다. 데모는 상대 1명으로 한다.
+- 대기 시간: 요청 하나에 Jev 10초 + Haiku 최대 2×12초 = 34초로, BE `agent.timeout-ms`(55초) 안이다.
 - 설정: 저장소의 운영 compose(`pipeline/infra/deploy/compose.yml`)와 `.env.example`에서 `GEMINI_*`를 지우고 `ANTHROPIC_API_KEY`를 필수로 넣는다. 운영 브리지는 서버의 `~/bridge` compose로 뜨므로, 배포 전에 사용자가 서버 compose와 `.env`도 같이 바꾼다.
 - 순서: BE CI와 운영은 scam-agent `main`을 받는다. scam-agent PR을 `main`에 먼저 합치고, 바로 BE PR CI를 다시 돌려 `dev`에 합친다. 그 사이 BE CI는 예전 브리지 테스트가 깨져 실패하므로 팀원에게 `dev` 머지를 잠시 멈춰 달라고 알린다. BE `dev`에 합치면 운영에 자동 배포된다.
 

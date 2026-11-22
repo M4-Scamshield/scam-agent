@@ -1,6 +1,6 @@
 # 작업 목록
 
-상태: 진행 중(agent·BE 브리지 구현과 실연결 확인 완료, 코드 리뷰·PR·KorCCVi 큰 표본 평가 남음). 작업 이슈: [#13](https://github.com/M4-Scamshield/scam-agent/issues/13)
+상태: 진행 중(agent·BE 브리지 구현·실연결·코드 리뷰·PR 완료, 머지와 KorCCVi 큰 표본 평가 남음). 작업 이슈: [#13](https://github.com/M4-Scamshield/scam-agent/issues/13)
 
 - [x] 상태 정의, 라우팅, LLM 계약, 절대선을 제안으로 기록한다.
 - [x] 팀장과 전환 방향을 협의하고 작업 이슈를 등록한다(#13).
@@ -29,7 +29,7 @@
 - [x] Haiku 검증의 남은 검토를 정한다: 짧은 수사기관 사칭, 신분 주장 근거 사용, 정상 통화 주의 시간, 절대선 값 처리. 근거: [design](design.md#결정-사항-2026-11-22-구현-전-사용자-결정)
 - [ ] (나중) F1에 송금 직전 준비 행동을 넣을지 정한다.
 - [x] State, Graph, 상태별 LLM, 모의 tool을 [구현 계약](design.md#구현-계약-2026-11-22)대로 구현하고 API 없는 테스트를 작성한다. 근거: [work](work.md#agent-구현-2026-11-22)
-- [x] BE `agent-bridge`를 구현 계약대로 바꾼다(BE `dev`에서 딴 `feat/agent-state-bridge`, 브리지 테스트 18개 통과).
+- [x] BE `agent-bridge`를 구현 계약대로 바꾼다(BE `dev`에서 딴 `feat/agent-state-bridge`). 팀원 통화방 모델(BE #10)을 받아 방 단위 판단으로 맞췄다(브리지 테스트 15개 통과). 근거: [work](work.md#be-통화방-모델-반영-2026-11-22)
 - [x] 채택되면 [State·Graph 계약](../../../docs/design/state-and-graph.md)과 [아키텍처 문서](../../../docs/architecture/overview.md)를 갱신한다.
 - [x] 실제 Jev(질문 6개 묶음)와 Haiku 연결을 지어낸 예제 통화 3개로 확인한다. 새 줄 `(새)` 표시를 추가했다. 근거: [work](work.md#통합-확인과-새-줄-표시-2026-11-22)
 - [ ] KorCCVi 큰 표본으로 전체 흐름(Jev+Haiku)의 사기 알림·정상 오탐을 잰다.
