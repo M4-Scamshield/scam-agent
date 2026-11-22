@@ -345,6 +345,13 @@ v2의 상태별 FN·FP를 모두 대본에서 확인했다. 원문은 로컬에�
 - 검증: `.venv/bin/python -m pytest -q` 74개 통과(API 호출 없음). `uv lock --check`, 별도 가상환경에서 `uv sync --frozen --no-dev` 뒤 import 확인, `--offline --auto` 실행(정상 → 주의 10 → 위험 60), 그래프 Mermaid·PNG 다시 출력.
 - 하지 않은 것: 실제 Jev·Haiku 호출(키를 쓰지 않음), BE `agent-bridge` 변경, KorCCVi 평가.
 
+### 통합 확인과 새 줄 표시 (2026-11-22)
+
+- BE 브리지(`feat/agent-state-bridge`, 09090ef) 테스트 18개를 실제 agent 코드로 돌려 통과했다. agent 테스트 74개도 통과했다.
+- 실제 Jev·Haiku로 지어낸 대사 3통화를 브리지에 넣었다. 처음에는 새 줄 2줄 중 앞줄의 송금 요구를 Jev가 놓쳐, 새 줄 앞에 `(새)` 표시를 붙였다. 12통화 재확인에서 나빠진 지표가 없었다. 근거: [새 줄 표시](../../../docs/analysis/jev-state-question-versions.md#v5-새-줄-표시-2026-11-22)
+- 표시 뒤 결과: 사칭 송금 통화는 주의 → 위험 45 → 85 → 100(원격 지원 앱 설치 요구에서 F3 `risky`), 정상 상담은 정상 0, 친구 송금은 F1·F3 `within_normal`로 정상 0이었다. 요청당 0.2~6.8초였다.
+- 남은 것: KorCCVi 큰 표본 평가는 아직이다.
+
 ## 다음 행동
 
 1. 실제 Jev(질문 6개 묶음)와 Haiku를 예제 통화로 불러 형식과 대기 시간을 확인한다.

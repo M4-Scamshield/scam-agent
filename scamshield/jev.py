@@ -14,12 +14,14 @@ from scamshield.tactics import STATES
 DEFAULT_BASE_URL = "https://api.typesafe.ai"
 DEFAULT_MODEL = "jev-latest"
 
-# 묶음 방식 질문: 앞 4줄은 맥락, 마지막 n줄이 판단할 새 대사다.
+# 묶음 방식 질문: 앞 4줄은 맥락이고, "(새)"를 붙인 줄이 판단할 새 대사다.
+# 표시 없이 "마지막 n줄"로만 가리키면 마지막 줄이 짧은 [나] 말일 때 앞의 새 줄을 놓쳤다(2026-11-22 확인).
 CONTEXT_LINES = 4
+NEW_MARK = "(새) "
 TIMEOUT_S = 10
 
 COMMON = """한국어 통화 대본의 최근 일부입니다. 각 줄은 "[화자] 발화"입니다.
-마지막 {n}줄이 판단할 새 대사이고, 그 앞 줄은 새 대사를 이해하기 위한 맥락입니다.
+"(새)"로 시작하는 줄이 판단할 새 대사이고, 나머지 줄은 새 대사를 이해하기 위한 맥락입니다.
 통화가 사기인지는 판단하지 마세요. 새 대사 중 어느 한 줄에서라도 아래 행동이 나타났는지만 판단하세요.
 맥락 줄에만 있고 새 대사에는 없는 행동은 해당하지 않습니다. 새 대사가 앞 줄과 이어져 그 행동을 완성하면 해당합니다.
 어느 화자든 상대에게 그 행동을 했으면 해당합니다. 행동을 언급만 하거나 남의 사례로 이야기하면 해당하지 않습니다.
@@ -28,11 +30,11 @@ COMMON = """한국어 통화 대본의 최근 일부입니다. 각 줄은 "[화�
 판단할 행동: """
 
 
-def build_questions(n: int) -> dict:
+def build_questions() -> dict:
     return {
         code: {
             "type": "choice",
-            "instructions": COMMON.format(n=n) + f"{code} {name} — {yes}",
+            "instructions": COMMON + f"{code} {name} — {yes}",
             "criteria": {"Yes": f"새 대사에 {name} 행동이 있다: {yes}", "No": f"새 대사가 {no}"},
         }
         for code, (name, yes, no) in STATES.items()
@@ -87,8 +89,8 @@ class JevClient:
         """lines의 마지막 n_new줄에 각 상태 행동이 있는지 묻는다. {F1: {verdict, probability}, ...}"""
         body = {
             "model": self.model,
-            "state": {"transcript": lines},
-            "questions": build_questions(n_new),
+            "state": {"transcript": lines[:len(lines) - n_new] + [NEW_MARK + line for line in lines[len(lines) - n_new:]]},
+            "questions": build_questions(),
         }
         request = Request(
             self.base_url + "/v1/systemone",

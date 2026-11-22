@@ -176,7 +176,7 @@ tool 열은 상태별 후보다. 이번에 만드는 Mock은 F1·F3 tool뿐이�
     - `held`: 보류 중인 F3·F5. `held[s] = {probability(마지막 값), seqs(누적)}`. `seen`에 F1·F2·F4·F6 중 하나가 처음 들어온 요청에서 `held` 전부를 함께 부르고 비운다. 이때 Haiku가 실패한 상태는 다음 Yes까지 미판단으로 둔다.
   - `uncertain` 점수 = 판단 점수 × 0.5^floor((now − judged_at) / 60), 5 미만이면 0이다.
 - 실험 코드는 import하지 않는다. 컨테이너에는 `scamshield/`만 들어간다. Jev 질문·`STATES`·Haiku 공통 프롬프트는 `scamshield/` 안으로 옮겨 쓴다.
-- Jev: 요청마다 1번. `history`의 마지막 4줄과 새 줄 전부를 보내고, [묶음 확인](../../../docs/analysis/jev-state-question-versions.md#v5-새-줄-묶음-확인-2026-11-22)에 쓴 질문(`experiments/jev_states/chunk_states.py`)으로 상태 6개를 묻는다. 대기 10초. 실패하면 지금처럼 `PipelineError`다.
+- Jev: 요청마다 1번. `history`의 마지막 4줄과 새 줄 전부를 보내고, [묶음 확인](../../../docs/analysis/jev-state-question-versions.md#v5-새-줄-묶음-확인-2026-11-22)에 쓴 질문(`experiments/jev_states/chunk_states.py`)으로 상태 6개를 묻는다. 새 줄 앞에는 `(새)`를 붙이고 질문도 그 표시로 새 대사를 가리킨다([새 줄 표시](../../../docs/analysis/jev-state-question-versions.md#v5-새-줄-표시-2026-11-22)). 대기 10초. 실패하면 지금처럼 `PipelineError`다.
 - Haiku: `claude-haiku-5-5`, effort `low`, 키는 `ANTHROPIC_API_KEY`
   - 프롬프트는 Haiku 실험(`experiments/jev_states/haiku_states.py`)의 공통 프롬프트에 신분 주장 문장을 더한 것이다. 운영 대본에 맞게 `[나]`는 앱 사용자, `[상대]`는 통화 상대, `[사용자 입력 …]`은 사용자가 앱에 넣은 내용이라고 쓰고, 실험의 `evidence_lines` 출력은 뺀다. 입력은 전체 대화(`history`+새 줄), 상태 이름과 Jev 확률, `call_context`, 다시 부를 때 이전 판단이다.
   - 출력 JSON: `{judgment, absolute_line, reason, response, actions, call_context}`

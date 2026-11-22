@@ -42,14 +42,14 @@ def test_http_request_matches_official_contract(monkeypatch):
     assert request.get_header("Authorization") == "Bearer synthetic-test-key"
     assert transport.call_args.kwargs["timeout"] == 10
     payload = json.loads(request.data)
-    assert payload["state"] == {"transcript": lines}
+    assert payload["state"] == {"transcript": lines[:4] + ["(새) " + line for line in lines[4:]]}
     assert payload["model"] == "jev-latest"
     assert set(payload["questions"]) == set(STATES)
     assert "voice_phishing" not in payload["questions"]
     for question in payload["questions"].values():
         assert question["type"] == "choice"
         assert set(question["criteria"]) == {"Yes", "No"}
-        assert "마지막 2줄이 판단할 새 대사" in question["instructions"]
+        assert '"(새)"로 시작하는 줄이 판단할 새 대사' in question["instructions"]
 
 
 def test_no_returns_probability_of_yes_not_probability_of_no(monkeypatch):
