@@ -1,6 +1,6 @@
 # Jev 상태 감지와 상태별 LLM 판단·대응
 
-상태: 제안(2026-11-16 팀장과 협의해 이 구조로 전환하기로 함, 구현 전). 작업 이슈: [#13](https://github.com/M4-Scamshield/scam-agent/issues/13). 현재 계약인 [2AS State·Graph](../../../docs/design/state-and-graph.md)를 대체하지 않는다.
+상태: 2026-11-16 팀장과 협의해 이 구조로 전환하기로 함, 2026-11-22 agent 구현으로 2AS 계약을 대체했다([State·Graph](../../../docs/design/state-and-graph.md)). 작업 이슈: [#13](https://github.com/M4-Scamshield/scam-agent/issues/13).
 
 ## 문제와 목표
 

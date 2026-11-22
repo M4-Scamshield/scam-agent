@@ -1,11 +1,11 @@
 # 작업 목록
 
-상태: 진행 중(설계 확정, 구현 단계). 작업 이슈: [#13](https://github.com/M4-Scamshield/scam-agent/issues/13)
+상태: 진행 중(agent 구현·API 없는 테스트 완료, BE 브리지·실연결 확인 남음). 작업 이슈: [#13](https://github.com/M4-Scamshield/scam-agent/issues/13)
 
 - [x] 상태 정의, 라우팅, LLM 계약, 절대선을 제안으로 기록한다.
 - [x] 팀장과 전환 방향을 협의하고 작업 이슈를 등록한다(#13).
 - [x] 미정 사항을 정한다: voice_phishing 임시 유지(나중에 제거), Claude는 상태 에이전트만, BE 계약 유지, 점수 임시 값, F1·F3 Mock tool. 근거: [design](design.md#결정-사항-2026-11-16-사용자-결정)
-- [ ] (나중) 평가로 `voice_phishing`만 Yes인 사기가 거의 없다고 확인되면 이 질문을 없앤다.
+- [x] (나중) 평가로 `voice_phishing`만 Yes인 사기가 거의 없다고 확인되면 이 질문을 없앤다. 2026-11-22 결정으로 평가 전에 구현에서 뺐다.
 - [x] 실제 Jev에 상태 질문 6개와 `voice_phishing`을 한 요청으로 보내 응답 형식을 확인한다(20통화, 실패 0). 근거: [work](work.md#2026-11-16-jev-상태-질문-소량-실호출)
 - [x] F5·F6 질문 문구를 고쳐 재현율을 다시 확인한다(F5 2/7→5/7, F6 8/13→12/13). 근거: [work](work.md#f5f6-문구-수정-v2)
 - [ ] 정상 금융 상담 통화에서 F6 오탐을 따로 확인한다.
@@ -28,6 +28,7 @@
 - [x] Haiku로 Jev 상태 후보를 검증해 정상 오탐과 사기 누락을 잰다(사기 알림 36/40, 정상 위험 1/20). 근거: [work](work.md#haiku-상태-판단-검증-2026-11-22)
 - [x] Haiku 검증의 남은 검토를 정한다: 짧은 수사기관 사칭, 신분 주장 근거 사용, 정상 통화 주의 시간, 절대선 값 처리. 근거: [design](design.md#결정-사항-2026-11-22-구현-전-사용자-결정)
 - [ ] (나중) F1에 송금 직전 준비 행동을 넣을지 정한다.
-- [ ] State, Graph, 상태별 LLM, 모의 tool을 [구현 계약](design.md#구현-계약-2026-11-22)대로 구현하고 API 없는 테스트를 작성한다.
+- [x] State, Graph, 상태별 LLM, 모의 tool을 [구현 계약](design.md#구현-계약-2026-11-22)대로 구현하고 API 없는 테스트를 작성한다. 근거: [work](work.md#agent-구현-2026-11-22)
 - [ ] BE `agent-bridge`를 구현 계약대로 바꾼다(BE `dev`에서 딴 브랜치).
-- [ ] 채택되면 [2AS 계약](../../../docs/design/state-and-graph.md)과 아키텍처 문서를 갱신한다.
+- [x] 채택되면 [State·Graph 계약](../../../docs/design/state-and-graph.md)과 [아키텍처 문서](../../../docs/architecture/overview.md)를 갱신한다.
+- [ ] 실제 Jev(질문 6개 묶음)와 Haiku 연결을 예제 통화로 확인한다.

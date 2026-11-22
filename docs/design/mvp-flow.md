@@ -1,18 +1,16 @@
-# 2AS 입력과 실행 흐름
+# 입력과 실행 흐름
 
-현재 기준은 [2AS State·Graph 계약](state-and-graph.md)이다. 기존 Fake Jev·Mock 조회 데모는 [과거 실행 기록](../../openspec/changes/first-demo/work.md)으로 보존한다.
+현재 기준은 [State·Graph 계약](state-and-graph.md)이다. 2AS와 기존 Fake Jev·Mock 조회 데모의 기록은 [2AS work](../../openspec/changes/jev-gemini-two-agent/work.md)와 [과거 실행 기록](../../openspec/changes/first-demo/work.md)으로 보존한다.
 
-## 이번 turn의 흐름
+## 요청 하나의 흐름
 
-1. 완성된 STT 문자열을 `CallPipeline.run_turn(call_id, utterance)`로 전달한다. 현재 CLI 텍스트 입력이 이 경계를 대신한다.
-2. update_context가 대화를 누적하고 이번 판정·분석을 비운다.
-3. Jev가 전체 대화를 읽고 Yes/No와 P(Yes)를 반환하면 State에 저장한다.
-4. No는 analysis=None으로 종료한다. Yes는 Gemini가 대화·Jev 결과를 읽어 reason/response를 저장하고 종료한다.
-
-다음 발화도 같은 callId로 전체 대화를 평가한다. 이전 Yes가 새 Yes를 강제하지 않는다. 실제 STT 수신·화자/partial·Kafka는 이번 범위 밖이다.
+1. BE `agent-bridge`(또는 CLI)가 이전 대화 `history`, 이번 새 줄 `new_lines`, 이전 출력 `state`, 시각 `now`로 `CallPipeline.analyze`를 부른다.
+2. Jev가 최근 4줄과 새 줄로 F1~F6이 새 줄에 나타났는지 감지한다.
+3. 켜진 상태 중 부를 상태만 Haiku가 전체 대화로 판단한다. F3·F5만 켜진 동안은 보류한다.
+4. 상태 판단으로 통화 상태·점수·안내를 만들고 다음 요청에 넘길 `state`를 돌려준다.
 
 ## 실행 확인
 
-`--offline --auto`의 준비된 세 문장은 일상 대화 → 기관 사칭/범죄 연루 → 안전계좌 송금 요구다. offline 대역에서 No → Yes → Yes를 고정 규칙으로 보여준다. 실제 Jev의 선택·확률과 Gemini 출력은 모델이 결정하므로 fixture와 동일하다고 가정하지 않는다.
+CLI는 대화와 `state`를 직접 들고 요청을 이어 보내며, 시각은 `time.time()`이다. 화자 표시가 없는 입력은 `[상대]` 말로 본다. `--offline --auto`의 준비된 세 문장은 일상 대화 → 기관 사칭·범죄 연루 → 안전계좌 송금 요구다. offline 대역은 키워드 규칙과 고정 판단(F1·F2 `risky`, 나머지 `uncertain`)으로 정상 → 주의 → 위험을 보여 준다. 실제 Jev·Haiku 출력은 모델이 정하므로 대역과 같다고 가정하지 않는다.
 
-직접 텍스트 한 건은 `--text`로 전달한다. 기본 CLI의 Enter 입력과 `--auto`는 세 turn 뒤 종료하는 데모이며 Graph의 turn 한도가 아니다. 명령·키 설정은 [README](../../README.md), 현재 검증은 [2AS work](../../openspec/changes/jev-gemini-two-agent/work.md)를 따른다.
+직접 텍스트 한 건은 `--text`로 넣는다. 기본 CLI의 Enter 입력과 `--auto`는 세 요청 뒤 끝나는 데모다. 명령·키 설정은 [README](../../README.md), 현재 검증은 [jev-state-agents work](../../openspec/changes/jev-state-agents/work.md)를 따른다.

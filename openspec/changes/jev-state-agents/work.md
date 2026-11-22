@@ -330,9 +330,24 @@ v2의 상태별 FN·FP를 모두 대본에서 확인했다. 원문은 로컬에�
 - 구현 계약을 서브에이전트로 리뷰해 고쳤다: 키 오류는 건너뛰지 않고 오류로, 상태당 Haiku 호출 2번·12초로 대기 시간 맞춤, 실험 코드 대신 `scamshield/` 안으로 질문·프롬프트 복사, 운영 대본 화자 표기, `held`·`evidence_seqs`·감소식 명시, 서버 `~/bridge` compose·`.env` 변경, 두 PR 사이 CI 공백, 통화당 알림 1번 한계.
 - BE의 `main`은 2026-10-17 이후 멈춰 있고 기본 브랜치는 `dev`다. `dev`에 합치면 운영에 자동 배포되고, BE CI와 운영은 scam-agent `main`을 받는다.
 
+### agent 구현 (2026-11-22)
+
+[구현 계약](design.md#구현-계약-2026-11-22)대로 `scamshield/`를 바꿨다. 계약 요약은 [State·Graph](../../../docs/design/state-and-graph.md)에 있다.
+
+- 입구: `build_pipeline(offline)` → `CallPipeline.analyze(history, new_lines, state, now) -> AnalysisOutcome`. LangGraph `update_context → detect_states → judge_states → finalize`, checkpointer 없음.
+- 새 파일: `tactics.py`(상태 정의·우선순위·점수), `haiku.py`(프롬프트·호출·tool 왕복), `tools.py`(Mock tool). `gemini.py`·`langchain-google-genai`·`voice_phishing` 질문·`tests/test_pipeline.py`(옛 노드용 대화형 스크립트, CLI가 대신함)를 뺐다. `anthropic`을 더했다.
+- Jev 질문·`STATES`·Haiku 프롬프트는 실험 코드와 같은 값인지 비교해 확인했다(실험 코드는 import하지 않음). 서비스에서 `INSTRUCTIONS`를 빼면서 이를 import하던 실험 스크립트 2개에는 예전 문구를 그대로 옮겨 두었다.
+- 계약에서 정하지 않아 정한 것
+  - 다시 부를 때 이전 근거는 이유(`reason`)로만 넘긴다. `history`에는 `seq`가 없어 `evidence_seqs`를 대화 번호로 바꿀 수 없다.
+  - 설정 오류는 `PipelineError(stage="config", code="config")`, Haiku 인증 오류는 `stage="llm", code="AUTH_FAILED"`다.
+  - `reason`은 `" / "`로 잇는다. `state_analyses`에는 성공한 판단만 넣고, 건너뛴 상태는 오류 코드만 로그에 남긴다.
+  - Mock `check_phone`은 상대가 내세운 기관의 대표번호와 다르면 `flagged`다. `check_url`은 신고 주소 목록이나 IP 주소면 `flagged`다. 목록 값은 모두 지어낸 예시다.
+- 검증: `.venv/bin/python -m pytest -q` 74개 통과(API 호출 없음). `uv lock --check`, 별도 가상환경에서 `uv sync --frozen --no-dev` 뒤 import 확인, `--offline --auto` 실행(정상 → 주의 10 → 위험 60), 그래프 Mermaid·PNG 다시 출력.
+- 하지 않은 것: 실제 Jev·Haiku 호출(키를 쓰지 않음), BE `agent-bridge` 변경, KorCCVi 평가.
+
 ## 다음 행동
 
-1. [구현 계약](design.md#구현-계약-2026-11-22)대로 agent를 구현하고 API 없는 테스트를 쓴다.
+1. 실제 Jev(질문 6개 묶음)와 Haiku를 예제 통화로 불러 형식과 대기 시간을 확인한다.
 2. BE `dev`에서 브랜치를 따 `agent-bridge`를 바꾼다. scam-agent `main`을 먼저 합치고 BE `dev`에 합친다.
 3. (나중) 주의 표시·`actions` 필드를 BE와 정한다. F1 송금 직전 준비 행동을 정한다.
 4. 사기 통화의 F4·F6 FP와 F4 정답 규칙(N5·N6)을 표본 검수한다.
