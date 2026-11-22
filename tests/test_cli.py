@@ -45,3 +45,25 @@ def test_empty_stt_text_and_conflicting_options():
     assert result.returncode == 1
     assert "INVALID_INPUT" in result.stderr
     assert run_cli("--offline", "--text", "입력", "--auto").returncode == 2
+
+
+def test_chat_url_uses_supervisor_and_mock_tool():
+    result = run_cli("--offline", "--chat", "https://safe-account-check.example/")
+    assert result.returncode == 0, result.stderr
+    assert "Supervisor 경로: url" in result.stdout
+    assert "URL(Mock)" in result.stdout and "risky" in result.stdout
+    assert "통화 상태:" not in result.stdout
+
+
+def test_mixed_stt_and_url_runs_both_routes():
+    result = run_cli("--offline", "--text", "송금하세요.", "--chat", "https://example.com/")
+    assert result.returncode == 0, result.stderr
+    assert "Supervisor 경로: call, url" in result.stdout
+    assert "통화 상태: 위험" in result.stdout and "unknown" in result.stdout
+
+
+def test_supervisor_auto_keeps_legacy_call_behavior():
+    result = run_cli("--offline", "--supervisor", "--auto")
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.count("Supervisor 경로: call") == 3
+    assert "통화 상태: 위험  점수: 60" in result.stdout
