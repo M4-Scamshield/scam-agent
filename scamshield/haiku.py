@@ -55,7 +55,7 @@ SYSTEM = """당신은 통화 보호 앱의 판단 에이전트입니다. 감지�
 JSON 객체 하나만 답하세요. 다른 글은 쓰지 마세요.
 {"judgment": "risky" | "within_normal" | "uncertain",
  "absolute_line": true | false,
- "reason": "대화 근거로 쓴 판단 이유 한두 문장",
+ "reason": "사용자에게 보여 줄 판단 이유 한 문장(50자 안팎). 대사 번호, [p1] 같은 화자 표시, 상태 코드는 쓰지 말고 '상대가 ~라며 ~를 요구합니다'처럼 쓰세요.",
  "response": "risky일 때 사용자에게 줄 지금 상황에 맞춘 대응 한두 문장, 아니면 빈 문자열",
  "actions": ["사용자에게 보여 줄 버튼이나 후속 안내"],
  "call_context": {"purpose": "상대가 주장하는 통화 목적", "claimed_identity": "상대가 내세운 신분"}}"""

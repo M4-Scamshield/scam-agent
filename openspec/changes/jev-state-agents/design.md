@@ -167,7 +167,7 @@ tool 열은 상태별 후보다. 이번에 만드는 Mock은 F1·F3 tool뿐이�
   - 상태를 입력으로만 받으므로 같은 요청을 재시도해도 판단이 두 번 쌓이지 않는다. checkpointer에 기대지 않는다.
 - 출력 `AnalysisOutcome`
   - `status`: `"위험" | "주의" | "정상"`, `score`: 0~100 정수([spec](spec.md#충족해야-할-동작)의 점수 규칙)
-  - `message`, `reason`, `evidence_seqs`: 위 BE 필드 결정대로. `message`는 위험이 아니면 `None`이고, 위험인데 Haiku `response`가 비면 고정 문구를 쓴다. `evidence_seqs`는 `risky` 상태들이 Yes가 된 요청의 새 줄 `seq` 전부다(보류였으면 `held`에 쌓인 `seq`). `reason`은 `risky`와 점수가 남은 `uncertain` 상태의 이유를 `"F1: …"` 꼴로 이어 붙이고, 없으면 `None`이다.
+  - `message`, `reason`, `evidence_seqs`: 위 BE 필드 결정대로. `message`는 위험이 아니면 `None`이고, 위험인데 Haiku `response`가 비면 고정 문구를 쓴다. `evidence_seqs`는 `risky` 상태들이 Yes가 된 요청의 새 줄 `seq` 전부다(보류였으면 `held`에 쌓인 `seq`). `reason`은 `risky` 상태 중 우선순위가 가장 높은 상태의 이유 하나다(`risky`가 없으면 점수가 남은 `uncertain` 중 가장 높은 상태). 없으면 `None`이다. 처음에는 켜진 상태의 이유를 `"F1: … / F4: …"`로 모두 이었는데, 배포 화면에서 길고 `uncertain`의 "근거 부족" 문장이 섞여 2026-11-22 바꿨다. Haiku에도 이유를 사용자에게 보일 한 문장으로, 대사 번호·화자 표시·상태 코드 없이 쓰게 한다.
   - `states`: 이번 Jev 판단(상태별 `verdict`·`probability`), `state_analyses`: 이번에 부른 Haiku 결과(우선순위 순)
   - `state`: 다음 요청에 넘길 JSON 직렬화 가능한 dict
     - `handled`: 상태별 `{judgment, reason, response, actions, evidence_seqs, judged_at}`. `judged_at`은 그 판단을 한 요청의 `now`다.
