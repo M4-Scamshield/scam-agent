@@ -247,6 +247,22 @@ def test_haiku_failure_skips_only_that_state_and_retries_on_next_yes():
     assert second.state["handled"]["F1"]["judgment"] == "risky"
 
 
+def test_reason_and_message_follow_newly_risky_state():
+    analyst = FakeAnalyst(
+        F1=judged("risky", reason="송금 요구", response="송금을 멈추세요."),
+        F2=judged("risky", reason="인증번호 요구", response="번호를 알려 주지 마세요."),
+    )
+    call = Call(FakeDetector({"F1"}, {"F2"}, {"F4"}), analyst)
+    first = call.say("[상대] 안전계좌로 옮기세요.", now=0.0)
+    second = call.say("[상대] 인증번호를 불러 주세요.", now=10.0)
+    third = call.say("[상대] 안 하면 체포됩니다.", now=20.0)
+    assert (first.score, first.reason, first.message) == (40, "송금 요구", "송금을 멈추세요.")
+    # F1이 우선순위는 높아도, 나중에 risky가 된 F2의 근거·안내를 쓴다.
+    assert (second.score, second.reason, second.message) == (80, "인증번호 요구", "번호를 알려 주지 마세요.")
+    # 새 risky 없이 점수만 오르면(F4 uncertain) 근거는 그대로 둔다.
+    assert (third.score, third.reason, third.message) == (85, "인증번호 요구", "번호를 알려 주지 마세요.")
+
+
 def test_reason_is_top_state_only_and_uncertain_is_hidden_when_risky():
     analyst = FakeAnalyst(F3=judged("uncertain", reason="주소가 아직 안 나옴"), F4=judged("risky", reason="선입금 요구"))
     call = Call(FakeDetector({"F1"}, {"F3", "F4"}), analyst)

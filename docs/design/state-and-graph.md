@@ -33,8 +33,8 @@ flowchart TD
 |---|---|
 | `status` | `risky` 상태가 있으면 위험, 없고 점수가 남은 `uncertain`이 있으면 주의, 그 밖은 정상 |
 | `score` | 상태별 점수 칸의 합(최대 100) |
-| `message` | 위험일 때 우선순위가 가장 높은 `risky` 상태의 `response`. 비었으면 고정 문구. 위험이 아니면 `None` |
-| `reason` | 사용자 화면의 근거. `risky` 상태 중 우선순위가 가장 높은 상태의 이유 한 문장(`risky`가 없으면 점수가 남은 `uncertain` 중 가장 높은 상태). 상태 코드는 붙이지 않는다. 없으면 `None` |
+| `message` | 위험일 때 가장 최근에 `risky`가 된 상태의 `response`(같은 요청에서 여럿이면 우선순위가 가장 높은 것). 비었으면 고정 문구. 위험이 아니면 `None` |
+| `reason` | 사용자 화면의 근거. `message`와 같은 상태의 이유 한 문장(`risky`가 없으면 점수가 남은 `uncertain` 중 우선순위가 가장 높은 상태). 상태 코드는 붙이지 않는다. 없으면 `None` |
 | `evidence_seqs` | `risky` 상태를 판단한 요청의 새 줄 `seq`(보류였으면 보류 동안 쌓인 `seq`) |
 | `states` | 이번 Jev 결과. 상태별 `{verdict, probability(P(Yes))}` |
 | `state_analyses` | 이번에 부른 Haiku의 보정 후 판단(우선순위 순). 보정 전 판단·보정 이유·tool 결과 상태를 함께 남긴다 |

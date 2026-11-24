@@ -189,9 +189,11 @@ def build_graph(detector: Detector, analyst: Analyst):
         risky = [code for code in PRIORITY if handled.get(code, {}).get("judgment") == "risky"]
         watch = [code for code in PRIORITY if handled.get(code, {}).get("judgment") == "uncertain" and points[code] > 0]
         status = "위험" if risky else "주의" if watch else "정상"
-        message = (handled[risky[0]]["response"] or FALLBACK_MESSAGE) if risky else None
         # 사용자 화면의 근거는 가장 중요한 상태 하나의 이유만 쓴다(여럿을 이으면 길고, uncertain의 "근거 부족"이 섞인다).
-        top = (risky or watch or [None])[0]
+        # 위험이면 가장 최근에 risky가 된 상태(같은 때면 우선순위)를 쓴다. 위험 뒤 갱신 경고에 새 근거가 보이게 한다.
+        latest = max((handled[code]["judged_at"] for code in risky), default=None)
+        top = ([code for code in risky if handled[code]["judged_at"] == latest] or watch or [None])[0]
+        message = (handled[top]["response"] or FALLBACK_MESSAGE) if risky else None
         outcome = {
             "status": status,
             "score": min(100, round(sum(points.values()))),

@@ -146,7 +146,7 @@ tool 열은 상태별 후보다. 이번에 만드는 Mock은 F1·F3 tool뿐이�
 - **tool 결과**: `flagged`면 코드가 `risky`로 고정한다. `error`는 판단에 쓰지 않고 Haiku에 조회 실패로 알리며 기록한다. F1·F3 모두 Haiku가 tool calling으로 부른다.
 - **Haiku 실패·잘못된 출력**: 그 상태만 판단하지 않은 것으로 두고, 다음 Yes에서 다시 부른다. 요청 전체를 오류로 만들지 않는다. Jev 실패는 지금처럼 오류다.
 - **`call_context`**: 모든 Haiku 출력에 목적·신분 갱신값을 넣어 합친다.
-- **BE 필드**: `message`는 `risky` 상태 중 우선순위가 가장 높은 상태의 `response`, `reason`은 켜진 상태의 이유를 우선순위 순서로, `evidenceSeqs`는 `risky` 상태의 근거 대사 번호다.
+- **BE 필드**: `message`와 `reason`은 가장 최근에 `risky`가 된 상태의 `response`와 이유(같은 요청에서 여럿이면 우선순위가 가장 높은 것), `evidenceSeqs`는 `risky` 상태의 근거 대사 번호다.
 - **동시 호출**: 여러 상태가 켜지면 Haiku를 동시에 부르고 결과는 우선순위로 정리한다.
 - **프롬프트**: 실험처럼 공통 프롬프트 하나에 상태별 정의·절대선·초점을 넣는다.
 - **Haiku 검증의 남은 검토**
@@ -167,7 +167,7 @@ tool 열은 상태별 후보다. 이번에 만드는 Mock은 F1·F3 tool뿐이�
   - 상태를 입력으로만 받으므로 같은 요청을 재시도해도 판단이 두 번 쌓이지 않는다. checkpointer에 기대지 않는다.
 - 출력 `AnalysisOutcome`
   - `status`: `"위험" | "주의" | "정상"`, `score`: 0~100 정수([spec](spec.md#충족해야-할-동작)의 점수 규칙)
-  - `message`, `reason`, `evidence_seqs`: 위 BE 필드 결정대로. `message`는 위험이 아니면 `None`이고, 위험인데 Haiku `response`가 비면 고정 문구를 쓴다. `evidence_seqs`는 `risky` 상태들이 Yes가 된 요청의 새 줄 `seq` 전부다(보류였으면 `held`에 쌓인 `seq`). `reason`은 `risky` 상태 중 우선순위가 가장 높은 상태의 이유 하나다(`risky`가 없으면 점수가 남은 `uncertain` 중 가장 높은 상태). 없으면 `None`이다. 처음에는 켜진 상태의 이유를 `"F1: … / F4: …"`로 모두 이었는데, 배포 화면에서 길고 `uncertain`의 "근거 부족" 문장이 섞여 2026-11-22 바꿨다. Haiku에도 이유를 사용자에게 보일 한 문장으로, 대사 번호·화자 표시·상태 코드 없이 쓰게 한다.
+  - `message`, `reason`, `evidence_seqs`: 위 BE 필드 결정대로. `message`는 위험이 아니면 `None`이고, 위험인데 Haiku `response`가 비면 고정 문구를 쓴다. `evidence_seqs`는 `risky` 상태들이 Yes가 된 요청의 새 줄 `seq` 전부다(보류였으면 `held`에 쌓인 `seq`). `message`와 `reason`은 가장 최근에 `risky`가 된 상태(`judged_at`이 가장 늦은 것, 같으면 우선순위가 높은 것)에서 가져온다. `risky`가 없으면 `reason`은 점수가 남은 `uncertain` 중 우선순위가 가장 높은 상태의 이유이고, 그것도 없으면 `None`이다. 2026-11-24 BE가 위험 뒤 점수가 오르면 `warning`으로 다시 알리게 되면서, 우선순위로만 고르면 근거가 첫 경고 그대로 남아 이렇게 바꿨다. 처음에는 켜진 상태의 이유를 `"F1: … / F4: …"`로 모두 이었는데, 배포 화면에서 길고 `uncertain`의 "근거 부족" 문장이 섞여 2026-11-22 바꿨다. Haiku에도 이유를 사용자에게 보일 한 문장으로, 대사 번호·화자 표시·상태 코드 없이 쓰게 한다.
   - `states`: 이번 Jev 판단(상태별 `verdict`·`probability`), `state_analyses`: 이번에 부른 Haiku 결과(우선순위 순)
   - `state`: 다음 요청에 넘길 JSON 직렬화 가능한 dict
     - `handled`: 상태별 `{judgment, reason, response, actions, evidence_seqs, judged_at}`. `judged_at`은 그 판단을 한 요청의 `now`다.
