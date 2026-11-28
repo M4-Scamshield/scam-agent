@@ -197,14 +197,17 @@ class SupervisorOutcome(BaseModel):
     # 서버가 history에 추가할, 실제 통화 분석에 전달된 새 줄(STT와 일반 채팅).
     appended_lines: list[NewLine]
     state: dict
+    analysis_status: Literal["completed", "failed"] = "completed"
+    failures: list[AnalysisFailure] = []
 
 
 class SupervisorInput(TypedDict):
-    history: list[str]
+    history: list[str | NewLine]
     new_lines: list[dict]
     chat: list[dict]
     memory: dict | None
     now: float
+    on_progress: NotRequired[ProgressCallback | None]
 
 
 class SupervisorState(SupervisorInput, total=False):

@@ -9,6 +9,8 @@ from scamshield.agents.interfaces import OfflineAnalyst, OfflineDetector
 from scamshield.agents.supervisor import OfflineSupervisor, SupervisorPipeline, build_supervisor_pipeline
 from scamshield.agents.url_agent import OfflineURLAnalyst, failed_lookup
 from scamshield.state import ChatMessage, NewLine, PipelineError
+from scamshield.llm import AnalystError
+from test_graph import FakeAnalyst, FakeDetector
 
 FLAGGED = "https://safe-account-check.example/"
 UNKNOWN = "https://example.com/"
@@ -180,3 +182,32 @@ def test_public_builders_keep_legacy_and_supervisor_entrypoints():
     assert isinstance(build_pipeline(offline=True), CallPipeline)
     assert isinstance(public_builder(offline=True), SupervisorPipeline)
     assert build_supervisor_pipeline(offline=True).analyze([], [], None, 0).routes == []
+
+
+def test_failed_call_remains_visible_on_completed_chat_replay_without_new_attempts():
+    analyst, events = FakeAnalyst(F1=AnalystError("TIMEOUT")), []
+    agent = SupervisorPipeline(
+        CallPipeline(FakeDetector({"F1"}), analyst, retry_wait=lambda _: None),
+        OfflineSupervisor(), OfflineURLAnalyst(),
+    )
+    first = agent.analyze([], [], None, 0, chat=[message("지금 송금하세요.")], on_progress=events.append)
+    assert first.analysis_status == "failed" and first.call.status is None
+    assert len(first.appended_lines) == 1 and len(analyst.requests) == 4
+    assert all(event.status == "analyzing" for event in events[:-1]) and events[-1].status == "failed"
+    second = agent.analyze(first.appended_lines, [], first.state, 1, chat=[message("지금 송금하세요.")])
+    assert second.call is None and second.analysis_status == "failed" and len(analyst.requests) == 4
+    assert second.failures == first.failures
+
+
+def test_supervisor_terminal_progress_waits_for_url_work_and_is_emitted_once():
+    agent, _, _, urls = pipeline()
+    events = []
+    good = OfflineURLAnalyst()
+    def url_work(url):
+        assert events and all(event.status == "analyzing" for event in events)
+        return good.analyze_url(url)
+    urls.analyze_url.side_effect = url_work
+    result = agent.analyze([], [NewLine(seq=1, text="[p1] 송금하세요.")], None, 0,
+        chat=[message(UNKNOWN, seq=2)], on_progress=events.append)
+    assert result.analysis_status == "completed" and events[-1].status == "completed"
+    assert sum(event.status == "completed" for event in events) == 1

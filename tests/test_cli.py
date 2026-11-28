@@ -67,3 +67,17 @@ def test_supervisor_auto_keeps_legacy_call_behavior():
     assert result.returncode == 0, result.stderr
     assert result.stdout.count("Supervisor 경로: call") == 3
     assert "통화 상태: 위험  점수: 60" in result.stdout
+
+
+def test_cli_displays_retries_and_final_failure_instead_of_normal(monkeypatch, capsys):
+    from scamshield import cli
+    from scamshield.graph import CallPipeline
+    from scamshield.llm import AnalystError
+    from test_graph import FakeAnalyst, FakeDetector
+    agent = CallPipeline(FakeDetector({"F1"}), FakeAnalyst(F1=AnalystError("TIMEOUT")), retry_wait=lambda _: None)
+    monkeypatch.setattr(cli, "build_pipeline", lambda **kwargs: agent)
+    assert cli.main(["--offline", "--text", "송금하세요."]) == 1
+    output = capsys.readouterr().out
+    assert "분석 중" in output and "분석 실패" in output
+    assert all(f"재시도 {attempt}/3" in output for attempt in (1, 2, 3))
+    assert "통화 상태: 정상" not in output

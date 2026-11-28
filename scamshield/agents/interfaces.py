@@ -13,7 +13,7 @@ class Detector(Protocol):
 
 class Analyst(Protocol):
     def judge(self, request: dict) -> dict:
-        """Judge one state; return StateJudgment fields. Raise PipelineError only for auth failure."""
+        """Judge one state with selected evidence; transient errors retry, config/auth errors stop."""
         ...
 
 

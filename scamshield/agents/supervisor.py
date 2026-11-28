@@ -3,7 +3,9 @@
 from copy import deepcopy
 from hashlib import sha256
 import json
+import logging
 from math import isfinite
+from threading import Lock
 
 from langgraph.graph import END, START, StateGraph
 from pydantic import TypeAdapter, ValidationError
@@ -11,14 +13,15 @@ from pydantic import TypeAdapter, ValidationError
 from scamshield.agents.call_agent import CallPipeline, build_pipeline
 from scamshield.agents.interfaces import Supervisor, URLAnalyst
 from scamshield.state import (
-    ChatMessage, ChatReceipt, JevDecision, NewLine, PipelineError,
+    AnalysisProgress, ChatMessage, ChatReceipt, JevDecision, NewLine, PipelineError, ProgressCallback,
     SupervisorInput, SupervisorMemory, SupervisorOutcome, SupervisorState, URLAnalysis,
 )
 from scamshield.agents.url_agent import OfflineURLAnalyst, extract_urls, failed_lookup, has_non_url_text
 
 _CHAT = TypeAdapter(list[ChatMessage])
 _LINES = TypeAdapter(list[NewLine])
-_HISTORY = TypeAdapter(list[str])
+_HISTORY = TypeAdapter(list[str | NewLine])
+logger = logging.getLogger("scamshield")
 
 
 def _fingerprint(message: dict) -> str:
@@ -71,6 +74,8 @@ def build_supervisor_graph(call_pipeline: CallPipeline, supervisor: Supervisor, 
             for message in chat if not memory["chat_receipts"][message["id"]]["urls_done"]
         }
         pending = list(dict.fromkeys(url for urls in chat_urls.values() for url in urls if url not in memory["url_cache"]))
+        if state.get("on_progress"):
+            state["on_progress"](AnalysisProgress(status="analyzing", seqs=seqs))
         return {
             "history": history, "new_lines": new_lines, "chat": chat, "memory": memory, "now": now,
             "call_chat": call_chat, "chat_urls": chat_urls, "pending_urls": pending,
@@ -108,7 +113,10 @@ def build_supervisor_graph(call_pipeline: CallPipeline, supervisor: Supervisor, 
             for message in state["call_chat"]
         ]
         lines.sort(key=lambda line: line["seq"])
-        outcome = call_pipeline.analyze(state["history"], lines, state["memory"]["call_state"], state["now"])
+        def forward(event):
+            if event.status == "analyzing" and state.get("on_progress"):
+                state["on_progress"](event)
+        outcome = call_pipeline.analyze(state["history"], lines, state["memory"]["call_state"], state["now"], on_progress=forward)
         memory = deepcopy(state["memory"])
         memory["call_state"] = outcome.state
         return {"memory": memory, "call": outcome.model_dump(), "appended_lines": lines}
@@ -148,9 +156,14 @@ def build_supervisor_graph(call_pipeline: CallPipeline, supervisor: Supervisor, 
             for url in urls:
                 if url in memory["url_cache"]:
                     results[url] = memory["url_cache"][url]
+        failures = list(memory["call_state"]["failures"].values())
+        analysis_status = "failed" if failures else "completed"
+        if state.get("on_progress"):
+            state["on_progress"](AnalysisProgress(status=analysis_status, failures=failures, seqs=[line["seq"] for line in state["appended_lines"]]))
         return {"outcome": {
             "call": state["call"], "url_analyses": list(results.values()), "routes": state["routes"],
             "appended_lines": state["appended_lines"], "state": memory,
+            "analysis_status": analysis_status, "failures": failures,
         }}
 
     builder = StateGraph(SupervisorState, input_schema=SupervisorInput)
@@ -169,8 +182,20 @@ class SupervisorPipeline:
     def __init__(self, call_pipeline: CallPipeline, supervisor: Supervisor, url_analyst: URLAnalyst):
         self.graph = build_supervisor_graph(call_pipeline, supervisor, url_analyst)
 
-    def analyze(self, history: list[str], new_lines: list[NewLine], state: dict | None, now: float, *, chat: list[ChatMessage] | None = None) -> SupervisorOutcome:
-        result = self.graph.invoke({"history": history, "new_lines": new_lines, "chat": [] if chat is None else chat, "memory": state, "now": now})
+    def analyze(self, history: list[str | NewLine], new_lines: list[NewLine], state: dict | None, now: float, *, chat: list[ChatMessage] | None = None, on_progress: ProgressCallback | None = None) -> SupervisorOutcome:
+        lock = Lock()
+        def emit(event):
+            if on_progress:
+                with lock:
+                    try:
+                        on_progress(event.model_copy(deep=True))
+                    except Exception:
+                        logger.warning("analysis progress delivery failed")
+        try:
+            result = self.graph.invoke({"history": history, "new_lines": new_lines, "chat": [] if chat is None else chat, "memory": state, "now": now, "on_progress": emit})
+        except PipelineError:
+            emit(AnalysisProgress(status="failed"))
+            raise
         return SupervisorOutcome.model_validate(result["outcome"])
 
 

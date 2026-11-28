@@ -9,12 +9,15 @@ from scamshield.agents.supervisor import build_supervisor_pipeline
 
 
 def print_outcome(outcome) -> None:
+    if outcome.analysis_status == "failed":
+        print("  분석 실패: 재시도를 완료했거나 복구할 수 없는 오류가 발생했습니다.")
     yes = [code for code, decision in outcome.states.items() if decision.verdict == "Yes"]
     print(f"  Jev Yes: {', '.join(yes) or '없음'}")
     for analysis in outcome.state_analyses:
         fixed = f" (보정: {', '.join(analysis.corrections)})" if analysis.corrections else ""
         print(f"  [{analysis.state}] {analysis.judgment}{fixed}: {analysis.reason}")
-    print(f"  통화 상태: {outcome.status}  점수: {outcome.score}")
+    if outcome.status is not None:
+        print(f"  통화 상태: {outcome.status}  점수: {outcome.score}")
     if outcome.message:
         print("  대응: " + outcome.message)
     if outcome.reason:
@@ -49,6 +52,11 @@ def main(argv: list[str] | None = None) -> int:
     print(mode, flush=True)
     history: list[str] = []
     state = None
+    failed = False
+    def progress(event):
+        if event.status == "analyzing":
+            retry = f" / 재시도 {event.attempt - 1}/3" if event.attempt > 1 else ""
+            print("  분석 중" + retry, flush=True)
     utterances = (args.text,) if args.text is not None else (None,) if args.chat is not None else DEMO_UTTERANCES
     for seq, prepared in enumerate(utterances, start=1):
         print(f"\n발화 {seq}/{len(utterances)}: {prepared}", flush=True)
@@ -71,9 +79,9 @@ def main(argv: list[str] | None = None) -> int:
             lines = [NewLine(seq=seq, text=text)] if prepared is not None else []
             if use_supervisor:
                 chat = [{"id": f"cli-chat-{i}", "seq": i + len(lines), "text": value} for i, value in enumerate(args.chat or [], 1)]
-                outcome = pipeline.analyze(history, lines, state, time.time(), chat=chat)
+                outcome = pipeline.analyze(history, lines, state, time.time(), chat=chat, on_progress=progress)
             else:
-                outcome = pipeline.analyze(history, lines, state, time.time())
+                outcome = pipeline.analyze(history, lines, state, time.time(), on_progress=progress)
         except PipelineError as exc:
             print(f"오류 [{exc.stage}/{exc.code}]: {exc.message}", file=sys.stderr)
             return 1
@@ -81,6 +89,8 @@ def main(argv: list[str] | None = None) -> int:
             print("  Supervisor 경로: " + (", ".join(outcome.routes) or "없음"))
             if outcome.call:
                 print_outcome(outcome.call)
+            elif outcome.analysis_status == "failed":
+                print("  분석 실패: 이전 구간의 분석이 완료되지 않았습니다.")
             for analysis in outcome.url_analyses:
                 label = "Mock" if analysis.tool.is_mock else "조회"
                 print(f"  URL({label}): {analysis.url} → {analysis.judgment}: {analysis.reason}")
@@ -92,4 +102,5 @@ def main(argv: list[str] | None = None) -> int:
         else:
             history.append(text)
         state = outcome.state
-    return 0
+        failed = failed or outcome.analysis_status == "failed"
+    return 1 if failed else 0
