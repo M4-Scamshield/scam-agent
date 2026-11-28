@@ -1,8 +1,9 @@
-from typing import Literal, TypedDict
+from typing import Annotated, Literal, TypedDict
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 StateCode = Literal["F1", "F2", "F3", "F4", "F5", "F6"]
+LineNumber = Annotated[int, Field(gt=0, strict=True)]
 
 
 class JevDecision(BaseModel):
@@ -14,7 +15,7 @@ class JevDecision(BaseModel):
 
 
 class NewLine(BaseModel):
-    seq: int
+    seq: int = Field(ge=1, strict=True)
     # "[화자] 발화"
     text: str = Field(min_length=1)
 
@@ -47,6 +48,8 @@ class StateJudgment(BaseModel):
     actions: list[str] = []
     call_context: CallContext = CallContext()
     tools: list[ToolRecord] = []
+    evidence_lines: list[LineNumber] = []
+    context_lines: list[LineNumber] = []
 
     # 저노력 Haiku가 null이나 객체 항목을 내도 그 상태를 버리지 않는다.
     _empty = field_validator("response", mode="before")(_none_to_empty)
@@ -74,6 +77,8 @@ class StateAnalysis(BaseModel):
     response: str
     actions: list[str]
     tools: list[ToolRecord]
+    evidence_seqs: list[int] = []
+    context_seqs: list[int] = []
 
 
 class Handled(BaseModel):
@@ -83,6 +88,12 @@ class Handled(BaseModel):
     actions: list[str]
     evidence_seqs: list[int]
     judged_at: float
+    context_seqs: list[int] = []
+
+
+class LineReference(BaseModel):
+    seq: int | None = None
+    fingerprint: str
 
 
 class Held(BaseModel):
@@ -99,6 +110,7 @@ class AgentMemory(BaseModel):
     call_context: CallContext = CallContext()
     seen: list[StateCode] = []
     held: dict[StateCode, Held] = {}
+    line_refs: list[LineReference] = []
 
 
 class AnalysisOutcome(BaseModel):
@@ -110,6 +122,7 @@ class AnalysisOutcome(BaseModel):
     states: dict[str, JevDecision]
     state_analyses: list[StateAnalysis]
     state: dict
+    context_seqs: list[int] = []
 
 
 class ChatMessage(BaseModel):
@@ -182,7 +195,7 @@ class SupervisorState(SupervisorInput, total=False):
 
 
 class AnalyzeInput(TypedDict):
-    history: list[str]
+    history: list[str | NewLine]
     new_lines: list[dict]
     memory: dict
     now: float
@@ -190,6 +203,7 @@ class AnalyzeInput(TypedDict):
 
 class AgentState(AnalyzeInput, total=False):
     lines: list[str]
+    line_seqs: list[int | None]
     states: dict
     todo: dict
     state_analyses: list[dict]

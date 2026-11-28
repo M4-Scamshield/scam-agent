@@ -40,7 +40,8 @@ class FakeAnalyst:
         result = self.results.get(request["state"], judged())
         if isinstance(result, Exception):
             raise result
-        return result(request) if callable(result) else result
+        output = result(request) if callable(result) else result
+        return {"evidence_lines": request["detected_lines"], **output}
 
     def called(self):
         return sorted(request["state"] for request in self.requests)

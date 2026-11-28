@@ -64,4 +64,8 @@ class OfflineAnalyst:
             "actions": [],
             "call_context": {"purpose": "", "claimed_identity": ""},
             "tools": [],
+            "evidence_lines": [
+                position for position in request["detected_lines"]
+                if any(word in request["lines"][position - 1] for word in OFFLINE_KEYWORDS[request["state"]])
+            ],
         }

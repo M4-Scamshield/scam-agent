@@ -16,6 +16,8 @@ ANSWER = {
     "response": "",
     "actions": ["대표번호로 확인하기"],
     "call_context": {"purpose": "계좌 확인", "claimed_identity": "은행 직원"},
+    "evidence_lines": [3],
+    "context_lines": [1],
 }
 
 
@@ -82,10 +84,10 @@ def test_request_shape_without_tools():
     assert call["system"] == SYSTEM
 
 
-def test_prompt_has_speaker_legend_identity_limit_and_no_evidence_lines():
+def test_prompt_has_speaker_legend_identity_limit_and_selected_evidence():
     assert "참가자 id" in SYSTEM and "요구하는 쪽을 상대로" in SYSTEM and "[사용자 입력 …]" in SYSTEM
     assert "상대가 말한 기관·지점이 공식인지는 대화로 확인할 수 없습니다." in SYSTEM
-    assert "evidence_lines" not in SYSTEM
+    assert '"evidence_lines"' in SYSTEM and '"context_lines"' in SYSTEM
     assert '"actions"' in SYSTEM
     user = build_user(request("F1", previous={"judgment": "uncertain", "reason": "이전 이유"}))
     assert "감지된 행동: F1 자산 넘기기" in user

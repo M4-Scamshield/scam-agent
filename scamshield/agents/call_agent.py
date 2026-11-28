@@ -2,13 +2,14 @@ import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
-from math import floor
+from math import floor, isfinite
 
 from langgraph.graph import END, START, StateGraph
 from pydantic import TypeAdapter, ValidationError
 
 from scamshield.agents.interfaces import Analyst, Detector, OfflineAnalyst, OfflineDetector
 from scamshield.agents.jev_agent import CONTEXT_LINES
+from scamshield.context import prepare_context, validate_evidence
 from scamshield.state import (
     AgentMemory,
     AgentState,
@@ -26,7 +27,6 @@ logger = logging.getLogger("scamshield")
 FALLBACK_MESSAGE = "사기 수법과 맞는 요구가 있습니다. 송금·정보 제공·앱 설치를 멈추고, 통화를 끊은 뒤 기관 대표번호로 직접 확인하세요."
 
 _NEW_LINES = TypeAdapter(list[NewLine])
-_HISTORY = TypeAdapter(list[str])
 
 
 def state_points(handled: dict, now: float) -> dict[str, float]:
@@ -81,10 +81,12 @@ def route(states: dict, memory: dict, seqs: list[int], lines: list[int]) -> dict
 def build_graph(detector: Detector, analyst: Analyst):
     def update_context(state: AgentState) -> dict:
         try:
-            history = _HISTORY.validate_python(state["history"])
             new_lines = [line.model_dump() for line in _NEW_LINES.validate_python(state["new_lines"])]
             memory = AgentMemory.model_validate(state["memory"] or {}).model_dump(mode="json")
+            history, line_seqs = prepare_context(state["history"], new_lines, memory)
             now = float(state["now"])
+            if not isfinite(now):
+                raise ValueError("invalid time")
         except (KeyError, TypeError, ValueError, ValidationError) as exc:
             raise PipelineError("input", "INVALID_INPUT", "history·new_lines·state·now 형식이 잘못되었습니다.") from exc
         if not new_lines:
@@ -95,6 +97,7 @@ def build_graph(detector: Detector, analyst: Analyst):
             "memory": memory,
             "now": now,
             "lines": history + [line["text"] for line in new_lines],
+            "line_seqs": line_seqs,
             "state_analyses": [],
         }
 
@@ -125,6 +128,7 @@ def build_graph(detector: Detector, analyst: Analyst):
                 "state": code,
                 "probability": item["probability"],
                 "lines": list(state["lines"]),
+                "line_seqs": list(state["line_seqs"]),
                 # 예전 state의 보류 항목에는 lines가 없을 수 있다. 그때는 이번 새 줄을 가리킨다.
                 "detected_lines": item.get("lines") or list(range(len(state["history"]) + 1, len(state["lines"]) + 1)),
                 "call_context": dict(memory["call_context"]),
@@ -139,7 +143,7 @@ def build_graph(detector: Detector, analyst: Analyst):
                 if code not in futures:
                     continue
                 try:
-                    results[code] = StateJudgment.model_validate(futures[code].result())
+                    results[code] = validate_evidence(StateJudgment.model_validate(futures[code].result()), requests[code])
                 except PipelineError:
                     raise
                 except ValidationError:
@@ -150,6 +154,8 @@ def build_graph(detector: Detector, analyst: Analyst):
         analyses = []
         for code, result in results.items():
             judgment, corrections = result.judgment, []
+            evidence_seqs = [state["line_seqs"][line - 1] for line in result.evidence_lines]
+            context_seqs = [state["line_seqs"][line - 1] for line in result.context_lines]
             if code in ABSOLUTE_STATES and result.absolute_line and judgment != "risky":
                 judgment = "risky"
                 corrections.append("absolute_line")
@@ -168,13 +174,16 @@ def build_graph(detector: Detector, analyst: Analyst):
                 "response": result.response,
                 "actions": result.actions,
                 "tools": [tool.model_dump() for tool in result.tools],
+                "evidence_seqs": evidence_seqs,
+                "context_seqs": context_seqs,
             })
             handled[code] = {
                 "judgment": judgment,
                 "reason": result.reason,
                 "response": result.response,
                 "actions": result.actions,
-                "evidence_seqs": state["todo"][code]["seqs"],
+                "evidence_seqs": evidence_seqs,
+                "context_seqs": context_seqs,
                 "judged_at": state["now"],
             }
             for key, value in result.call_context.model_dump().items():
@@ -200,6 +209,7 @@ def build_graph(detector: Detector, analyst: Analyst):
             "message": message,
             "reason": (handled[top]["reason"] or None) if top else None,
             "evidence_seqs": sorted({seq for code in risky for seq in handled[code]["evidence_seqs"]}),
+            "context_seqs": sorted({seq for code in risky for seq in handled[code]["context_seqs"]}),
             "states": state["states"],
             "state_analyses": state["state_analyses"],
             "state": memory,
@@ -229,7 +239,7 @@ class CallPipeline:
     def __init__(self, detector: Detector, analyst: Analyst):
         self.graph = build_graph(detector, analyst)
 
-    def analyze(self, history: list[str], new_lines: list[NewLine], state: dict | None, now: float) -> AnalysisOutcome:
+    def analyze(self, history: list[str | NewLine], new_lines: list[NewLine], state: dict | None, now: float) -> AnalysisOutcome:
         result = self.graph.invoke({"history": history, "new_lines": new_lines, "memory": state, "now": now})
         return AnalysisOutcome.model_validate(result["outcome"])
 
