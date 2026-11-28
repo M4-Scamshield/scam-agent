@@ -55,6 +55,7 @@ def request(state="F6", **extra):
         "detected_lines": [3],
         "call_context": {"purpose": "", "claimed_identity": "은행 직원"},
         "previous": None,
+        "line_seqs": [1, 2, 3],
         **extra,
     }
 
@@ -104,8 +105,8 @@ def test_f1_tool_round_trip_sends_only_extracted_value():
         [text("조회합니다."), tool_use("check_account", {"account_number": "111-222-333-34444"})],
         [text(json.dumps({**ANSWER, "judgment": "within_normal"}))],
     )
-    result = haiku.judge(request("F1"))
-    assert result["tools"] == [{"name": "check_account", "status": "flagged"}]
+    result = haiku.judge(request("F1", lines=["[p1] 계좌 111-222-333-34444로 보내세요.", "[p2] 네.", "[p1] 지금요."]))
+    assert result["tools"] == [{"name": "check_account", "status": "flagged", "evidence_lines": [1]}]
     # 보정은 graph가 한다. 여기서는 Haiku 판단과 tool 결과를 그대로 돌려준다.
     assert result["judgment"] == "within_normal"
     assert len(messages.calls) == 2
@@ -121,9 +122,9 @@ def test_f3_gets_three_tools_and_at_most_two_api_calls():
         [tool_use("check_phone", {"phone_number": "1332"}, "c")],
     )
     # 두 번째 응답에 판단 글이 없어도 tool이 찾은 위험(flagged)은 버리지 않는다.
-    result = haiku.judge(request("F3"))
+    result = haiku.judge(request("F3", lines=["[p1] 팀뷰어 퀵서포트를 설치하세요.", "[p2] 네.", "[p1] 설치하셨나요?"]))
     assert result["judgment"] == "risky"
-    assert {"name": "check_app", "status": "flagged"} in result["tools"]
+    assert {"name": "check_app", "status": "flagged", "evidence_lines": [1]} in result["tools"]
     assert len(messages.calls) == 2
     assert [tool["name"] for tool in messages.calls[0]["tools"]] == ["check_url", "check_app", "check_phone"]
     assert "tool_choice" not in messages.calls[0]
@@ -148,6 +149,34 @@ def test_loose_haiku_output_is_accepted():
 
 def test_bad_tool_input_is_a_tool_error_not_a_crash():
     assert run_tool("check_phone", {"phone_number": "1332", "claimed_institution": 7})["status"] == "error"
+
+
+@pytest.mark.parametrize("finish", [
+    AnalystError("TIMEOUT"), AnalystError("HTTP_500"),
+    PipelineError("llm", "AUTH_FAILED", "인증 오류"),
+    [text("잘못된 JSON")],
+    [text(json.dumps({**ANSWER, "judgment": "risky", "evidence_lines": [99]}))],
+])
+def test_grounded_flagged_evidence_survives_model_finalization_failure(finish):
+    haiku, _ = analyst([tool_use("check_account", {"account_number": "11122233334444"})], finish)
+    result = haiku.judge(request("F1", lines=["[p1] 111-222-333-34444로 보내세요."]))
+    assert result["judgment"] == "risky"
+    assert result["evidence_lines"] == [1]
+    assert result["tools"][0]["status"] == "flagged"
+
+
+@pytest.mark.parametrize("name,arguments", [
+    ("check_account", {"account_number": "11122233334444"}),
+    ("check_app", {"app_name": "팀뷰어"}),
+])
+def test_unmentioned_value_or_wrong_state_tool_is_not_executed(monkeypatch, name, arguments):
+    def forbidden(*args):
+        raise AssertionError("unverified lookup must not execute")
+    monkeypatch.setattr("scamshield.agents.analysis_agent.run_tool", forbidden)
+    haiku, _ = analyst([tool_use(name, arguments)], [text(json.dumps(ANSWER))])
+    result = haiku.judge(request("F1"))
+    assert result["tools"][0]["status"] == "error"
+    assert result["tools"][0]["evidence_lines"] == []
 
 
 @pytest.mark.parametrize("failure, code", [

@@ -23,6 +23,7 @@ class NewLine(BaseModel):
 class ToolRecord(BaseModel):
     name: str
     status: Literal["flagged", "not_found", "error"]
+    evidence_lines: list[LineNumber] = []
 
 
 def _none_to_empty(value):

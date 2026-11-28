@@ -6,7 +6,8 @@ import re
 from pydantic import ValidationError
 
 from scamshield.llm import AnalystError, HaikuClient
-from scamshield.state import StateJudgment, ToolRecord
+from scamshield.context import validate_evidence
+from scamshield.state import PipelineError, StateJudgment, ToolRecord
 from scamshield.tactics import STATES
 from scamshield.tools import STATE_TOOLS, TOOL_SCHEMAS, run_tool
 
@@ -96,6 +97,33 @@ def parse_judgment(text: str) -> StateJudgment:
         raise AnalystError("INVALID_OUTPUT") from exc
 
 
+def tool_source_lines(name: str, arguments, request: dict) -> list[int]:
+    """도구가 받은 값이 실제 어느 발화에 있는지 확인한다. 원문·값은 결과에 저장하지 않는다."""
+    if name not in STATE_TOOLS.get(request["state"], ()) or not isinstance(arguments, dict):
+        return []
+    field = {"check_account": "account_number", "check_phone": "phone_number", "check_app": "app_name", "check_url": "url"}[name]
+    value = arguments.get(field)
+    if not isinstance(value, str) or not value.strip():
+        return []
+    positions = []
+    for position, line in enumerate(request["lines"], 1):
+        if name in ("check_account", "check_phone"):
+            digits = re.sub(r"\D", "", value)
+            matches = re.findall(r"\d(?:[\d\s()+-]*\d)?", line)
+            hit = bool(digits) and digits in [re.sub(r"\D", "", item) for item in matches]
+        elif name == "check_app":
+            hit = re.sub(r"\s", "", value).casefold() in re.sub(r"\s", "", line).casefold()
+        else:
+            from scamshield.agents.url_agent import extract_urls, normalize_url
+            try:
+                hit = normalize_url(value) in extract_urls(line)
+            except (ValueError, UnicodeError):
+                hit = False
+        if hit:
+            positions.append(position)
+    return positions
+
+
 class HaikuAnalyst(HaikuClient):
     system_prompt = SYSTEM
 
@@ -109,17 +137,22 @@ class HaikuAnalyst(HaikuClient):
         if uses:
             results = []
             for use in uses:
-                result = run_tool(use.name, use.input)
-                records.append(ToolRecord(name=use.name, status=result["status"]))
+                source = tool_source_lines(use.name, use.input, request)
+                result = run_tool(use.name, use.input) if source else {"status": "error", "detail": "허용된 도구와 실제 대화에 나온 조회 값만 사용할 수 있습니다."}
+                records.append(ToolRecord(name=use.name, status=result["status"], evidence_lines=source))
                 results.append({"type": "tool_result", "tool_use_id": use.id, "content": json.dumps(result, ensure_ascii=False)})
             messages += [{"role": "assistant", "content": response.content}, {"role": "user", "content": results}]
-            response = self._create(messages, tools, allow_tools=False)
-        text = "".join(block.text for block in response.content if block.type == "text")
+        flagged = sorted({line for record in records if record.status == "flagged" for line in record.evidence_lines})
         try:
+            if uses:
+                response = self._create(messages, tools, allow_tools=False)
+            text = "".join(block.text for block in response.content if block.type == "text")
             judgment = parse_judgment(text)
-        except AnalystError:
-            if not any(record.status == "flagged" for record in records):
+            judgment = judgment.model_copy(update={"tools": records, "evidence_lines": sorted(set(judgment.evidence_lines) | set(flagged))})
+            judgment = validate_evidence(judgment, request)
+        except (AnalystError, PipelineError):
+            if not flagged:
                 raise
-            # 판단 글을 못 받았어도 tool이 위험을 찾았으면 그 결과는 지킨다(graph가 risky로 고정).
-            judgment = StateJudgment(judgment="risky", reason=FLAGGED_REASON)
+            # 마무리의 timeout·인증·파싱·근거 오류에도 이미 검증한 위험 근거를 유지한다.
+            judgment = StateJudgment(judgment="risky", reason=FLAGGED_REASON, evidence_lines=flagged)
         return judgment.model_copy(update={"tools": records}).model_dump()
