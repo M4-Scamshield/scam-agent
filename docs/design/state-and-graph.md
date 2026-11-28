@@ -1,104 +1,102 @@
 # ScamShield 상태별 판단 State·Graph 계약
 
-상태: **2026-11-22 [jev-state-agents](../../openspec/changes/jev-state-agents/design.md#구현-계약-2026-11-22) 구현 계약대로 구현, API 없는 테스트 통과**. 실제 Jev 6질문·Haiku 연결은 아직 확인하지 않았다. 이전 Jev Yes/No + Gemini 2AS 계약을 대체한다. 2AS의 요구와 검증 기록은 [2AS change](../../openspec/changes/jev-gemini-two-agent/work.md)에 보존한다.
+상태: 2026-11-28 분석 재시도·진행 상태·근거 선택을 agent에 구현했다. 이번 실제 모델·BE·프론트 연결은 검증하지 않았다. [현재 검증·한계](../../openspec/changes/analysis-failure-handling/work.md)와 이전 [상태별 판단 구현](../../openspec/changes/jev-state-agents/work.md), 과거 [2AS 기록](../../openspec/changes/jev-gemini-two-agent/work.md)을 구분한다.
 
 ## 목적과 범위
 
-통화의 새 줄이 들어오면 Jev가 사기 수법 행동 F1~F6이 새 줄에 나타났는지 감지하고, 켜진 상태마다 Claude Haiku가 대화 맥락으로 그 행동이 수상한지 판단한다. 상태 판단으로 통화 상태(위험·주의·정상)와 점수를 정한다. 상태 정의는 [spec](../../openspec/changes/jev-state-agents/spec.md#상태-정의)에 있다. STT·화자 구분·BE 저장은 BE `agent-bridge`가 맡는다.
+새 통화 줄에서 Jev가 행동 F1~F6을 감지하고 선택된 상태마다 Haiku가 전체 대화로 최종 판단한다. 실패한 감지·분석은 최대 3회 추가 재시도하며, 진행 상태와 위험도를 별도로 반환한다. 실제 근거 발화를 선택·검증하고 직접 요구와 보조 맥락을 구분한다. 상태 정의는 [기존 spec](../../openspec/changes/jev-state-agents/spec.md)에 있다. 화자·STT·원문 저장과 실제 화면 연결은 호출 서버·프론트 책임이다.
 
 ## 실행 구조
 
-```mermaid
-flowchart TD
-    S([history·new_lines·state·now]) --> U[update_context: 입력 검증·전체 대화 구성]
-    U --> D[detect_states: Jev 1회, 라우팅]
-    D -->|부를 상태 있음| J[judge_states: 상태별 Haiku 동시 호출, 보정]
-    D -->|없음| F[finalize: 점수·통화 상태·BE 필드]
-    J --> F
-    F --> E([AnalysisOutcome])
-```
+전체 대화·원래 번호 검증 → Jev 감지와 재시도 → 상태별 Haiku·근거 검증과 재시도 → 위험도·완료 여부·실패 정보를 반환한다. 감지가 실패하면 분석 단계로 가지 않고 최종 실패를 반환한다.
 
-통화 전용 입구는 [graph.py](../../scamshield/graph.py)의 `CallPipeline.analyze(history, new_lines, state, now)`이며 구현은 [call_agent.py](../../scamshield/agents/call_agent.py)에 있다. 2026-11-23 별도 상위 [Supervisor·채팅 입구](supervisor-and-chat.md)를 추가했으며 이 통화 API도 유지한다. 통화 상태는 입력 `state`로만 받고 출력 `state`로 돌려주므로 checkpointer가 없다. 같은 요청을 같은 `state`로 다시 보내면 점수가 중복 누적되지는 않지만 모델 호출 자체가 중복될 수 있다. 서버가 history와 state를 저장하고 다음 요청에 다시 보내야 한다. `build_pipeline(offline=False)`는 `TYPESAFE_API_KEY`·`ANTHROPIC_API_KEY`가 비어 있으면 `PipelineError(code="config")`를 낸다. `offline=True`는 키 없는 고정 대역이다.
+입구는 [graph.py](../../scamshield/graph.py)의 CallPipeline.analyze(history, new_lines, state, now, on_progress=...)다. on_progress는 선택적인 키워드 인자다. 구현은 [call_agent.py](../../scamshield/agents/call_agent.py)에 있다. [Supervisor](supervisor-and-chat.md)도 같은 통화 분석과 진행 콜백을 사용한다. checkpointer나 요청 사이의 프로세스 저장소는 없다. 원문과 최신 state를 서버가 원자적으로 저장하고 같은 방의 요청을 직렬화해야 한다. 오래된 state를 재전송한 경우의 분산 중복 제거는 서버 책임이다.
+
+build_pipeline(offline=False)는 두 API 키가 필요하다. 키가 없으면 config 오류이며 offline으로 자동 대체하지 않는다.
 
 ## 입력과 출력
 
-- `history: list[str]`: 이번 요청 전 대화. 한 줄은 `"[화자] 발화"`다. `[ ]` 안은 화자로, BE 통화방에서는 참가자 id(`[p1]` 등)다. 누가 앱 사용자인지는 표시하지 않는다. `[사용자 입력 …]`은 참가자가 앱에 넣은 내용이다. 로컬 CLI·테스트는 `[나]`·`[상대]`도 쓴다.
-- `new_lines: list[NewLine]`: 이번 새 줄 `{seq, text}`. 1줄 이상이다.
-- `state: dict | None`: 이전 출력의 `state`. `None`이면 새 통화다.
-- `now: float`: 새 줄의 시각(초). `uncertain` 점수 감소를 잰다.
+- history: 이번 요청 전 전체 대화. 원래 seq가 있는 NewLine 또는 {seq, text}를 권장한다. 문자열 이력도 허용하지만 이전 state의 line_refs로 번호를 복원한다. 대괄호 안은 화자이며 사용자 입력 표시는 앱 입력이다.
+- new_lines: 새 줄 {seq, text}, 1줄 이상. 알려진 전체 seq는 양의 정수이며 중복 없이 증가해야 한다.
+- state: 이전 출력 state. None은 새 통화다.
+- now: 유한한 초 단위 시각. 점수 감쇠에 사용한다.
+- on_progress: 선택적인 동기 콜백. AnalysisProgress를 받으며 빠르게 반환해야 한다. 실제 HTTP/SSE/WebSocket 전송은 호출 서버가 구현한다.
 
-`AnalysisOutcome`([state.py](../../scamshield/state.py))
+[context.py](../../scamshield/context.py)의 line_refs는 원문 대신 SHA-256과 원래 seq만 보관한다. 이력의 길이·내용·번호가 이전 state와 다르면 입력 오류다. 과거 문자열 이력과 대응 state가 모두 없어 번호를 알 수 없으면 배열 위치를 seq로 추측하지 않는다. 그 줄이 근거로 선택되면 INVALID_EVIDENCE다. 마이그레이션 시 원래 seq가 있는 이력을 전달해야 한다.
+
+AnalysisOutcome([state.py](../../scamshield/state.py)):
 
 | 필드 | 의미 |
 |---|---|
-| `status` | `risky` 상태가 있으면 위험, 없고 점수가 남은 `uncertain`이 있으면 주의, 그 밖은 정상 |
-| `score` | 상태별 점수 칸의 합(최대 100) |
-| `message` | 위험일 때 가장 최근에 `risky`가 된 상태의 `response`(같은 요청에서 여럿이면 우선순위가 가장 높은 것). 비었으면 고정 문구. 위험이 아니면 `None` |
-| `reason` | 사용자 화면의 근거. `message`와 같은 상태의 이유 한 문장(`risky`가 없으면 점수가 남은 `uncertain` 중 우선순위가 가장 높은 상태). 상태 코드는 붙이지 않는다. 없으면 `None` |
-| `evidence_seqs` | `risky` 상태를 판단한 요청의 새 줄 `seq`(보류였으면 보류 동안 쌓인 `seq`) |
-| `states` | 이번 Jev 결과. 상태별 `{verdict, probability(P(Yes))}` |
-| `state_analyses` | 이번에 부른 Haiku의 보정 후 판단(우선순위 순). 보정 전 판단·보정 이유·tool 결과 상태를 함께 남긴다 |
-| `state` | 다음 요청에 넘길 JSON dict: `handled`(상태별 `{judgment, reason, response, actions, evidence_seqs, judged_at}`), `call_context`(`{purpose, claimed_identity}`), `seen`, `held`(F3·F5 `{probability, seqs, lines}`, `lines`는 대화상 줄 번호) |
+| analysis_status | 최종 completed 또는 failed. 진행 중은 콜백으로 전달 |
+| failures | stage·state·code·attempts·seqs. 원래 실패 구간과 시도 횟수 |
+| status | 완료 시 위험·주의·정상. 실패가 남으면 risky가 있을 때만 위험을 유지하고 그 밖은 None |
+| score | 상태별 점수 합(최대 100). 실패가 남고 risky가 없으면 None |
+| message | 가장 최근 risky의 안내, 비어 있으면 고정 안내. 위험이 아니면 None |
+| reason | 최근 risky 또는 점수가 남은 uncertain 중 우선순위가 높은 상태의 이유 |
+| evidence_seqs | 선택·검증된 직접 행동 근거의 원래 seq. 새 줄 전체를 복사하지 않음 |
+| context_seqs | 판단에 필요한 신분·목적 등 보조 맥락의 원래 seq |
+| states | 이번 Jev 상태별 verdict·P(Yes). 감지 실패면 빈 dict |
+| state_analyses | 이번에 성공한 상태별 보정 전후 판단·도구 결과·선택 근거 |
+| state | handled·call_context·seen·held·line_refs·failures. 다음 요청용 JSON |
 
 ## Jev 상태 감지
 
-[jev_agent.py](../../scamshield/agents/jev_agent.py)는 통화 분석 요청마다 `POST /v1/systemone`을 1번 부른다. `history` 마지막 4줄과 새 줄 전부를 보내고, 상태 6개를 choice 질문으로 묻는다. 새 줄에 `(새)` 표시를 붙여 새 대사에 행동이 있는지만 묻는다. 대기 10초, 자동 재시도는 없다. 호출 실패·잘못된 출력은 `PipelineError(stage="jev")`이며 모든 상태를 No로 바꾸지 않는다. 키·주소·모델 환경변수는 `TYPESAFE_API_KEY`·`TYPESAFE_BASE_URL`·`TYPESAFE_DEFAULT_MODEL`이다. 상위 Supervisor를 사용하면 라우팅 질문 2개를 위한 Jev 호출이 별도로 1회 추가된다.
+[jev_agent.py](../../scamshield/agents/jev_agent.py)는 시도마다 POST /v1/systemone을 한 번 호출한다. 이전 4줄과 새 줄을 보내고 새 대사에서 행동이 있는지 감지한다. 전송 timeout은 10초이며 통화 그래프가 실패한 감지를 최대 3회 추가 재시도한다. 최종 실패를 전부 No로 바꾸지 않는다. 키·주소·모델 환경변수는 TYPESAFE_API_KEY·TYPESAFE_BASE_URL·TYPESAFE_DEFAULT_MODEL이다.
+
+상위 Supervisor 라우팅의 Jev 요청은 별개이며 이번 자동 재시도 대상이 아니다. 후보 감지 누락·맥락 변화 시 재평가 정책도 이번에 변경하지 않았다.
 
 ## 라우팅
 
-- Yes인 상태 중 이전 판단이 `risky`가 아닌 상태를 부른다. 이미 `risky`인 상태는 다시 부르지 않고, `uncertain`·`within_normal`은 다시 Yes가 되면 다시 부른다.
-- 이 통화에서 F1·F2·F4·F6이 아직 켜지지 않았으면 F3·F5는 `held`에 쌓고 부르지 않는다. 그중 하나가 처음 켜진 요청에서 `held`를 모두 함께 부르고 비운다. 이때 Haiku에게는 그 상태가 감지됐던 대사 번호를 알려 준다.
-- 상태들은 `ThreadPoolExecutor`로 동시에 부르고 결과는 F1 → F3 → F2 → F5 → F4 → F6 순서로 정리한다.
+- Yes인 상태 중 이전 판단이 risky가 아닌 상태를 부른다. risky는 다시 부르지 않고 uncertain·within_normal은 다시 Yes이면 부른다.
+- F1·F2·F4·F6이 아직 감지되지 않았다면 F3·F5는 held로 보류한다. 핵심 상태가 처음 감지되면 보류 항목도 함께 부른다.
+- 상태들은 동시에 실행하며 결과는 F1 → F3 → F2 → F5 → F4 → F6 순서로 정리한다. 각 상태의 실패는 그 상태만 재시도한다.
+
+보류·risky 고정·점수 정책은 기존 계약을 유지했다. 따라서 completed는 이번 실행과 재시도가 종료됐다는 뜻이며 보류 정책의 탐지 품질까지 보장하지 않는다.
 
 ## 상태별 Haiku 판단
 
-[analysis_agent.py](../../scamshield/agents/analysis_agent.py)는 [공통 Claude 전송](../../scamshield/llm.py)을 통해 `claude-haiku-5-5`, effort `low`, 호출마다 대기 12초, `max_retries=0`으로 실행한다. 입력은 전체 대화(번호 붙임), 상태 정의·절대선·판단 핵심, Jev 확률과 새 대사 번호, `call_context`, 다시 부를 때 이전 판단과 이유다. 출력은 JSON `{judgment, absolute_line, reason, response, actions, call_context}`다. 프롬프트는 상대가 주장한 신분·절차를 정상 근거로 쓰지 말고, 상대가 말한 기관·지점이 공식인지는 대화로 확인할 수 없다고 적는다.
+[analysis_agent.py](../../scamshield/agents/analysis_agent.py)는 [공통 전송](../../scamshield/llm.py)의 Haiku 모델·effort low·timeout 12초·SDK max_retries=0을 사용한다. 재시도는 통화 그래프가 맡아 SDK와 중첩하지 않는다. 매 시도에 전체 대화·감지 후보·이전 판단·통화 맥락의 같은 복사본을 전달한다.
 
-- 보정: `absolute_line`은 F1·F2·F3·F5에서만 받아 `risky`로 고친다. tool 결과가 `flagged`면 `risky`로 고친다. 보정은 `corrections`에 남긴다.
-- tool([tools.py](../../scamshield/tools.py), 고정 목록 Mock): F1 `check_account`, F3 `check_url`·`check_app`(원격제어 앱)·`check_phone`(기관 대표번호). 결과는 `flagged`/`not_found`/`error`이고 `not_found`는 안전 근거가 아니다. 대화 원문이 아니라 계좌번호·주소·앱 이름·전화번호만 넣는다. 상태당 API 호출은 tool 왕복 포함 2번까지다. 두 번째 호출은 `tool_choice: none`이고, 판단 글을 못 받아도 `flagged`가 있으면 `risky`로 둔다.
-- 실패: 시간 초과·연결 실패·5xx 등 상태 코드 오류·잘못된 출력은 그 상태만 건너뛰고 오류 코드만 로그에 남긴다. 그 상태는 판단하지 않은 것으로 두고 다음 Yes에서 다시 부른다. 인증 실패(401·403)는 `PipelineError(stage="llm", code="AUTH_FAILED")`, 요청 거부(400·404)는 `llm/REQUEST_REJECTED`로 올린다.
-- `call_context`는 결과의 비어 있지 않은 값으로 갱신한다.
+출력은 판단·절대선·이유·안내·actions·call_context와 evidence_lines·context_lines다. 줄 번호는 대화상 1부터의 위치이며 서버 seq로 변환한다. risky에는 직접 근거가 하나 이상 필요하다. 0·음수·bool·문자열·범위 밖 번호와 원래 seq를 모르는 줄은 거부한다.
+
+단순 맞장구의 고정 목록은 코드에서도 직접 근거에서 제거하되 전체 대화에는 유지한다. 제거 후 risky의 직접 근거가 비면 재시도한다. 프롬프트는 인용·남의 사례·부정 표현을 실제 요구와 구분하도록 한다. 보조 맥락은 직접 근거와 분리하고 중복을 제거한다. 이 필터와 번호 검증만으로 모든 의미상 정확성을 보장하지 않으며 실제 품질 평가는 후속이다.
+
+- 보정: F1·F2·F3·F5의 absolute_line과 도구 flagged는 risky로 반영한다.
+- 도구: F1 계좌, F3 URL·앱·전화번호의 고정 목록 Mock이다. 해당 상태에 허용된 도구와 실제 원문에서 찾은 조회 값만 실행한다. 값·원문 대신 근거 줄 번호를 결과에 남긴다. not_found는 안전 근거가 아니다.
+- 한 분석 시도에 모델 호출은 도구 왕복 포함 최대 2회다. 검증된 flagged 근거가 있으면 마무리 모델의 timeout·인증·파싱·근거 오류에도 위험과 해당 근거를 유지한다.
+- call_context는 성공한 결과의 비어 있지 않은 값으로 갱신한다.
+
+## 재시도와 진행 상태
+
+[recovery.py](../../scamshield/recovery.py)가 각 실패 작업을 최초 1회 + 추가 3회(최대 4회) 실행한다. 대기 간격은 0.5·1·2초다. timeout·연결·429·5xx·출력/근거 오류는 재시도한다. 인증·요청 거부·설정 오류와 알 수 없는 내부 오류는 즉시 최종 실패다. 성공한 다른 상태와 원문 누적은 반복하지 않는다.
+
+진행 콜백은 시작·각 시도에 analyzing을 보내고 요청 종료 시 한 번만 completed/failed를 보낸다. 같은 호출의 콜백은 직렬화한다. 전달 실패는 민감한 예외 없이 기록하고 모델 재시도를 유발하지 않는다. UI는 analyzing을 분석 중, failed를 분석 실패로 연결해야 하며 기존 위험은 함께 유지한다.
+
+소진된 실패는 state에 남는다. 후속 단순 응답으로 사라지거나 재시도 예산이 초기화되지 않는다. 새 구간의 같은 상태 분석이 전체 문맥을 보고 성공하면 그 상태의 실패를 해소한다. 이전 감지 실패 구간은 이후의 다른 구간 감지 성공만으로 해소하지 않는다. 원래 실패 요청의 수동 복구·결과 채택은 서버에서 원래 입력과 버전을 보존해 다뤄야 한다.
+
+동기 재시도 중 새 발화는 호출 서버가 보관하고 다음 구간으로 처리해야 한다. 재시도 누적으로 기존 BE HTTP 55초 제한을 넘을 수 있으므로 실제 연결 시 HTTP·작업 임대 시간을 함께 조정해야 한다. timeout 12초는 분석 전체의 총 대기 마감이 아니다.
 
 ## 점수
 
 | 판단 | F1·F2·F3 | F5 | F4·F6 |
 |---|---:|---:|---:|
-| `risky` | 40 | 25 | 10 |
-| `uncertain` | 20 | 10 | 5 |
-| `within_normal` | 0 | 0 | 0 |
+| risky | 40 | 25 | 10 |
+| uncertain | 20 | 10 | 5 |
+| within_normal | 0 | 0 | 0 |
 
-상태마다 칸이 하나다. `risky`는 고정이고, `uncertain`은 `점수 × 0.5^floor((now − judged_at) / 60)`이며 5 미만이면 0이다. 다시 판단하면 칸을 바꾸고 감소를 다시 잰다.
+상태마다 한 칸이며 risky는 고정이다. uncertain은 1분마다 절반으로 줄고 5 미만이면 0이다. 재판단하면 칸을 바꾸고 감소를 다시 잰다. 실패 시 공개 score의 None 규칙과 내부 성공 판단의 점수 보존을 구분한다.
 
 ## 오류
 
-`PipelineError(stage, code, message)`: `input/INVALID_INPUT`(입력·state 형식), `jev/CALL_FAILED`·`jev/INVALID_OUTPUT`, `llm/AUTH_FAILED`·`llm/REQUEST_REJECTED`, `config/config`. 키·응답 본문·대화 내용은 메시지와 로그에 넣지 않는다.
+입력 불일치·초기 설정 오류는 기존 PipelineError다. 통화 감지·분석 오류는 정해진 코드만 failures로 반환하고 키·응답 본문·대화·인증 정보·예외 메시지는 노출하지 않는다. 실패 자체로 사기를 확정하거나 정상으로 확인하지 않는다.
 
 ## 검증과 후속 범위
 
-라우팅·보류·재호출, 절대선·tool 보정, 점수 감소, Haiku 실패와 인증 오류, BE 필드, `state` JSON 왕복, Jev 요청 형식, Haiku 요청·tool 왕복은 API 없는 테스트로 확인한다. 실제 Jev·Haiku 연결은 지어낸 예제 통화로 확인했고, KorCCVi 큰 표본 평가는 아직 하지 않았다. 검증 기록과 남은 일은 [work](../../openspec/changes/jev-state-agents/work.md)에 있다.
-
-## 후속 방향 — 분석 진행·재시도와 근거 선택(구현 전)
-
-2026-11-28 사용자는 다음 방향을 제시했다. 아래는 현재 코드의 동작과 구분한다.
-
-- 실패한 분석은 기존 대화 맥락을 보존한 채 다시 분석한다.
-- 최초 분석과 재시도 중에는 프론트에 `분석 중`을 유지한다. 최대 3회 재시도하고 그래도 실패하면 `분석 실패`를 표시한다. 성공하면 해당 구간의 분석 결과를 반영한다.
-- 최종 위험 판단은 기존 대화 전체를 바탕으로 한다. 새 발화 전체를 근거로 기록하지 않고 실제 근거를 선택·필터링한다.
-
-재시도 횟수는 최초 시도를 제외한 추가 3회(최대 4번의 분석 시도)로 해석해 설계한다. 이는 사용자 문구의 횟수 해석이며 실제 호출 횟수·단계별 적용·간격·총 대기·재시도 주체는 [후속 설계](../../openspec/changes/analysis-failure-handling/design.md)에서 구체화한다. 분석 시도 하나는 tool 왕복으로 모델을 여러 번 부를 수 있어 API 호출 수와 같지 않다.
-
-위험도와 진행 상태는 별개로 관리하는 방향을 제안한다. 재분석 중이거나 실패해도 이전에 확인한 위험과 조회 근거는 보존한다. 성공한 다른 상태까지 매번 재실행하기보다 실패한 분석 작업을 전체 문맥과 함께 다시 실행하는 방안을 검토한다.
-
-현재 Jev는 최근 맥락에서 행동 후보를 감지하고, 선택된 상태의 Haiku는 전체 대화를 읽는다. 최종 판단에 전체 대화를 쓰는 것과 모든 발화에서 전체 대화를 다시 감지하는 것은 별도의 선택이다. 후보 감지 누락·맥락 변화에 따른 재평가 정책은 미정이며 이 문서로 기존 창 방식을 폐지하지 않는다.
-
-근거 선택은 구현 전 제안이다. 분석에 쓰는 전체 대화를 유지하면서 최종 판단을 뒷받침하는 실제 발화 번호를 별도로 받는다. 모델이 반환한 번호가 실제 입력에 존재하는지 확인하고, 그 발화가 주장의 근거인지와 화자·인용·부정·앞뒤 맥락을 검토해야 한다. 번호가 존재한다는 검사만으로 의미상 정확성을 보장하지 않는다. 이전 대화의 안정적 seq 전달, 직접 요구와 보조 맥락 구분, 근거 누락·잘못된 근거의 복구 규칙은 후속 설계에서 정한다.
-
-현재 `history`는 번호 없는 `list[str]`이고 Haiku의 줄 번호는 대화상 위치다. 이전 근거까지 서버의 seq로 반환하려면 원래 번호와 줄 위치의 대응을 보존하는 계약이 필요하다. 배열 위치를 원래 seq라고 간주하지 않는다.
+현재 회귀 검증과 실제 실행 결과는 [분석 실패 대응 work](../../openspec/changes/analysis-failure-handling/work.md)에 있다. 실제 모델의 근거 선택 정확도·실제 지연·BE 이벤트·프론트 표시·재시도 후 서버 복구는 미검증이다. API 없는 성공을 실제 연결 성공으로 취급하지 않는다.
 
 ## 관련 문서
 
-- 기능상 위험: [분석 실패·보류·이력·재평가 검토](../analysis/runtime-risk-review.md). 첫 개선인 [분석 실패 대응 change](../../openspec/changes/analysis-failure-handling/proposal.md)는 문서화 단계이며 현재 실패·점수 계약은 아직 변경하지 않았다.
-- [현재 아키텍처](../architecture/overview.md) · [입력과 실행 흐름](mvp-flow.md) · [컨텍스트](../project-context.md)
-- [jev-state-agents proposal](../../openspec/changes/jev-state-agents/proposal.md) · [spec](../../openspec/changes/jev-state-agents/spec.md) · [design](../../openspec/changes/jev-state-agents/design.md) · [tasks](../../openspec/changes/jev-state-agents/tasks.md) · [work](../../openspec/changes/jev-state-agents/work.md)
-- 이전 계약: [2AS change](../../openspec/changes/jev-gemini-two-agent/design.md)
-- 상위 라우팅: [Supervisor 계약](supervisor-and-chat.md) · [새 change](../../openspec/changes/jev-supervisor-url/design.md)
+- [기능상 위험의 수정 전 재현](../analysis/runtime-risk-review.md) · [현재 아키텍처](../architecture/overview.md) · [입력 흐름](mvp-flow.md)
+- [분석 실패 대응 목적](../../openspec/changes/analysis-failure-handling/proposal.md) · [요구](../../openspec/changes/analysis-failure-handling/spec.md) · [설계](../../openspec/changes/analysis-failure-handling/design.md) · [작업](../../openspec/changes/analysis-failure-handling/tasks.md) · [검증](../../openspec/changes/analysis-failure-handling/work.md)
+- [이전 상태별 판단 change](../../openspec/changes/jev-state-agents/design.md) · [Supervisor 계약](supervisor-and-chat.md) · [Supervisor change](../../openspec/changes/jev-supervisor-url/design.md)

@@ -2,7 +2,7 @@
 
 ## 현재 확정 방향 — 상태별 판단
 
-2026-11-28 사용자는 분석 실패 시 기존 대화를 다시 분석하고, 재시도 동안 프론트에 `분석 중`을 유지하며 최대 3회 재시도 후에도 실패하면 `분석 실패`를 표시하는 방향을 제시했다. 이어 최종 판단은 기존 대화 전체를 바탕으로 하고, 새 발화 전체를 근거로 기록하지 말고 실제 근거를 필터링해야 한다고 명시했다. 이 방향은 아직 제품 코드·BE·프론트에 구현되지 않았다. 현재 동작과 후속 방향의 구분은 [State·Graph](design/state-and-graph.md), 작업·미정 사항은 [분석 실패 대응 change](../openspec/changes/analysis-failure-handling/work.md)에 있다.
+2026-11-28 사용자는 분석 실패 시 전체 대화 맥락을 보존해 재분석하고, 재시도 동안 `분석 중`을 유지하며 최대 3회 재시도 후 소진하면 `분석 실패`를 표시하도록 했다. 최종 판단은 전체 대화를 바탕으로 하고 실제 근거 발화를 필터링하도록 명시했다. 이어 이 브랜치에서 합의한 범위만 구현하고 작은 커밋으로 나눠 commit·push하도록 요청했다. agent의 재시도·진행 상태·근거 선택과 CLI 표시는 구현했으며 별도 BE·프론트 저장소는 수정하지 않았다. 현재 계약은 [State·Graph](design/state-and-graph.md), 검증·미연결 범위는 [분석 실패 대응 change](../openspec/changes/analysis-failure-handling/work.md)에 있다.
 
 2026-11-23 사용자 요청으로 기존 통화 분석 위에 Jev Supervisor를 추가한다. 새 STT·일반 채팅은 기존 분석으로, 채팅에서 얻은 URL은 URL 에이전트의 Tool Calling으로 보낸다. URL 검색은 현재 Mock 함수로 한정한다. 이전 채팅의 URL이 계속 라우팅되지 않게 메시지 ID별 처리 상태를 관리하며, 원문·최신 분석 state의 영속 저장은 서버가 맡는다. 에이전트는 `scamshield/agents/`에 역할별로 두고 `supervisor.py` 외에는 `*_agent.py`, Haiku 분석 역할은 `analysis_agent.py`로 정리한다. 계약은 [Supervisor·채팅](design/supervisor-and-chat.md), 진행은 [work](../openspec/changes/jev-supervisor-url/work.md)에 있다.
 

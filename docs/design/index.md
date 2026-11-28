@@ -4,7 +4,7 @@
 
 | 문서 | 포함한 내용 |
 |---|---|
-| [State·Graph 계약](state-and-graph.md) | 현재 Jev 상태 감지·상태별 Haiku 판단·점수, `analyze` 입출력·실패 |
+| [State·Graph 계약](state-and-graph.md) | 전체 문맥 판단·원래 seq·선택 근거, 분석 재시도·진행·실패, `analyze` 입출력·점수 |
 | [입력과 실행 흐름](mvp-flow.md) | 요청 하나의 흐름과 CLI·offline 실행 |
 | [Jev Supervisor·채팅·URL 계약](supervisor-and-chat.md) | 상위 라우팅, 메시지 ID·경로별 처리 상태, Mock URL Tool Calling, 서버 저장 책임 |
 

@@ -106,7 +106,20 @@ outcome = pipeline.analyze([], [NewLine(seq=1, text="[상대] 완성된 STT 텍�
 next_state = outcome.state  # 다음 요청의 state로 넘긴다
 ```
 
-결과 `AnalysisOutcome`은 `status`(위험·주의·정상), `score`(0~100), `message`, `reason`, `evidence_seqs`, 이번 Jev 결과 `states`, 이번 Haiku 판단 `state_analyses`, 다음 요청에 넘길 `state`다. `analyze`는 상태를 저장하지 않으므로 호출하는 쪽이 `history`와 `state`를 들고 있어야 한다. 실제 모델의 출력은 고정 시나리오가 아니다.
+결과 `AnalysisOutcome`은 `analysis_status`(completed/failed), `failures`, 위험도·점수·안내·근거·이번 분석·다음 `state`다. 실패가 남고 기존 risky가 없으면 status·score는 None이다. 정상 0점으로 대체하지 않는다. 직접 근거 `evidence_seqs`와 보조 맥락 `context_seqs`를 구분한다. 호출자는 전체 history와 최신 state를 보관한다.
+
+진행 상태는 선택적 콜백으로 받는다. 아래 예시는 agent 이벤트 확인이며 실제 화면·서버 전송은 별도 연결이 필요하다.
+
+```python
+events = []
+outcome = pipeline.analyze(
+    [], [NewLine(seq=101, text="[p1] 지금 송금하세요.")], None, time.time(),
+    on_progress=lambda event: events.append(event.model_dump()),
+)
+# events: analyzing 시작/시도들 → completed 또는 failed
+```
+
+실패한 통화 감지·상태 분석은 최초 시도 후 최대 3회 추가 재시도한다. 성공한 다른 상태는 반복하지 않는다. 원문 번호가 있는 `history: list[NewLine]`를 권장하며 문자열 이력은 state의 번호 대응으로 복원한다. 번호 없는 과거 이력에서 번호를 추측하지 않는다. 전체 대화상 줄 위치를 실제 seq로 검증·변환하고 선택된 근거만 반환한다.
 
 새 Supervisor API는 다음처럼 사용한다. `history`는 대화 원문, `state`는 이전 판단과 처리 기록이며 서버가 각각 보관한다. agent는 요청 사이에 둘을 자체 저장하지 않는다.
 
@@ -136,7 +149,9 @@ assert second.routes == ["call"]
 
 ## 현재 범위
 
-2AS의 Gemini 경로와 `voice_phishing` 질문을 뺐다. Jev 상태 6개 감지, F3·F5 보류와 재호출 규칙, 상태별 Haiku 동시 호출, 절대선·tool 보정, 점수 감소를 구현했다. tool은 고정 목록 Mock이다. Jev 실패와 Haiku 인증 실패는 오류이고, 그 밖의 Haiku 실패는 그 상태만 건너뛴다. 자동 재시도·offline 대체는 없다.
+2AS의 Gemini 경로와 `voice_phishing` 질문을 뺐다. 기존 감지·보류·상태별 동시 판단·보정·점수 규칙을 유지한다. 통화 감지·상태 분석의 일시 오류와 출력/근거 오류는 최대 3회 추가 재시도한다. 인증·설정·요청 거부는 즉시 실패한다. SDK 자동 재시도와 offline 대체는 없다. 도구는 Mock이며 원문에서 확인한 조회 값과 flagged 근거를 보존한다.
+
+CLI는 분석 중·재시도·분석 실패를 표시하며 실패가 있으면 종료 코드 1을 반환한다. 기존 위험 안내는 실패에도 유지한다. 실제 BE·프론트 진행 이벤트 연결은 후속이다. 누적 재시도로 기존 BE HTTP 55초 제한을 넘을 수 있으므로 연결 시 HTTP·작업 임대 시간을 함께 조정해야 한다. 상세 계약과 테스트 근거는 [State·Graph](docs/design/state-and-graph.md)와 [현재 work](openspec/changes/analysis-failure-handling/work.md)를 따른다.
 
 통화 상태 저장과 화자·상대 구분은 BE `agent-bridge`가 맡는다. CLI의 세 입력 제한은 데모 설정이다. 실제 tool API와 KorCCVi 평가는 후속 범위다.
 

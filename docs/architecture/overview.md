@@ -24,6 +24,8 @@
 | [url_agent.py](../../scamshield/agents/url_agent.py) | URL 추출·정규화·전용 Tool Calling·Mock 조회 인터페이스 |
 | [interfaces.py](../../scamshield/agents/interfaces.py) | 역할별 Protocol, 키 없는 통화 대역 |
 | [llm.py](../../scamshield/llm.py) | 두 Haiku 에이전트가 공유하는 전송·timeout·오류 분류 |
+| [context.py](../../scamshield/context.py) | 전체 이력의 원래 seq·지문 대응과 선택 근거 검증 |
+| [recovery.py](../../scamshield/recovery.py) | 통화 감지·상태 분석의 최대 3회 재시도와 진행 이벤트 |
 | [tactics.py](../../scamshield/tactics.py) | 상태 F1~F6 정의, 우선순위·보류 기준·절대선 상태·점수 |
 | [tools.py](../../scamshield/tools.py) | F1·F3·URL Mock tool(고정 목록) |
 | [graph.py](../../scamshield/graph.py) | 기존 BE import와 새 Supervisor builder의 공개 진입점 |
@@ -35,5 +37,7 @@
 두 `analyze`는 상태를 저장하지 않는다. 통화/채팅 원문·메시지 ID·최신 state는 BE가 저장해 다음 요청에 돌려준다. Supervisor state에는 대화 원문 대신 통화 분석 메모리·채팅 해시/완료 플래그·URL 결과를 담는다. 기존 BE 연결은 통화 전용이며 새 Supervisor 연결과 원자적 저장·방 단위 직렬화는 후속이다. tool은 Mock이고 실제 조회 API는 없다. 실행 방법은 [README](../../README.md)에 있다.
 
 ## 검증
+
+2026-11-28 분석 실패 대응을 agent에 추가했다. 전체 대화에서 직접/보조 근거를 선택하고, 실패한 작업만 같은 문맥으로 최대 3회 추가 재시도한다. 진행 콜백·최종 실패·nullable 점수와 이전 위험 보존은 [통화 계약](../design/state-and-graph.md), 검증과 BE·프론트 미연결 범위는 [현재 work](../../openspec/changes/analysis-failure-handling/work.md)에 있다.
 
 API 없는 Graph·Jev HTTP·Haiku 요청·Mock tool·CLI 검사는 [tests](../../tests/test_graph.py)에 연결된 테스트 모음으로 확인한다. 실제 Jev·Haiku 연결과 KorCCVi 평가는 아직이며 결과는 [work](../../openspec/changes/jev-state-agents/work.md)에 구분해 남긴다.

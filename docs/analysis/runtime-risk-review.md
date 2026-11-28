@@ -2,6 +2,8 @@
 
 조사 시점: 2026-11-28. 대상: `main`의 `ef21f02`에서 분기한 `fix/analysis-failure-handling`의 통화·Supervisor 코드.
 
+이 문서의 재현 결과와 아래의 ‘현재’ 표현은 수정 전 `ef21f02` 검토 시점을 뜻한다. 이후 사용자 요청에 따라 R1 재시도·실패 상태, 근거 선택·번호 대응과 R7 도구 위험 근거 보존을 agent에 구현했다. 수정 후 계약·제한은 [State·Graph](../design/state-and-graph.md), 검증은 [현재 work](../../openspec/changes/analysis-failure-handling/work.md)에 있다. R2·R4·R5·R6·R8의 다른 정책은 이번에 변경하지 않았다. 이력 검증은 원문·state 대응 범위만 추가했으며 서버 저장·복구 통합은 후속이다.
+
 상태: 코드 검토와 API 없는 재현을 완료했다. 실제 장애 발생률이나 실제 모델의 탐지 정확도를 측정한 결과는 아니다. 후속 사용자 방향은 [통화 계약](../design/state-and-graph.md)에 구현 전 방향으로 기록했다. 이 문서의 나머지 개선안은 제안이며 현재 실행 동작을 바꾸지 않는다. 첫 개선 작업은 [분석 실패 대응 change](../../openspec/changes/analysis-failure-handling/proposal.md)에서 이어간다.
 
 ## 검토 목적과 방법

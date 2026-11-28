@@ -20,7 +20,7 @@ flowchart TD
 
 | 입력 | 계약 |
 |---|---|
-| `history` | 이전 통화 분석에 전달한 전체 줄. 서버 보관. Supervisor 라우팅에는 보내지 않는다. |
+| `history` | 이전 통화 분석에 전달한 전체 줄. `{seq, text}` 또는 state의 번호 대응이 있는 문자열 목록. 서버 보관. Supervisor 라우팅에는 보내지 않는다. |
 | `new_lines` | 이번 새 STT `{seq, text}`. 채팅 전용 호출이면 빈 목록 가능. STT 재전송 제거는 서버 책임. |
 | `chat` | `{id: str, seq: int, text: str}` 목록. 새 메시지만 보내는 것을 권장하지만 이전 채팅을 포함해도 완료한 ID는 제외한다. |
 | `state` | 이전 Supervisor 응답의 state. 새 통화면 `None`. 기존 통화 state를 이전하려면 `{"call_state": old_state}`로 감싼다. |
@@ -35,6 +35,8 @@ Supervisor는 처리하지 않은 STT·채팅과 `pending_urls`만 보고 call/u
 구조를 내보낼 때 `python -m scamshield.export_graph --supervisor`는 실제 컴파일된 상위·하위 그래프를 시각화용으로 연결해 `call_agent` 내부의 Jev 감지·`analysis_agent` 호출·조건부 skip까지 보여준다. 하위 START/END만 제외하고 상위 call 진입과 url/done 복귀 간선은 보존한다. 실행 방식은 바꾸지 않는다. `--compact`를 추가하면 내부를 접은 보기를 별도 파일로 출력한다.
 
 `SupervisorOutcome`은 `call`(이번 통화 분석 또는 `None`), `url_analyses`, 실제 실행한 `routes`, 서버가 history에 추가할 `appended_lines`, 다음 요청의 `state`다. 일반 채팅은 `[사용자 입력] …` 줄로 통화 분석에 전달하며 STT와 seq 순서로 정렬한다. 원래 채팅은 서버가 별도로 보관한다. URL 결과는 기존 통화 점수·상태에 임의 합산하지 않는다.
+
+2026-11-28 `analysis_status`·`failures`와 선택적 `on_progress` 콜백을 추가했다. 통화 감지·분석의 재시도와 근거 선택은 [통화 계약](state-and-graph.md)을 따른다. 진행 이벤트는 analyzing을 전달하고 상위 작업 종료 시 completed/failed를 한 번 보낸다. 통화 내부 완료를 URL 작업 종료 전에 노출하지 않는다. 통화 분석이 없거나 이미 완료한 채팅만 재전송해도 이전 소진 실패는 보존해 반환한다. 이 상태는 통화 분석 완료 여부이며 URL 판정은 기존 url_analyses로 별도 확인한다. Supervisor 라우팅 자체와 URL agent의 재시도 정책은 이번에 변경하지 않았다. 실제 화면·네트워크 전송은 미연결이다.
 
 `SupervisorMemory`는 다음 세 가지를 가진다.
 
@@ -68,6 +70,6 @@ agent는 요청 동안만 상태를 사용한다. checkpointer·프로세스 전
 
 ## 관련 문서
 
-[기능상 위험 검토](../analysis/runtime-risk-review.md)에 URL 혼합 채팅의 call 누락 재현과 저장 계약의 한계를 기록했다. [분석 실패 대응 change](../../openspec/changes/analysis-failure-handling/proposal.md)는 첫 후속 작업이며 현재 Supervisor 계약·코드는 변경하지 않았다.
+[기능상 위험 검토](../analysis/runtime-risk-review.md)는 수정 전 코드의 관찰이다. [분석 실패 대응 change](../../openspec/changes/analysis-failure-handling/proposal.md)에서 통화 진행·실패 전달을 추가했으며, 혼합 URL 라우팅 누락은 후속으로 남겼다.
 
 [통화 계약](state-and-graph.md), [입력 흐름](mvp-flow.md), [아키텍처](../architecture/overview.md), [proposal](../../openspec/changes/jev-supervisor-url/proposal.md), [spec](../../openspec/changes/jev-supervisor-url/spec.md), [design](../../openspec/changes/jev-supervisor-url/design.md), [tasks](../../openspec/changes/jev-supervisor-url/tasks.md), [work](../../openspec/changes/jev-supervisor-url/work.md)
