@@ -2,6 +2,8 @@
 
 ## 현재 확정 방향 — 상태별 판단
 
+2026-11-28 사용자는 분석 실패 시 기존 대화를 다시 분석하고, 재시도 동안 프론트에 `분석 중`을 유지하며 최대 3회 재시도 후에도 실패하면 `분석 실패`를 표시하는 방향을 제시했다. 이어 최종 판단은 기존 대화 전체를 바탕으로 하고, 새 발화 전체를 근거로 기록하지 말고 실제 근거를 필터링해야 한다고 명시했다. 이 방향은 아직 제품 코드·BE·프론트에 구현되지 않았다. 현재 동작과 후속 방향의 구분은 [State·Graph](design/state-and-graph.md), 작업·미정 사항은 [분석 실패 대응 change](../openspec/changes/analysis-failure-handling/work.md)에 있다.
+
 2026-11-23 사용자 요청으로 기존 통화 분석 위에 Jev Supervisor를 추가한다. 새 STT·일반 채팅은 기존 분석으로, 채팅에서 얻은 URL은 URL 에이전트의 Tool Calling으로 보낸다. URL 검색은 현재 Mock 함수로 한정한다. 이전 채팅의 URL이 계속 라우팅되지 않게 메시지 ID별 처리 상태를 관리하며, 원문·최신 분석 state의 영속 저장은 서버가 맡는다. 에이전트는 `scamshield/agents/`에 역할별로 두고 `supervisor.py` 외에는 `*_agent.py`, Haiku 분석 역할은 `analysis_agent.py`로 정리한다. 계약은 [Supervisor·채팅](design/supervisor-and-chat.md), 진행은 [work](../openspec/changes/jev-supervisor-url/work.md)에 있다.
 
 2026-11-15 사용자 요청, 2026-11-22 구현: Jev가 KorCCVi에서 나온 사기 수법 행동 F1~F6을 상태로 감지하고, 켜진 상태마다 Claude Haiku가 대화 맥락으로 판단한다. Gemini 경로는 뺐다. 현재 계약은 [State·Graph](design/state-and-graph.md), 구현 상태는 [아키텍처](architecture/overview.md), 진행과 다음 행동은 [jev-state-agents work](../openspec/changes/jev-state-agents/work.md)를 따른다.

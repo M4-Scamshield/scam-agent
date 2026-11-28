@@ -77,8 +77,27 @@ flowchart TD
 
 라우팅·보류·재호출, 절대선·tool 보정, 점수 감소, Haiku 실패와 인증 오류, BE 필드, `state` JSON 왕복, Jev 요청 형식, Haiku 요청·tool 왕복은 API 없는 테스트로 확인한다. 실제 Jev·Haiku 연결은 지어낸 예제 통화로 확인했고, KorCCVi 큰 표본 평가는 아직 하지 않았다. 검증 기록과 남은 일은 [work](../../openspec/changes/jev-state-agents/work.md)에 있다.
 
+## 후속 방향 — 분석 진행·재시도와 근거 선택(구현 전)
+
+2026-11-28 사용자는 다음 방향을 제시했다. 아래는 현재 코드의 동작과 구분한다.
+
+- 실패한 분석은 기존 대화 맥락을 보존한 채 다시 분석한다.
+- 최초 분석과 재시도 중에는 프론트에 `분석 중`을 유지한다. 최대 3회 재시도하고 그래도 실패하면 `분석 실패`를 표시한다. 성공하면 해당 구간의 분석 결과를 반영한다.
+- 최종 위험 판단은 기존 대화 전체를 바탕으로 한다. 새 발화 전체를 근거로 기록하지 않고 실제 근거를 선택·필터링한다.
+
+재시도 횟수는 최초 시도를 제외한 추가 3회(최대 4번의 분석 시도)로 해석해 설계한다. 이는 사용자 문구의 횟수 해석이며 실제 호출 횟수·단계별 적용·간격·총 대기·재시도 주체는 [후속 설계](../../openspec/changes/analysis-failure-handling/design.md)에서 구체화한다. 분석 시도 하나는 tool 왕복으로 모델을 여러 번 부를 수 있어 API 호출 수와 같지 않다.
+
+위험도와 진행 상태는 별개로 관리하는 방향을 제안한다. 재분석 중이거나 실패해도 이전에 확인한 위험과 조회 근거는 보존한다. 성공한 다른 상태까지 매번 재실행하기보다 실패한 분석 작업을 전체 문맥과 함께 다시 실행하는 방안을 검토한다.
+
+현재 Jev는 최근 맥락에서 행동 후보를 감지하고, 선택된 상태의 Haiku는 전체 대화를 읽는다. 최종 판단에 전체 대화를 쓰는 것과 모든 발화에서 전체 대화를 다시 감지하는 것은 별도의 선택이다. 후보 감지 누락·맥락 변화에 따른 재평가 정책은 미정이며 이 문서로 기존 창 방식을 폐지하지 않는다.
+
+근거 선택은 구현 전 제안이다. 분석에 쓰는 전체 대화를 유지하면서 최종 판단을 뒷받침하는 실제 발화 번호를 별도로 받는다. 모델이 반환한 번호가 실제 입력에 존재하는지 확인하고, 그 발화가 주장의 근거인지와 화자·인용·부정·앞뒤 맥락을 검토해야 한다. 번호가 존재한다는 검사만으로 의미상 정확성을 보장하지 않는다. 이전 대화의 안정적 seq 전달, 직접 요구와 보조 맥락 구분, 근거 누락·잘못된 근거의 복구 규칙은 후속 설계에서 정한다.
+
+현재 `history`는 번호 없는 `list[str]`이고 Haiku의 줄 번호는 대화상 위치다. 이전 근거까지 서버의 seq로 반환하려면 원래 번호와 줄 위치의 대응을 보존하는 계약이 필요하다. 배열 위치를 원래 seq라고 간주하지 않는다.
+
 ## 관련 문서
 
+- 기능상 위험: [분석 실패·보류·이력·재평가 검토](../analysis/runtime-risk-review.md). 첫 개선인 [분석 실패 대응 change](../../openspec/changes/analysis-failure-handling/proposal.md)는 문서화 단계이며 현재 실패·점수 계약은 아직 변경하지 않았다.
 - [현재 아키텍처](../architecture/overview.md) · [입력과 실행 흐름](mvp-flow.md) · [컨텍스트](../project-context.md)
 - [jev-state-agents proposal](../../openspec/changes/jev-state-agents/proposal.md) · [spec](../../openspec/changes/jev-state-agents/spec.md) · [design](../../openspec/changes/jev-state-agents/design.md) · [tasks](../../openspec/changes/jev-state-agents/tasks.md) · [work](../../openspec/changes/jev-state-agents/work.md)
 - 이전 계약: [2AS change](../../openspec/changes/jev-gemini-two-agent/design.md)

@@ -68,4 +68,6 @@ agent는 요청 동안만 상태를 사용한다. checkpointer·프로세스 전
 
 ## 관련 문서
 
+[기능상 위험 검토](../analysis/runtime-risk-review.md)에 URL 혼합 채팅의 call 누락 재현과 저장 계약의 한계를 기록했다. [분석 실패 대응 change](../../openspec/changes/analysis-failure-handling/proposal.md)는 첫 후속 작업이며 현재 Supervisor 계약·코드는 변경하지 않았다.
+
 [통화 계약](state-and-graph.md), [입력 흐름](mvp-flow.md), [아키텍처](../architecture/overview.md), [proposal](../../openspec/changes/jev-supervisor-url/proposal.md), [spec](../../openspec/changes/jev-supervisor-url/spec.md), [design](../../openspec/changes/jev-supervisor-url/design.md), [tasks](../../openspec/changes/jev-supervisor-url/tasks.md), [work](../../openspec/changes/jev-supervisor-url/work.md)

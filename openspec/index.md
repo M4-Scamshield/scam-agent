@@ -20,6 +20,18 @@
 
 공통 설계의 기준은 `docs/design/`, 현재 구현 설명은 `docs/architecture/`에 둔다. change 문서는 해당 변경의 요구와 적용 방법·진행을 담고 상위 문서로 연결한다. 변경이 반영되면 관련 기준 문서를 갱신하고, 본문의 관련 문서 항목에서 해당 change와 검증 기록으로 연결한다.
 
+## 분석 실패 대응 — 진행 중(후속 방향 반영, 상세 계약·구현 후속)
+
+2026-11-28 기능상 위험 검토 후 사용자가 첫 위험인 분석 실패 대응부터 개선하고 브랜치를 만들어 문제를 docs에 정리하도록 요청했다. `fix/analysis-failure-handling`에서 [분석 문서](../docs/analysis/runtime-risk-review.md)에 핵심 위험과 대역 재현·원인·개선 후보를 정리했다. 현재는 문서 단계이며 재시도·응답 계약과 제품 코드는 변경하지 않았다.
+
+후속으로 사용자가 분석 중 표시 유지·최대 3회 재시도·소진 시 분석 실패 표시와 전체 대화 기반 판단·근거 발화 필터링 방향을 제시했다. [통화 계약](../docs/design/state-and-graph.md)에 구현 전 방향으로 기록했고, 현재 묶음 입력 전체가 근거로 기록되는 동작을 추가 재현했다. 상세 schema·재시도 실행·근거 선택은 미구현이다.
+
+- [proposal](changes/analysis-failure-handling/proposal.md): 목적·범위·문서 단계와 후속 구현의 구분.
+- [spec](changes/analysis-failure-handling/spec.md): 정상 오인 방지·근거 보존·복구의 요구 초안.
+- [design](changes/analysis-failure-handling/design.md): 적용 후보·trade-off·미정 사항.
+- [tasks](changes/analysis-failure-handling/tasks.md): 완료 범위와 후속 작업.
+- [work](changes/analysis-failure-handling/work.md): 실제 검증·기존 작업 보존·다음 행동.
+
 ## Jev Supervisor·채팅 URL 분석 — 완료(agent·Mock·API 없는 검증)
 
 검토·인계: [PR #16](https://github.com/M4-Scamshield/scam-agent/pull/16), head `feat/jev-supervisor-url-routing`, base `main`.
