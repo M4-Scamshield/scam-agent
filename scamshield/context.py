@@ -1,6 +1,7 @@
 """전체 대화의 줄 위치와 서버 seq를 대응시킨다. 원문은 호출자가 보관한다."""
 
 from hashlib import sha256
+import re
 
 from pydantic import TypeAdapter
 
@@ -9,6 +10,12 @@ from scamshield.state import NewLine, StateJudgment
 from scamshield.tactics import ABSOLUTE_STATES
 
 _HISTORY = TypeAdapter(list[str | NewLine])
+_ACKNOWLEDGMENTS = {"네", "예", "응", "알겠습니다", "네알겠습니다", "예알겠습니다", "ok", "okay", "yes"}
+
+
+def _acknowledgment(text: str) -> bool:
+    utterance = re.sub(r"^\s*\[[^\]]+\]\s*", "", text)
+    return re.sub(r"[\s.,!?。！？]+", "", utterance).casefold() in _ACKNOWLEDGMENTS
 
 
 def prepare_context(history, new_lines: list[dict], memory: dict) -> tuple[list[str], list[int | None]]:
@@ -43,12 +50,14 @@ def validate_evidence(result: StateJudgment, request: dict) -> StateJudgment:
     """위험 근거를 묶음 전체로 대체하지 않는다. 실제 줄·원래 seq만 허용한다."""
     evidence = sorted(set(result.evidence_lines))
     context = sorted(set(result.context_lines) - set(evidence))
+    for position in evidence + context:
+        if position > len(request["lines"]) or request["line_seqs"][position - 1] is None:
+            raise AnalystError("INVALID_EVIDENCE")
+    # 짧은 맞장구는 전체 문맥에 남기되 직접적인 위험 행동의 근거로 채택하지 않는다.
+    evidence = [position for position in evidence if not _acknowledgment(request["lines"][position - 1])]
     risky = result.judgment == "risky" or (
         request["state"] in ABSOLUTE_STATES and result.absolute_line
     ) or any(tool.status == "flagged" for tool in result.tools)
     if risky and not evidence:
         raise AnalystError("INVALID_EVIDENCE")
-    for position in evidence + context:
-        if position > len(request["lines"]) or request["line_seqs"][position - 1] is None:
-            raise AnalystError("INVALID_EVIDENCE")
     return result.model_copy(update={"evidence_lines": evidence, "context_lines": context})

@@ -25,6 +25,20 @@ def test_batch_selects_actual_request_and_separates_context_from_acknowledgment(
     assert outcome.state["handled"]["F1"]["context_seqs"] == [101]
 
 
+@pytest.mark.parametrize("evidence,expected", [([2, 3], [103]), ([2], [])])
+def test_plain_acknowledgment_is_filtered_even_when_model_selects_it(evidence, expected):
+    result = CallPipeline(FakeDetector({"F1"}), FakeAnalyst(
+        F1=judged("risky", evidence_lines=evidence),
+    )).analyze([], [
+        NewLine(seq=101, text="[p1] 검찰입니다."),
+        NewLine(seq=102, text="[p2] 네, 알겠습니다."),
+        NewLine(seq=103, text="[p1] 이 계좌로 보내세요."),
+    ], None, 0)
+    assert result.evidence_seqs == expected
+    if not expected:
+        assert result.analysis_status == "failed" and result.status is None
+
+
 def test_structured_history_keeps_full_context_and_original_noncontiguous_seqs():
     analyst = FakeAnalyst(F1=judged("risky", evidence_lines=[1], context_lines=[3]))
     history = [NewLine(seq=11, text="[p1] 돈을 보내세요."), NewLine(seq=14, text="[p2] 어디로요?")]
