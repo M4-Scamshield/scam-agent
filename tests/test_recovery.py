@@ -94,6 +94,22 @@ def test_existing_risk_is_visible_during_another_state_failure():
     assert second.message == "송금 중단" and second.evidence_seqs == [10] and second.score == 40
 
 
+def test_later_detection_success_does_not_erase_unanalyzed_old_segment():
+    class Detector:
+        failing = True
+        def detect_states(self, lines, n_new):
+            if self.failing:
+                raise AnalystError("TIMEOUT")
+            return FakeDetector(set()).detect_states(lines, n_new)
+    detector = Detector()
+    pipeline = CallPipeline(detector, FakeAnalyst(), retry_wait=lambda _: None)
+    first = pipeline.analyze([], [NewLine(seq=10, text="[p1] 송금 요구")], None, 0)
+    detector.failing = False
+    second = pipeline.analyze(["[p1] 송금 요구"], [NewLine(seq=20, text="[p2] 네")], first.state, 1)
+    assert second.analysis_status == "failed" and second.status is None
+    assert second.failures[0].seqs == [10]
+
+
 def test_broken_progress_sink_does_not_repeat_model_calls_or_expose_exception(caplog):
     analyst = FakeAnalyst(F1=judged("risky"))
     def broken(event):

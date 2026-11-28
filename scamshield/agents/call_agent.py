@@ -122,9 +122,9 @@ def build_graph(detector: Detector, analyst: Analyst, *, retry_wait=None):
         )
         memory = deepcopy(state["memory"])
         if failure:
-            memory["failures"]["jev"] = failure.model_dump()
+            key = "jev:" + ",".join(map(str, failure.seqs))
+            memory["failures"][key] = failure.model_dump()
             return {"states": {}, "memory": memory, "todo": {}}
-        memory["failures"].pop("jev", None)
         first = len(state["history"]) + 1
         positions = list(range(first, first + n_new))
         todo = route(states, memory, [line["seq"] for line in state["new_lines"]], positions)
