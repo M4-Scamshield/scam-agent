@@ -1,4 +1,4 @@
-from typing import Annotated, Literal, TypedDict
+from typing import Annotated, Callable, Literal, NotRequired, TypedDict
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -97,6 +97,27 @@ class LineReference(BaseModel):
     fingerprint: str
 
 
+class AnalysisFailure(BaseModel):
+    stage: Literal["jev", "llm"]
+    code: str
+    state: StateCode | None = None
+    attempts: int = Field(ge=1, le=4)
+    seqs: list[int]
+
+
+class AnalysisProgress(BaseModel):
+    status: Literal["analyzing", "completed", "failed"]
+    stage: Literal["pipeline", "jev", "llm"] = "pipeline"
+    state: StateCode | None = None
+    attempt: int = Field(default=0, ge=0, le=4)
+    max_attempts: int = 4
+    seqs: list[int] = []
+    failures: list[AnalysisFailure] = []
+
+
+ProgressCallback = Callable[[AnalysisProgress], None]
+
+
 class Held(BaseModel):
     probability: float
     seqs: list[int]
@@ -112,11 +133,12 @@ class AgentMemory(BaseModel):
     seen: list[StateCode] = []
     held: dict[StateCode, Held] = {}
     line_refs: list[LineReference] = []
+    failures: dict[str, AnalysisFailure] = {}
 
 
 class AnalysisOutcome(BaseModel):
-    status: Literal["위험", "주의", "정상"]
-    score: int = Field(ge=0, le=100)
+    status: Literal["위험", "주의", "정상"] | None
+    score: int | None = Field(ge=0, le=100)
     message: str | None
     reason: str | None
     evidence_seqs: list[int]
@@ -124,6 +146,8 @@ class AnalysisOutcome(BaseModel):
     state_analyses: list[StateAnalysis]
     state: dict
     context_seqs: list[int] = []
+    analysis_status: Literal["completed", "failed"] = "completed"
+    failures: list[AnalysisFailure] = []
 
 
 class ChatMessage(BaseModel):
@@ -200,6 +224,7 @@ class AnalyzeInput(TypedDict):
     new_lines: list[dict]
     memory: dict
     now: float
+    on_progress: NotRequired[ProgressCallback | None]
 
 
 class AgentState(AnalyzeInput, total=False):

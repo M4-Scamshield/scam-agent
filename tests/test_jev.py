@@ -81,7 +81,7 @@ def test_transport_errors_are_safe_and_not_retried(monkeypatch, failure):
     monkeypatch.setattr("scamshield.agents.jev_agent.urlopen", transport)
     with pytest.raises(PipelineError) as error:
         JevClient("private-key").detect_states(["[상대] 입력"], 1)
-    assert error.value.code == "CALL_FAILED"
+    assert error.value.code == ("AUTH_FAILED" if isinstance(failure, HTTPError) else "CALL_FAILED")
     assert "private" not in error.value.message
     transport.assert_called_once()
 

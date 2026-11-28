@@ -7,6 +7,11 @@ from scamshield.state import NewLine, PipelineError
 from test_graph import FakeAnalyst, FakeDetector, judged
 
 
+@pytest.fixture(autouse=True)
+def no_retry_delays(monkeypatch):
+    monkeypatch.setattr("scamshield.recovery.sleep", lambda seconds: None)
+
+
 def test_batch_selects_actual_request_and_separates_context_from_acknowledgment():
     analyst = FakeAnalyst(F1=judged("risky", evidence_lines=[3, 3], context_lines=[1, 3]))
     outcome = CallPipeline(FakeDetector({"F1"}), analyst).analyze([], [

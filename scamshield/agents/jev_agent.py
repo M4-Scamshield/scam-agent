@@ -130,7 +130,8 @@ class JevClient:
             with urlopen(request, timeout=TIMEOUT_S) as response:
                 raw = json.load(response)
         except HTTPError as exc:
-            raise PipelineError("jev", "CALL_FAILED", f"Jev HTTP {exc.code}: 인증·모델·요청 한도를 확인하세요.") from exc
+            code = "AUTH_FAILED" if exc.code in (401, 403) else "REQUEST_REJECTED" if exc.code in (400, 404) else f"HTTP_{exc.code}"
+            raise PipelineError("jev", code, f"Jev HTTP {exc.code}: 인증·모델·요청 한도를 확인하세요.") from exc
         except (URLError, TimeoutError, OSError) as exc:
             raise PipelineError("jev", "CALL_FAILED", "Jev 연결 또는 응답 대기에 실패했습니다.") from exc
         except (ValueError, UnicodeError) as exc:

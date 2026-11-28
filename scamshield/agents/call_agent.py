@@ -3,6 +3,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from math import floor, isfinite
+from threading import Lock
 
 from langgraph.graph import END, START, StateGraph
 from pydantic import TypeAdapter, ValidationError
@@ -10,14 +11,17 @@ from pydantic import TypeAdapter, ValidationError
 from scamshield.agents.interfaces import Analyst, Detector, OfflineAnalyst, OfflineDetector
 from scamshield.agents.jev_agent import CONTEXT_LINES
 from scamshield.context import prepare_context, validate_evidence
+from scamshield.recovery import attempt_analysis
 from scamshield.state import (
     AgentMemory,
+    AnalysisProgress,
     AgentState,
     AnalysisOutcome,
     AnalyzeInput,
     JevDecision,
     NewLine,
     PipelineError,
+    ProgressCallback,
     StateJudgment,
 )
 from scamshield.tactics import ABSOLUTE_STATES, CORE, HALF_LIFE_S, POINTS, PRIORITY, STATES
@@ -78,7 +82,7 @@ def route(states: dict, memory: dict, seqs: list[int], lines: list[int]) -> dict
     return {code: todo[code] for code in PRIORITY if code in todo}
 
 
-def build_graph(detector: Detector, analyst: Analyst):
+def build_graph(detector: Detector, analyst: Analyst, *, retry_wait=None):
     def update_context(state: AgentState) -> dict:
         try:
             new_lines = [line.model_dump() for line in _NEW_LINES.validate_python(state["new_lines"])]
@@ -91,6 +95,8 @@ def build_graph(detector: Detector, analyst: Analyst):
             raise PipelineError("input", "INVALID_INPUT", "history·new_lines·state·now 형식이 잘못되었습니다.") from exc
         if not new_lines:
             raise PipelineError("input", "INVALID_INPUT", "new_lines는 1줄 이상이어야 합니다.")
+        emit = state.get("on_progress") or (lambda event: None)
+        emit(AnalysisProgress(status="analyzing", seqs=[line["seq"] for line in new_lines]))
         return {
             "history": history,
             "new_lines": new_lines,
@@ -104,17 +110,21 @@ def build_graph(detector: Detector, analyst: Analyst):
     def detect_states(state: AgentState) -> dict:
         n_new = len(state["new_lines"])
         window = state["lines"][-(CONTEXT_LINES + n_new):]
-        try:
+        def detect():
             raw = detector.detect_states(list(window), n_new)
-        except PipelineError:
-            raise
-        except Exception as exc:
-            raise PipelineError("jev", "CALL_FAILED", "Jev 판단 호출에 실패했습니다.") from exc
-        try:
-            states = {code: JevDecision.model_validate(raw[code]).model_dump() for code in STATES}
-        except (KeyError, TypeError, ValidationError) as exc:
-            raise PipelineError("jev", "INVALID_OUTPUT", "Jev 상태별 판단 형식이 잘못되었습니다.") from exc
+            try:
+                return {code: JevDecision.model_validate(raw[code]).model_dump() for code in STATES}
+            except (KeyError, TypeError, ValidationError) as exc:
+                raise PipelineError("jev", "INVALID_OUTPUT", "Jev 상태별 판단 형식이 잘못되었습니다.") from exc
+        states, failure = attempt_analysis(
+            detect, stage="jev", seqs=[line["seq"] for line in state["new_lines"]],
+            emit=state.get("on_progress") or (lambda event: None), retry_wait=retry_wait,
+        )
         memory = deepcopy(state["memory"])
+        if failure:
+            memory["failures"]["jev"] = failure.model_dump()
+            return {"states": {}, "memory": memory, "todo": {}}
+        memory["failures"].pop("jev", None)
         first = len(state["history"]) + 1
         positions = list(range(first, first + n_new))
         todo = route(states, memory, [line["seq"] for line in state["new_lines"]], positions)
@@ -136,20 +146,27 @@ def build_graph(detector: Detector, analyst: Analyst):
             }
             for code, item in state["todo"].items()
         }
+        def judge(code, request):
+            def operation():
+                return validate_evidence(StateJudgment.model_validate(analyst.judge(deepcopy(request))), request)
+            return attempt_analysis(
+                operation, stage="llm", state=code, seqs=state["todo"][code]["seqs"],
+                emit=state.get("on_progress") or (lambda event: None), retry_wait=retry_wait,
+            )
+
         with ThreadPoolExecutor(max_workers=len(requests)) as pool:
-            futures = {code: pool.submit(analyst.judge, request) for code, request in requests.items()}
+            futures = {code: pool.submit(judge, code, request) for code, request in requests.items()}
             results = {}
             for code in PRIORITY:
                 if code not in futures:
                     continue
-                try:
-                    results[code] = validate_evidence(StateJudgment.model_validate(futures[code].result()), requests[code])
-                except PipelineError:
-                    raise
-                except ValidationError:
-                    logger.warning("state %s skipped: INVALID_OUTPUT", code)
-                except Exception as exc:
-                    logger.warning("state %s skipped: %s", code, getattr(exc, "code", type(exc).__name__))
+                result, failure = futures[code].result()
+                if failure:
+                    memory["failures"][code] = failure.model_dump()
+                    logger.warning("state %s failed: %s attempts=%d", code, failure.code, failure.attempts)
+                else:
+                    results[code] = result
+                    memory["failures"].pop(code, None)
 
         analyses = []
         for code, result in results.items():
@@ -198,14 +215,17 @@ def build_graph(detector: Detector, analyst: Analyst):
         risky = [code for code in PRIORITY if handled.get(code, {}).get("judgment") == "risky"]
         watch = [code for code in PRIORITY if handled.get(code, {}).get("judgment") == "uncertain" and points[code] > 0]
         status = "위험" if risky else "주의" if watch else "정상"
+        failures = list(memory["failures"].values())
         # 사용자 화면의 근거는 가장 중요한 상태 하나의 이유만 쓴다(여럿을 이으면 길고, uncertain의 "근거 부족"이 섞인다).
         # 위험이면 가장 최근에 risky가 된 상태(같은 때면 우선순위)를 쓴다. 위험 뒤 갱신 경고에 새 근거가 보이게 한다.
         latest = max((handled[code]["judged_at"] for code in risky), default=None)
         top = ([code for code in risky if handled[code]["judged_at"] == latest] or watch or [None])[0]
         message = (handled[top]["response"] or FALLBACK_MESSAGE) if risky else None
         outcome = {
-            "status": status,
-            "score": min(100, round(sum(points.values()))),
+            "status": status if not failures or risky else None,
+            "score": min(100, round(sum(points.values()))) if not failures or risky else None,
+            "analysis_status": "failed" if failures else "completed",
+            "failures": failures,
             "message": message,
             "reason": (handled[top]["reason"] or None) if top else None,
             "evidence_seqs": sorted({seq for code in risky for seq in handled[code]["evidence_seqs"]}),
@@ -214,6 +234,8 @@ def build_graph(detector: Detector, analyst: Analyst):
             "state_analyses": state["state_analyses"],
             "state": memory,
         }
+        emit = state.get("on_progress") or (lambda event: None)
+        emit(AnalysisProgress(status=outcome["analysis_status"], seqs=[line["seq"] for line in state["new_lines"]], failures=failures))
         return {"outcome": outcome}
 
     builder = StateGraph(AgentState, input_schema=AnalyzeInput)
@@ -236,11 +258,19 @@ def build_graph(detector: Detector, analyst: Analyst):
 class CallPipeline:
     """Stateless: 통화 상태는 analyze 입력의 state로만 받고 출력의 state로 돌려준다."""
 
-    def __init__(self, detector: Detector, analyst: Analyst):
-        self.graph = build_graph(detector, analyst)
+    def __init__(self, detector: Detector, analyst: Analyst, *, retry_wait=None):
+        self.graph = build_graph(detector, analyst, retry_wait=retry_wait)
 
-    def analyze(self, history: list[str | NewLine], new_lines: list[NewLine], state: dict | None, now: float) -> AnalysisOutcome:
-        result = self.graph.invoke({"history": history, "new_lines": new_lines, "memory": state, "now": now})
+    def analyze(self, history: list[str | NewLine], new_lines: list[NewLine], state: dict | None, now: float, *, on_progress: ProgressCallback | None = None) -> AnalysisOutcome:
+        lock = Lock()
+        def emit(event):
+            if on_progress is not None:
+                with lock:
+                    try:
+                        on_progress(event.model_copy(deep=True))
+                    except Exception:
+                        logger.warning("analysis progress delivery failed")
+        result = self.graph.invoke({"history": history, "new_lines": new_lines, "memory": state, "now": now, "on_progress": emit})
         return AnalysisOutcome.model_validate(result["outcome"])
 
 

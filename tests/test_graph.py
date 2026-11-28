@@ -51,7 +51,7 @@ class Call:
     """BE 브리지처럼 history와 state를 들고 요청을 이어 보낸다."""
 
     def __init__(self, detector, analyst):
-        self.pipeline = CallPipeline(detector, analyst)
+        self.pipeline = CallPipeline(detector, analyst, retry_wait=lambda delay: None)
         self.history, self.state, self.seq = [], None, 0
 
     def say(self, *texts, now=0.0):
@@ -126,10 +126,10 @@ def test_held_state_whose_haiku_fails_waits_for_next_yes():
     call.say("[상대] 계좌가 정지될 수 있어요.")
     assert "F3" not in call.state["handled"] and call.state["held"] == {}
     call.say("[나] 네.")
-    assert analyst.called() == ["F3", "F4"]
+    assert analyst.called() == ["F3"] * 4 + ["F4"]
     analyst.results["F3"] = judged("within_normal")
     call.say("[상대] 다시 이 주소로 들어가세요.")
-    assert analyst.called() == ["F3", "F3", "F4"]
+    assert analyst.called() == ["F3"] * 5 + ["F4"]
     assert call.state["handled"]["F3"]["judgment"] == "within_normal"
 
 
@@ -237,15 +237,18 @@ def test_be_fields_message_reason_and_evidence():
     assert outcome.score == 40 + 40 + 5
 
 
-def test_haiku_failure_skips_only_that_state_and_retries_on_next_yes():
+def test_haiku_failure_keeps_successful_states_and_new_work_can_resolve_failure():
     analyst = FakeAnalyst(F1=AnalystError("HTTP_500"), F6=judged("uncertain"))
     call = Call(FakeDetector({"F1", "F6"}, {"F1"}), analyst)
     first = call.say("[상대] 송금하세요.")
     assert [analysis.state for analysis in first.state_analyses] == ["F6"]
     assert "F1" not in first.state["handled"]
+    assert first.analysis_status == "failed" and first.status is None and first.score is None
+    assert first.failures[0].attempts == 4
     analyst.results["F1"] = judged("risky")
     second = call.say("[상대] 지금 송금하세요.")
     assert second.state["handled"]["F1"]["judgment"] == "risky"
+    assert second.analysis_status == "completed" and second.failures == []
 
 
 def test_reason_and_message_follow_newly_risky_state():
@@ -276,32 +279,32 @@ def test_reason_is_top_state_only_and_uncertain_is_hidden_when_risky():
 
 
 @pytest.mark.parametrize("bad", [{"judgment": "maybe", "reason": "x"}, {"judgment": "risky"}, RuntimeError("boom")])
-def test_invalid_haiku_output_is_skipped(bad):
+def test_invalid_haiku_output_is_failed_not_normal(bad):
     analyst = FakeAnalyst(F1=bad)
     outcome = Call(FakeDetector({"F1"}), analyst).say("[상대] 송금하세요.")
     assert outcome.state_analyses == []
-    assert outcome.status == "정상"
+    assert outcome.analysis_status == "failed" and outcome.status is None and outcome.score is None
 
 
-def test_haiku_auth_failure_raises():
+def test_haiku_auth_failure_is_terminal_without_pointless_retries():
     analyst = FakeAnalyst(F1=PipelineError("llm", "AUTH_FAILED", "인증 실패"), F6=judged())
-    with pytest.raises(PipelineError) as error:
-        Call(FakeDetector({"F1", "F6"}), analyst).say("[상대] 송금하세요.")
-    assert error.value.code == "AUTH_FAILED"
+    outcome = Call(FakeDetector({"F1", "F6"}), analyst).say("[상대] 송금하세요.")
+    assert outcome.analysis_status == "failed"
+    assert outcome.failures[0].code == "AUTH_FAILED" and outcome.failures[0].attempts == 1
 
 
 @pytest.mark.parametrize("raw", [RuntimeError("private"), {"F1": {"verdict": "Yes", "probability": 0.9}}, None])
-def test_jev_failure_is_an_error_not_all_no(raw):
+def test_jev_failure_is_explicit_failure_not_all_no(raw):
     class Broken:
         def detect_states(self, lines, n_new):
             if isinstance(raw, Exception):
                 raise raw
             return raw
 
-    with pytest.raises(PipelineError) as error:
-        Call(Broken(), FakeAnalyst()).say("[상대] 입력")
-    assert error.value.stage == "jev"
-    assert "private" not in error.value.message
+    outcome = Call(Broken(), FakeAnalyst()).say("[상대] 입력")
+    assert outcome.analysis_status == "failed" and outcome.states == {}
+    assert outcome.status is None and outcome.failures[0].stage == "jev"
+    assert "private" not in json.dumps(outcome.model_dump())
 
 
 def test_state_round_trips_through_json_and_analyze_is_stateless():
